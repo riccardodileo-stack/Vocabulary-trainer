@@ -372,7 +372,14 @@ function exportWords() {
 }
 
 function chooseImportFile() {
-  document.getElementById("import-file-input").click();
+  const fileInput = document.getElementById("import-file-input");
+
+  if (!fileInput) {
+    showToast("Import input not found");
+    return;
+  }
+
+  fileInput.click();
 }
 
 function importWordsFromFile(event) {
@@ -704,8 +711,6 @@ function setupEvents() {
   document.getElementById("clear-inputs-button").addEventListener("click", clearInputs);
 
   document.getElementById("export-words-button").addEventListener("click", exportWords);
-
-  document.getElementById("choose-import-file-button").addEventListener("click", chooseImportFile);
 
   document.getElementById("import-file-input").addEventListener("change", importWordsFromFile);
 

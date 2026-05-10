@@ -563,6 +563,32 @@ button:hover {
   margin: 0 0 20px;
 }
 
+.file-input-hidden {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.fake-file-button {
+  display: inline-block;
+  border: none;
+  border-radius: 999px;
+  padding: 13px 22px;
+  font-size: 15px;
+  font-weight: 850;
+  cursor: pointer;
+  transition: 0.22s ease;
+  background: rgba(0,0,0,0.06);
+  color: var(--text);
+}
+
+.fake-file-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.98);
+}
+
 @media (max-width: 820px) {
   .backup-grid {
     grid-template-columns: 1fr;
