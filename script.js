@@ -113,33 +113,6 @@ function setupVocabularySubTabs() {
   const vocabularyTabButtons = document.querySelectorAll("[data-vocabulary-tab]");
   const wordListPanel = document.getElementById("word-list-panel");
   const addWordPanel = document.getElementById("add-word-panel");
-
-  vocabularyTabButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      vocabularyTabButtons.forEach((btn) => btn.classList.remove("active"));
-      button.classList.add("active");
-
-      const selectedTab = button.dataset.vocabularyTab;
-
-      wordListPanel.classList.remove("active");
-      addWordPanel.classList.remove("active");
-
-      if (selectedTab === "list") {
-        wordListPanel.classList.add("active");
-      }
-
-      if (selectedTab === "add") {
-        addWordPanel.classList.add("active");
-        document.getElementById("english-input").focus();
-      }
-    });
-  });
-}
-
-function setupVocabularySubTabs() {
-  const vocabularyTabButtons = document.querySelectorAll("[data-vocabulary-tab]");
-  const wordListPanel = document.getElementById("word-list-panel");
-  const addWordPanel = document.getElementById("add-word-panel");
   const backupPanel = document.getElementById("backup-panel");
 
   vocabularyTabButtons.forEach((button) => {
@@ -164,6 +137,32 @@ function setupVocabularySubTabs() {
 
       if (selectedTab === "backup") {
         backupPanel.classList.add("active");
+      }
+    });
+  });
+}
+
+function setupQuizSubTabs() {
+  const quizTabButtons = document.querySelectorAll("[data-quiz-tab]");
+  const engItaPanel = document.getElementById("quiz-eng-ita-panel");
+  const itaEngPanel = document.getElementById("quiz-ita-eng-panel");
+
+  quizTabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      quizTabButtons.forEach((btn) => btn.classList.remove("active"));
+      button.classList.add("active");
+
+      const selectedTab = button.dataset.quizTab;
+
+      engItaPanel.classList.remove("active");
+      itaEngPanel.classList.remove("active");
+
+      if (selectedTab === "eng-ita") {
+        engItaPanel.classList.add("active");
+      }
+
+      if (selectedTab === "ita-eng") {
+        itaEngPanel.classList.add("active");
       }
     });
   });
@@ -383,26 +382,36 @@ function chooseImportFile() {
 }
 
 function importWordsFromFile(event) {
+  console.log("Import function started");
+
   const file = event.target.files[0];
 
   if (!file) {
+    showToast("No file selected");
+    console.log("No file selected");
     return;
   }
+
+  console.log("Selected file:", file.name);
 
   const reader = new FileReader();
 
   reader.onload = function () {
+    console.log("File loaded");
+
     try {
       const importedData = JSON.parse(reader.result);
+      console.log("Parsed JSON:", importedData);
 
       let importedWords = [];
 
       if (Array.isArray(importedData)) {
         importedWords = importedData;
-      } else if (Array.isArray(importedData.words)) {
+      } else if (importedData && Array.isArray(importedData.words)) {
         importedWords = importedData.words;
       } else {
         showToast("Invalid JSON format");
+        console.log("Invalid JSON format");
         return;
       }
 
@@ -410,7 +419,7 @@ function importWordsFromFile(event) {
       let skippedCount = 0;
 
       importedWords.forEach((item) => {
-        if (!item.english || !item.italian) {
+        if (!item || !item.english || !item.italian) {
           skippedCount += 1;
           return;
         }
@@ -418,19 +427,11 @@ function importWordsFromFile(event) {
         const english = String(item.english).trim();
         const italian = String(item.italian).trim();
 
-        if (!english || !italian) {
-          skippedCount += 1;
-          return;
-        }
-
         const alreadyExists = words.some((word) => {
-          const sameEnglish =
-            normalizeText(word.english) === normalizeText(english);
-
-          const sameItalian =
-            normalizeText(word.italian) === normalizeText(italian);
-
-          return sameEnglish && sameItalian;
+          return (
+            normalizeText(word.english) === normalizeText(english) &&
+            normalizeText(word.italian) === normalizeText(italian)
+          );
         });
 
         if (alreadyExists) {
@@ -450,11 +451,21 @@ function importWordsFromFile(event) {
       renderWordList();
 
       showToast(`Imported ${addedCount} words, skipped ${skippedCount}`);
+
+      console.log("Import completed");
+      console.log("Added:", addedCount);
+      console.log("Skipped:", skippedCount);
     } catch (error) {
+      console.error("Import error:", error);
       showToast("Error while reading JSON file");
     }
 
     event.target.value = "";
+  };
+
+  reader.onerror = function () {
+    console.error("FileReader error");
+    showToast("Error while opening file");
   };
 
   reader.readAsText(file);
@@ -713,6 +724,10 @@ function setupEvents() {
   document.getElementById("export-words-button").addEventListener("click", exportWords);
 
   document.getElementById("import-file-input").addEventListener("change", importWordsFromFile);
+
+  document.getElementById("import-file-input").addEventListener("change", () => {
+    console.log("IMPORT EVENT TRIGGERED");
+  });
 
   document.getElementById("english-input").addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
