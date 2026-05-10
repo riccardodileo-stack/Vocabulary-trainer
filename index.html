@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Vocabulary Trainer" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+  <title>Vocabulary Trainer</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta name="theme-color" content="#f5f5f7" />
+</head>
+
+<body>
+  <div class="page">
+
+    <!-- HERO -->
+    <header class="hero">
+      <div class="hero-badge">Offline English Trainer</div>
+      <h1>Vocabulary Trainer</h1>
+      <p>
+        Build your personal English vocabulary and train with randomized quizzes,
+        directly from your device.
+      </p>
+    </header>
+
+    <!-- MAIN APP SHELL -->
+    <main class="shell">
+
+      <!-- MAIN TABS -->
+      <nav class="tabs main-tabs">
+        <button class="tab-button active" data-main-tab="vocabulary">
+          Vocabulary
+        </button>
+
+        <button class="tab-button" data-main-tab="quiz">
+          Quiz
+        </button>
+      </nav>
+
+      <div class="content">
+
+        <!-- ========================= -->
+        <!-- VOCABULARY SECTION -->
+        <!-- ========================= -->
+        <section id="vocabulary-section" class="section active">
+
+          <div class="section-header">
+            <h2>Vocabulary</h2>
+            <p>Add, view and manage your personal English-Italian word list.</p>
+          </div>
+
+          <!-- SUB TABS VOCABULARY -->
+          <div class="sub-tabs">
+            <button class="sub-tab-button active" data-vocabulary-tab="list">
+              Word List
+            </button>
+
+            <button class="sub-tab-button" data-vocabulary-tab="add">
+              Add Word
+            </button>
+          </div>
+
+          <!-- WORD LIST -->
+          <div id="word-list-panel" class="sub-section active">
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <div class="big-title">Your words</div>
+                  <p class="subtitle left">
+                    Here you can see all the words you have already saved.
+                  </p>
+                </div>
+
+                <div class="counter-pill">
+                  <span id="word-count">0</span> words
+                </div>
+              </div>
+
+              <div id="empty-list-message" class="empty-state">
+                <div class="empty-icon">📘</div>
+                <h3>No words yet</h3>
+                <p>Add your first word to start training.</p>
+              </div>
+
+              <div id="word-list" class="word-list"></div>
+            </div>
+          </div>
+
+          <!-- ADD WORD -->
+          <div id="add-word-panel" class="sub-section">
+            <div class="panel">
+              <div class="big-title">Add a new word</div>
+              <p class="subtitle left">
+                Insert the English word and its Italian translation.
+              </p>
+
+              <div class="grid">
+                <div class="field">
+                  <label for="english-input">English word</label>
+                  <input
+                    id="english-input"
+                    type="text"
+                    placeholder="Example: battery"
+                    autocomplete="off"
+                  />
+                </div>
+
+                <div class="field">
+                  <label for="italian-input">Italian translation</label>
+                  <input
+                    id="italian-input"
+                    type="text"
+                    placeholder="Example: batteria"
+                    autocomplete="off"
+                  />
+                </div>
+              </div>
+
+              <div class="buttons">
+                <button id="save-word-button" class="primary">
+                  Save word
+                </button>
+
+                <button id="clear-inputs-button" class="secondary">
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ========================= -->
+        <!-- QUIZ SECTION -->
+        <!-- ========================= -->
+        <section id="quiz-section" class="section">
+
+          <div class="section-header">
+            <h2>Quiz</h2>
+            <p>Train your vocabulary in both directions.</p>
+          </div>
+
+          <!-- SUB TABS QUIZ -->
+          <div class="sub-tabs">
+            <button class="sub-tab-button active" data-quiz-tab="eng-ita">
+              English → Italian
+            </button>
+
+            <button class="sub-tab-button" data-quiz-tab="ita-eng">
+              Italian → English
+            </button>
+          </div>
+
+          <!-- QUIZ ENGLISH TO ITALIAN -->
+          <div id="quiz-eng-ita-panel" class="sub-section active">
+            <div class="panel center quiz-panel">
+
+              <div class="quiz-mode-pill blue-pill">
+                English → Italian
+              </div>
+
+              <div class="big-title">Translate this word</div>
+
+              <div id="eng-ita-question" class="quiz-word">
+                No words available
+              </div>
+
+              <div class="field quiz-answer-field">
+                <label for="eng-ita-answer">Your answer in Italian</label>
+                <input
+                  id="eng-ita-answer"
+                  type="text"
+                  placeholder="Write the Italian translation..."
+                  autocomplete="off"
+                />
+              </div>
+
+              <div id="eng-ita-feedback" class="feedback-card hidden"></div>
+
+              <div class="buttons center-buttons">
+                <button id="start-eng-ita-button" class="primary">
+                  Start quiz
+                </button>
+
+                <button id="check-eng-ita-button" class="success hidden">
+                  Check answer
+                </button>
+
+                <button id="next-eng-ita-button" class="secondary hidden">
+                  Next word
+                </button>
+              </div>
+
+              <div id="eng-ita-progress" class="quiz-progress">
+                Score: 0 / 0
+              </div>
+
+            </div>
+          </div>
+
+          <!-- QUIZ ITALIAN TO ENGLISH -->
+          <div id="quiz-ita-eng-panel" class="sub-section">
+            <div class="panel center quiz-panel">
+
+              <div class="quiz-mode-pill green-pill">
+                Italian → English
+              </div>
+
+              <div class="big-title">Translate this word</div>
+
+              <div id="ita-eng-question" class="quiz-word">
+                No words available
+              </div>
+
+              <div class="field quiz-answer-field">
+                <label for="ita-eng-answer">Your answer in English</label>
+                <input
+                  id="ita-eng-answer"
+                  type="text"
+                  placeholder="Write the English translation..."
+                  autocomplete="off"
+                />
+              </div>
+
+              <div id="ita-eng-feedback" class="feedback-card hidden"></div>
+
+              <div class="buttons center-buttons">
+                <button id="start-ita-eng-button" class="primary">
+                  Start quiz
+                </button>
+
+                <button id="check-ita-eng-button" class="success hidden">
+                  Check answer
+                </button>
+
+                <button id="next-ita-eng-button" class="secondary hidden">
+                  Next word
+                </button>
+              </div>
+
+              <div id="ita-eng-progress" class="quiz-progress">
+                Score: 0 / 0
+              </div>
+
+            </div>
+          </div>
+
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- TOAST MESSAGE -->
+  <div id="toast" class="toast"></div>
+
+  <script src="script.js"></script>
+
+  <script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./service-worker.js");
+    });
+  }
+</script>
+
+</body>
+</html>
