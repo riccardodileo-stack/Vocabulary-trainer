@@ -136,27 +136,34 @@ function setupVocabularySubTabs() {
   });
 }
 
-function setupQuizSubTabs() {
-  const quizTabButtons = document.querySelectorAll("[data-quiz-tab]");
-  const engItaPanel = document.getElementById("quiz-eng-ita-panel");
-  const itaEngPanel = document.getElementById("quiz-ita-eng-panel");
+function setupVocabularySubTabs() {
+  const vocabularyTabButtons = document.querySelectorAll("[data-vocabulary-tab]");
+  const wordListPanel = document.getElementById("word-list-panel");
+  const addWordPanel = document.getElementById("add-word-panel");
+  const backupPanel = document.getElementById("backup-panel");
 
-  quizTabButtons.forEach((button) => {
+  vocabularyTabButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      quizTabButtons.forEach((btn) => btn.classList.remove("active"));
+      vocabularyTabButtons.forEach((btn) => btn.classList.remove("active"));
       button.classList.add("active");
 
-      const selectedTab = button.dataset.quizTab;
+      const selectedTab = button.dataset.vocabularyTab;
 
-      engItaPanel.classList.remove("active");
-      itaEngPanel.classList.remove("active");
+      wordListPanel.classList.remove("active");
+      addWordPanel.classList.remove("active");
+      backupPanel.classList.remove("active");
 
-      if (selectedTab === "eng-ita") {
-        engItaPanel.classList.add("active");
+      if (selectedTab === "list") {
+        wordListPanel.classList.add("active");
       }
 
-      if (selectedTab === "ita-eng") {
-        itaEngPanel.classList.add("active");
+      if (selectedTab === "add") {
+        addWordPanel.classList.add("active");
+        document.getElementById("english-input").focus();
+      }
+
+      if (selectedTab === "backup") {
+        backupPanel.classList.add("active");
       }
     });
   });
@@ -198,9 +205,15 @@ function renderWordList() {
         <div class="word-value">${escapeHtml(word.italian)}</div>
       </div>
 
-      <button class="danger delete-button" data-delete-index="${index}">
-        Delete
-      </button>
+      <div class="word-actions">
+        <button class="edit-button" data-edit-index="${index}">
+          Edit
+        </button>
+
+        <button class="danger delete-button" data-delete-index="${index}">
+          Delete
+        </button>
+      </div>
     `;
 
     wordList.appendChild(card);
@@ -212,6 +225,15 @@ function renderWordList() {
     button.addEventListener("click", () => {
       const index = Number(button.dataset.deleteIndex);
       deleteWord(index);
+    });
+  });
+
+  const editButtons = document.querySelectorAll("[data-edit-index]");
+
+  editButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const index = Number(button.dataset.editIndex);
+      editWord(index);
     });
   });
 }
@@ -260,10 +282,175 @@ function deleteWord(index) {
   showToast("Word deleted");
 }
 
+function editWord(index) {
+  const currentWord = words[index];
+
+  const newEnglish = prompt("Edit English word:", currentWord.english);
+  if (newEnglish === null) {
+    return;
+  }
+
+  const newItalian = prompt("Edit Italian translation:", currentWord.italian);
+  if (newItalian === null) {
+    return;
+  }
+
+  const cleanEnglish = newEnglish.trim();
+  const cleanItalian = newItalian.trim();
+
+  if (!cleanEnglish || !cleanItalian) {
+    showToast("Both fields are required");
+    return;
+  }
+
+  const duplicateExists = words.some((word, wordIndex) => {
+    const sameIndex = wordIndex === index;
+
+    const sameEnglish =
+      normalizeText(word.english) === normalizeText(cleanEnglish);
+
+    const sameItalian =
+      normalizeText(word.italian) === normalizeText(cleanItalian);
+
+    return !sameIndex && sameEnglish && sameItalian;
+  });
+
+  if (duplicateExists) {
+    showToast("This word pair already exists");
+    return;
+  }
+
+  words[index] = {
+    english: cleanEnglish,
+    italian: cleanItalian
+  };
+
+  saveWords();
+  renderWordList();
+
+  showToast("Word updated");
+}
+
 function clearInputs() {
   document.getElementById("english-input").value = "";
   document.getElementById("italian-input").value = "";
   document.getElementById("english-input").focus();
+}
+
+function exportWords() {
+  if (words.length === 0) {
+    showToast("No words to export");
+    return;
+  }
+
+  const backup = {
+    app: "Vocabulary Trainer",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    words: words
+  };
+
+  const jsonContent = JSON.stringify(backup, null, 2);
+  const blob = new Blob([jsonContent], { type: "application/json" });
+
+  const url = URL.createObjectURL(blob);
+
+  const date = new Date().toISOString().slice(0, 10);
+  const fileName = `vocabulary-backup-${date}.json`;
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+
+  showToast("Backup exported");
+}
+
+function chooseImportFile() {
+  document.getElementById("import-file-input").click();
+}
+
+function importWordsFromFile(event) {
+  const file = event.target.files[0];
+
+  if (!file) {
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function () {
+    try {
+      const importedData = JSON.parse(reader.result);
+
+      let importedWords = [];
+
+      if (Array.isArray(importedData)) {
+        importedWords = importedData;
+      } else if (Array.isArray(importedData.words)) {
+        importedWords = importedData.words;
+      } else {
+        showToast("Invalid JSON format");
+        return;
+      }
+
+      let addedCount = 0;
+      let skippedCount = 0;
+
+      importedWords.forEach((item) => {
+        if (!item.english || !item.italian) {
+          skippedCount += 1;
+          return;
+        }
+
+        const english = String(item.english).trim();
+        const italian = String(item.italian).trim();
+
+        if (!english || !italian) {
+          skippedCount += 1;
+          return;
+        }
+
+        const alreadyExists = words.some((word) => {
+          const sameEnglish =
+            normalizeText(word.english) === normalizeText(english);
+
+          const sameItalian =
+            normalizeText(word.italian) === normalizeText(italian);
+
+          return sameEnglish && sameItalian;
+        });
+
+        if (alreadyExists) {
+          skippedCount += 1;
+          return;
+        }
+
+        words.push({
+          english: english,
+          italian: italian
+        });
+
+        addedCount += 1;
+      });
+
+      saveWords();
+      renderWordList();
+
+      showToast(`Imported ${addedCount} words, skipped ${skippedCount}`);
+    } catch (error) {
+      showToast("Error while reading JSON file");
+    }
+
+    event.target.value = "";
+  };
+
+  reader.readAsText(file);
 }
 
 // This avoids problems if a user writes special HTML characters
@@ -515,6 +702,12 @@ function getCorrectAnswerText(direction, word) {
 function setupEvents() {
   document.getElementById("save-word-button").addEventListener("click", addWord);
   document.getElementById("clear-inputs-button").addEventListener("click", clearInputs);
+
+  document.getElementById("export-words-button").addEventListener("click", exportWords);
+
+  document.getElementById("choose-import-file-button").addEventListener("click", chooseImportFile);
+
+  document.getElementById("import-file-input").addEventListener("change", importWordsFromFile);
 
   document.getElementById("english-input").addEventListener("keydown", (event) => {
     if (event.key === "Enter") {

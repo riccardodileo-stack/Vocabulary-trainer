@@ -66,6 +66,10 @@
             <button class="sub-tab-button" data-vocabulary-tab="add">
               Add Word
             </button>
+
+            <button class="sub-tab-button" data-vocabulary-tab="backup">
+              Import / Export
+            </button>
           </div>
 
           <!-- WORD LIST -->
@@ -132,6 +136,51 @@
                 <button id="clear-inputs-button" class="secondary">
                   Clear
                 </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- IMPORT / EXPORT -->
+          <div id="backup-panel" class="sub-section">
+            <div class="panel">
+              <div class="big-title">Import / Export vocabulary</div>
+              <p class="subtitle left">
+                Create a backup of your current vocabulary or import words from a JSON file.
+                Existing identical pairs will not be duplicated.
+              </p>
+
+              <div class="backup-grid">
+                <div class="backup-card">
+                  <div class="backup-icon">⬇️</div>
+                  <div class="backup-title">Export backup</div>
+                  <p class="backup-text">
+                    Download a JSON file containing all your current English-Italian words.
+                  </p>
+
+                  <button id="export-words-button" class="primary">
+                    Export JSON
+                  </button>
+                </div>
+
+                <div class="backup-card">
+                  <div class="backup-icon">⬆️</div>
+                  <div class="backup-title">Import backup</div>
+                  <p class="backup-text">
+                    Select a JSON file and import new words. Already existing identical pairs
+                    will be skipped.
+                  </p>
+
+                  <input
+                    id="import-file-input"
+                    class="hidden"
+                    type="file"
+                    accept=".json,application/json"
+                  />
+
+                  <button id="choose-import-file-button" class="secondary">
+                    Choose JSON file
+                  </button>
+                </div>
               </div>
             </div>
           </div>
