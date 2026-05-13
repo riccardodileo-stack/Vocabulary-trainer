@@ -153,7 +153,6 @@ function setupVocabularySubTabs() {
 
       if (selectedTab === "add") {
         addWordPanel.classList.add("active");
-        document.getElementById("english-input").focus();
       }
 
       if (selectedTab === "backup") {
@@ -319,7 +318,6 @@ function addWord() {
 
   englishInput.value = "";
   italianInput.value = "";
-  englishInput.focus();
 
   showToast("Word saved successfully");
 }
@@ -384,7 +382,6 @@ function editWord(index) {
 function clearInputs() {
   document.getElementById("english-input").value = "";
   document.getElementById("italian-input").value = "";
-  document.getElementById("english-input").focus();
 }
 
 function exportWords() {
@@ -600,7 +597,6 @@ function updateQuizScreen(direction) {
 
   answerInput.value = "";
   answerInput.disabled = false;
-  answerInput.focus();
 
   feedbackElement.className = "feedback-card hidden";
   feedbackElement.innerHTML = "";
