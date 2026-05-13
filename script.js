@@ -7,6 +7,7 @@ const STORAGE_KEY = "vocabularyTrainerWords";
 
 // Main data
 let words = [];
+let wordSearchQuery = "";
 
 // Quiz states
 let engItaQuiz = {
@@ -31,6 +32,26 @@ let itaEngQuiz = {
 
 function normalizeText(text) {
   return text.trim().toLowerCase();
+}
+
+function splitAnswerOptions(text) {
+  return text
+    .split("/")
+    .map((part) => normalizeText(part))
+    .filter((part) => part.length > 0);
+}
+
+function isFlexibleAnswerCorrect(userAnswer, correctAnswer) {
+  const userOptions = splitAnswerOptions(userAnswer);
+  const correctOptions = splitAnswerOptions(correctAnswer);
+
+  if (userOptions.length === 0 || correctOptions.length === 0) {
+    return false;
+  }
+
+  return userOptions.every((userOption) => {
+    return correctOptions.includes(userOption);
+  });
 }
 
 function showToast(message) {
@@ -180,14 +201,44 @@ function renderWordList() {
   wordList.innerHTML = "";
   wordCount.textContent = words.length;
 
+  const filteredWords = words
+    .map((word, originalIndex) => {
+      return {
+        ...word,
+        originalIndex: originalIndex
+      };
+    })
+    .filter((word) => {
+      if (!wordSearchQuery) {
+        return true;
+      }
+
+      return normalizeText(word.english).includes(normalizeText(wordSearchQuery));
+    });
+
   if (words.length === 0) {
     emptyListMessage.classList.remove("hidden");
+    emptyListMessage.innerHTML = `
+      <div class="empty-icon">📘</div>
+      <h3>No words yet</h3>
+      <p>Add your first word to start training.</p>
+    `;
+    return;
+  }
+
+  if (filteredWords.length === 0) {
+    emptyListMessage.classList.remove("hidden");
+    emptyListMessage.innerHTML = `
+      <div class="empty-icon">🔎</div>
+      <h3>No results</h3>
+      <p>No English word matches your search.</p>
+    `;
     return;
   }
 
   emptyListMessage.classList.add("hidden");
 
-  words.forEach((word, index) => {
+  filteredWords.forEach((word) => {
     const card = document.createElement("div");
     card.className = "word-card";
 
@@ -205,11 +256,11 @@ function renderWordList() {
       </div>
 
       <div class="word-actions">
-        <button class="edit-button" data-edit-index="${index}">
+        <button class="edit-button" data-edit-index="${word.originalIndex}">
           Edit
         </button>
 
-        <button class="danger delete-button" data-delete-index="${index}">
+        <button class="danger delete-button" data-delete-index="${word.originalIndex}">
           Delete
         </button>
       </div>
@@ -595,19 +646,28 @@ function checkAnswer(direction) {
     direction === "eng-ita" ? "eng-ita-progress" : "ita-eng-progress"
   );
 
-  const userAnswer = normalizeText(answerInput.value);
+  const rawUserAnswer = answerInput.value.trim();
 
-  const correctAnswer =
+  const rawCorrectAnswer =
     direction === "eng-ita"
-      ? normalizeText(currentWord.italian)
-      : normalizeText(currentWord.english);
+      ? currentWord.italian
+      : currentWord.english;
+
+  const userAnswer = normalizeText(rawUserAnswer);
+  const correctAnswer = normalizeText(rawCorrectAnswer);
 
   if (!userAnswer) {
     showToast("Write an answer first");
     return;
   }
 
-  const isCorrect = userAnswer === correctAnswer;
+  let isCorrect = false;
+
+  if (direction === "eng-ita") {
+    isCorrect = isFlexibleAnswerCorrect(rawUserAnswer, rawCorrectAnswer);
+  } else {
+    isCorrect = userAnswer === correctAnswer;
+  }
 
   if (isCorrect) {
     quiz.score += 1;
@@ -724,6 +784,11 @@ function setupEvents() {
   document.getElementById("export-words-button").addEventListener("click", exportWords);
 
   document.getElementById("import-file-input").addEventListener("change", importWordsFromFile);
+
+  document.getElementById("word-search-input").addEventListener("input", (event) => {
+    wordSearchQuery = event.target.value;
+    renderWordList();
+  });
 
   document.getElementById("import-file-input").addEventListener("change", () => {
     console.log("IMPORT EVENT TRIGGERED");

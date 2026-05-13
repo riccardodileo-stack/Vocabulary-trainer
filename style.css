@@ -691,4 +691,19 @@ button:hover {
     font-size: 30px;
     padding: 20px;
   }
+
+  .search-box {
+    margin: 18px 0 32px;
+    background: rgba(255,255,255,0.72);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 14px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.045);
+  }
+
+  .search-box input {
+    font-size: 17px;
+    font-weight: 700;
+  }
+
 }
