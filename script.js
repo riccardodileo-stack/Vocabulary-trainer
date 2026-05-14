@@ -15,7 +15,8 @@ let engItaQuiz = {
   queue: [],
   currentIndex: 0,
   score: 0,
-  answered: false
+  answered: false,
+  mistakes: []
 };
 
 let itaEngQuiz = {
@@ -23,7 +24,8 @@ let itaEngQuiz = {
   queue: [],
   currentIndex: 0,
   score: 0,
-  answered: false
+  answered: false,
+  mistakes: []
 };
 
 // ===============================
@@ -207,6 +209,7 @@ function renderWordList() {
         originalIndex: originalIndex
       };
     })
+    .reverse()
     .filter((word) => {
       if (!wordSearchQuery) {
         return true;
@@ -542,6 +545,7 @@ function startQuiz(direction) {
   quiz.currentIndex = 0;
   quiz.score = 0;
   quiz.answered = false;
+  quiz.mistakes = [];
 
   updateQuizScreen(direction);
 }
@@ -577,6 +581,10 @@ function updateQuizScreen(direction) {
     direction === "eng-ita" ? "next-eng-ita-button" : "next-ita-eng-button"
   );
 
+  const endButton = document.getElementById(
+    direction === "eng-ita" ? "end-eng-ita-button" : "end-ita-eng-button"
+  );
+
   const progressElement = document.getElementById(
     direction === "eng-ita" ? "eng-ita-progress" : "ita-eng-progress"
   );
@@ -586,6 +594,14 @@ function updateQuizScreen(direction) {
     progressElement.textContent = "Score: 0 / 0";
     return;
   }
+
+  const mistakesButton = document.getElementById(
+    direction === "eng-ita" ? "view-eng-ita-mistakes-button" : "view-ita-eng-mistakes-button"
+  );
+
+  const mistakesElement = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-mistakes" : "ita-eng-mistakes"
+  );
 
   const currentWord = getCurrentQuizWord(quiz);
 
@@ -604,6 +620,19 @@ function updateQuizScreen(direction) {
   startButton.classList.add("hidden");
   checkButton.classList.remove("hidden");
   nextButton.classList.add("hidden");
+
+  if (endButton) {
+    endButton.classList.remove("hidden");
+  }
+
+  if (mistakesButton) {
+    mistakesButton.classList.add("hidden");
+  }
+
+  if (mistakesElement) {
+    mistakesElement.classList.add("hidden");
+    mistakesElement.innerHTML = "";
+  }
 
   progressElement.textContent = `Score: ${quiz.score} / ${quiz.currentIndex}`;
 }
@@ -636,6 +665,10 @@ function checkAnswer(direction) {
 
   const nextButton = document.getElementById(
     direction === "eng-ita" ? "next-eng-ita-button" : "next-ita-eng-button"
+  );
+
+  const endButton = document.getElementById(
+    direction === "eng-ita" ? "end-eng-ita-button" : "end-ita-eng-button"
   );
 
   const progressElement = document.getElementById(
@@ -676,6 +709,12 @@ function checkAnswer(direction) {
       <strong>${escapeHtml(getCorrectAnswerText(direction, currentWord))}</strong>
     `;
   } else {
+    quiz.mistakes.push({
+      english: currentWord.english,
+      italian: currentWord.italian,
+      yourAnswer: answerInput.value.trim()
+    });
+
     feedbackElement.className = "feedback-card feedback-wrong";
     feedbackElement.innerHTML = `
       ❌ Not quite<br>
@@ -709,6 +748,23 @@ function nextQuestion(direction) {
   updateQuizScreen(direction);
 }
 
+function endQuiz(direction) {
+  const quiz = direction === "eng-ita" ? engItaQuiz : itaEngQuiz;
+
+  if (quiz.queue.length === 0) {
+    showToast("Start the quiz first");
+    return;
+  }
+
+  const answeredQuestions = quiz.answered
+    ? quiz.currentIndex + 1
+    : quiz.currentIndex;
+
+  quiz.queue = quiz.queue.slice(0, Math.max(answeredQuestions, 0));
+
+  finishQuiz(direction);
+}
+
 function finishQuiz(direction) {
   const quiz = direction === "eng-ita" ? engItaQuiz : itaEngQuiz;
 
@@ -736,6 +792,18 @@ function finishQuiz(direction) {
     direction === "eng-ita" ? "next-eng-ita-button" : "next-ita-eng-button"
   );
 
+  const endButton = document.getElementById(
+    direction === "eng-ita" ? "end-eng-ita-button" : "end-ita-eng-button"
+  );
+
+  const mistakesButton = document.getElementById(
+    direction === "eng-ita" ? "view-eng-ita-mistakes-button" : "view-ita-eng-mistakes-button"
+  );
+
+  const mistakesElement = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-mistakes" : "ita-eng-mistakes"
+  );
+
   const progressElement = document.getElementById(
     direction === "eng-ita" ? "eng-ita-progress" : "ita-eng-progress"
   );
@@ -756,9 +824,75 @@ function finishQuiz(direction) {
   checkButton.classList.add("hidden");
   nextButton.classList.add("hidden");
 
+  if (endButton) {
+    endButton.classList.add("hidden");
+  }
+
+  if (mistakesButton) {
+    mistakesButton.classList.remove("hidden");
+  }
+
+  if (mistakesElement) {
+    mistakesElement.classList.add("hidden");
+    mistakesElement.innerHTML = "";
+  }
+
   progressElement.textContent = `Final score: ${quiz.score} / ${quiz.queue.length}`;
 
   showToast("Quiz completed");
+}
+
+function toggleMistakes(direction) {
+  const quiz = direction === "eng-ita" ? engItaQuiz : itaEngQuiz;
+
+  const mistakesElement = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-mistakes" : "ita-eng-mistakes"
+  );
+
+  if (!mistakesElement) {
+    return;
+  }
+
+  if (!mistakesElement.classList.contains("hidden")) {
+    mistakesElement.classList.add("hidden");
+    return;
+  }
+
+  if (quiz.mistakes.length === 0) {
+    mistakesElement.innerHTML = `
+      <div class="mistakes-empty">
+        No mistakes. Perfect quiz 🎉
+      </div>
+    `;
+  } else {
+    mistakesElement.innerHTML = quiz.mistakes
+      .map((word) => {
+        return `
+          <div class="mistake-card">
+            <div class="mistake-row">
+              <div>
+                <div class="word-label">English</div>
+                <div class="mistake-word">${escapeHtml(word.english)}</div>
+              </div>
+
+              <div class="arrow">→</div>
+
+              <div>
+                <div class="word-label">Italian</div>
+                <div class="mistake-word">${escapeHtml(word.italian)}</div>
+              </div>
+            </div>
+
+            <div class="mistake-answer">
+              Your answer: <strong>${escapeHtml(word.yourAnswer || "-")}</strong>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  mistakesElement.classList.remove("hidden");
 }
 
 function getQuestionText(direction, word) {
@@ -824,6 +958,14 @@ function setupEvents() {
     }
   });
 
+  document.getElementById("view-eng-ita-mistakes-button").addEventListener("click", () => {
+    toggleMistakes("eng-ita");
+  });
+
+  document.getElementById("end-eng-ita-button").addEventListener("click", () => {
+    endQuiz("eng-ita");
+  });
+
   document.getElementById("start-ita-eng-button").addEventListener("click", () => {
     startQuiz("ita-eng");
   });
@@ -845,6 +987,15 @@ function setupEvents() {
       }
     }
   });
+
+  document.getElementById("view-ita-eng-mistakes-button").addEventListener("click", () => {
+    toggleMistakes("ita-eng");
+  });
+
+  document.getElementById("end-ita-eng-button").addEventListener("click", () => {
+    endQuiz("ita-eng");
+  });
+
 }
 
 // ===============================
