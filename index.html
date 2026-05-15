@@ -222,54 +222,73 @@
           <div id="quiz-eng-ita-panel" class="sub-section active">
             <div class="panel center quiz-panel">
 
-              <div class="quiz-mode-pill blue-pill">
-                English → Italian
-              </div>
+              <div id="eng-ita-start-screen" class="quiz-start-screen">
+                <div class="quiz-mode-pill blue-pill">
+                  English → Italian
+                </div>
 
-              <div class="big-title">Translate this word</div>
+                <div class="start-quiz-title">Ready to train?</div>
 
-              <div id="eng-ita-question" class="quiz-word">
-                No words available
-              </div>
+                <p class="start-quiz-subtitle">
+                  Start a randomized quiz and translate your English words into Italian.
+                </p>
 
-              <div class="field quiz-answer-field">
-                <label for="eng-ita-answer">Your answer in Italian</label>
-                <input
-                  id="eng-ita-answer"
-                  type="text"
-                  placeholder="Write the Italian translation..."
-                  autocomplete="off"
-                />
-              </div>
-
-              <div id="eng-ita-feedback" class="feedback-card hidden"></div>
-
-              <div class="buttons center-buttons">
-                <button id="start-eng-ita-button" class="primary">
-                  Start quiz
-                </button>
-
-                <button id="check-eng-ita-button" class="success hidden">
-                  Check answer
-                </button>
-
-                <button id="next-eng-ita-button" class="secondary hidden">
-                  Next word
-                </button>
-
-                <button id="end-eng-ita-button" class="danger hidden">
-                  End quiz
-                </button>
-
-                <button id="view-eng-ita-mistakes-button" class="secondary hidden">
-                  View mistakes
+                <button id="start-eng-ita-button" class="start-quiz-button">
+                  START QUIZ<br>
+                  <span>English → Italian</span>
                 </button>
               </div>
 
-              <div id="eng-ita-mistakes" class="mistakes-list hidden"></div>
+              <div id="eng-ita-quiz-screen" class="quiz-active-screen hidden">
+                <div class="quiz-mode-pill blue-pill">
+                  English → Italian
+                </div>
 
-              <div id="eng-ita-progress" class="quiz-progress">
-                Score: 0 / 0
+                <div class="big-title">Translate this word</div>
+
+                <div id="eng-ita-question" class="quiz-word">
+                  No words available
+                </div>
+
+                <div class="field quiz-answer-field">
+                  <label for="eng-ita-answer">Your answer in Italian</label>
+                  <input
+                    id="eng-ita-answer"
+                    type="text"
+                    placeholder="Write the Italian translation..."
+                    autocomplete="off"
+                  />
+                </div>
+
+                <div id="eng-ita-feedback" class="feedback-card hidden"></div>
+
+                <div class="buttons center-buttons">
+                  <button id="check-eng-ita-button" class="success hidden">
+                    Check answer
+                  </button>
+
+                  <button id="next-eng-ita-button" class="secondary hidden">
+                    Next word
+                  </button>
+
+                  <button id="end-eng-ita-button" class="danger hidden">
+                    End quiz
+                  </button>
+
+                  <button id="restart-eng-ita-button" class="primary hidden">
+                    Back to start
+                  </button>
+
+                  <button id="view-eng-ita-mistakes-button" class="secondary hidden">
+                    View mistakes
+                  </button>
+                </div>
+
+                <div id="eng-ita-mistakes" class="mistakes-list hidden"></div>
+
+                <div id="eng-ita-progress" class="quiz-progress">
+                  Score: 0 / 0
+                </div>
               </div>
 
             </div>
@@ -279,54 +298,73 @@
           <div id="quiz-ita-eng-panel" class="sub-section">
             <div class="panel center quiz-panel">
 
-              <div class="quiz-mode-pill green-pill">
-                Italian → English
-              </div>
+              <div id="ita-eng-start-screen" class="quiz-start-screen">
+                <div class="quiz-mode-pill green-pill">
+                  Italian → English
+                </div>
 
-              <div class="big-title">Translate this word</div>
+                <div class="start-quiz-title">Ready to train?</div>
 
-              <div id="ita-eng-question" class="quiz-word">
-                No words available
-              </div>
+                <p class="start-quiz-subtitle">
+                  Start a randomized quiz and translate your Italian words into English.
+                </p>
 
-              <div class="field quiz-answer-field">
-                <label for="ita-eng-answer">Your answer in English</label>
-                <input
-                  id="ita-eng-answer"
-                  type="text"
-                  placeholder="Write the English translation..."
-                  autocomplete="off"
-                />
-              </div>
-
-              <div id="ita-eng-feedback" class="feedback-card hidden"></div>
-
-              <div class="buttons center-buttons">
-                <button id="start-ita-eng-button" class="primary">
-                  Start quiz
-                </button>
-
-                <button id="check-ita-eng-button" class="success hidden">
-                  Check answer
-                </button>
-
-                <button id="next-ita-eng-button" class="secondary hidden">
-                  Next word
-                </button>
-
-                <button id="end-ita-eng-button" class="danger hidden">
-                  End quiz
-                </button>
-
-                <button id="view-ita-eng-mistakes-button" class="secondary hidden">
-                  View mistakes
+                <button id="start-ita-eng-button" class="start-quiz-button">
+                  START QUIZ<br>
+                  <span>Italian → English</span>
                 </button>
               </div>
 
-              <div id="ita-eng-mistakes" class="mistakes-list hidden"></div>
+              <div id="ita-eng-quiz-screen" class="quiz-active-screen hidden">
+                <div class="quiz-mode-pill green-pill">
+                  Italian → English
+                </div>
 
-              <div id="ita-eng-progress" class="quiz-progress">
-                Score: 0 / 0
+                <div class="big-title">Translate this word</div>
+
+                <div id="ita-eng-question" class="quiz-word">
+                  No words available
+                </div>
+
+                <div class="field quiz-answer-field">
+                  <label for="ita-eng-answer">Your answer in English</label>
+                  <input
+                    id="ita-eng-answer"
+                    type="text"
+                    placeholder="Write the English translation..."
+                    autocomplete="off"
+                  />
+                </div>
+
+                <div id="ita-eng-feedback" class="feedback-card hidden"></div>
+
+                <div class="buttons center-buttons">
+                  <button id="check-ita-eng-button" class="success hidden">
+                    Check answer
+                  </button>
+
+                  <button id="next-ita-eng-button" class="secondary hidden">
+                    Next word
+                  </button>
+
+                  <button id="end-ita-eng-button" class="danger hidden">
+                    End quiz
+                  </button>
+
+                  <button id="restart-ita-eng-button" class="primary hidden">
+                    Back to start
+                  </button>
+
+                  <button id="view-ita-eng-mistakes-button" class="secondary hidden">
+                    View mistakes
+                  </button>
+                </div>
+
+                <div id="ita-eng-mistakes" class="mistakes-list hidden"></div>
+
+                <div id="ita-eng-progress" class="quiz-progress">
+                  Score: 0 / 0
+                </div>
               </div>
 
             </div>

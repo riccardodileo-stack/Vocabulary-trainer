@@ -78,6 +78,137 @@ function shuffleArray(array) {
   return copy;
 }
 
+function showQuizStartScreen(direction) {
+  const startScreen = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-start-screen" : "ita-eng-start-screen"
+  );
+
+  const quizScreen = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-quiz-screen" : "ita-eng-quiz-screen"
+  );
+
+  if (startScreen) {
+    startScreen.classList.remove("hidden");
+  }
+
+  if (quizScreen) {
+    quizScreen.classList.add("hidden");
+  }
+}
+
+function showQuizActiveScreen(direction) {
+  const startScreen = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-start-screen" : "ita-eng-start-screen"
+  );
+
+  const quizScreen = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-quiz-screen" : "ita-eng-quiz-screen"
+  );
+
+  if (startScreen) {
+    startScreen.classList.add("hidden");
+  }
+
+  if (quizScreen) {
+    quizScreen.classList.remove("hidden");
+  }
+}
+
+function resetQuizToStart(direction) {
+  const quiz = direction === "eng-ita" ? engItaQuiz : itaEngQuiz;
+
+  quiz.queue = [];
+  quiz.currentIndex = 0;
+  quiz.score = 0;
+  quiz.answered = false;
+  quiz.mistakes = [];
+
+  const questionElement = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-question" : "ita-eng-question"
+  );
+
+  const answerInput = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-answer" : "ita-eng-answer"
+  );
+
+  const feedbackElement = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-feedback" : "ita-eng-feedback"
+  );
+
+  const checkButton = document.getElementById(
+    direction === "eng-ita" ? "check-eng-ita-button" : "check-ita-eng-button"
+  );
+
+  const nextButton = document.getElementById(
+    direction === "eng-ita" ? "next-eng-ita-button" : "next-ita-eng-button"
+  );
+
+  const endButton = document.getElementById(
+    direction === "eng-ita" ? "end-eng-ita-button" : "end-ita-eng-button"
+  );
+
+  const restartButton = document.getElementById(
+    direction === "eng-ita" ? "restart-eng-ita-button" : "restart-ita-eng-button"
+  );
+
+  const mistakesButton = document.getElementById(
+    direction === "eng-ita" ? "view-eng-ita-mistakes-button" : "view-ita-eng-mistakes-button"
+  );
+
+  const mistakesElement = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-mistakes" : "ita-eng-mistakes"
+  );
+
+  const progressElement = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-progress" : "ita-eng-progress"
+  );
+
+  if (questionElement) {
+    questionElement.textContent = "No words available";
+  }
+
+  if (answerInput) {
+    answerInput.value = "";
+    answerInput.disabled = false;
+  }
+
+  if (feedbackElement) {
+    feedbackElement.className = "feedback-card hidden";
+    feedbackElement.innerHTML = "";
+  }
+
+  if (checkButton) {
+    checkButton.classList.add("hidden");
+  }
+
+  if (nextButton) {
+    nextButton.classList.add("hidden");
+  }
+
+  if (endButton) {
+    endButton.classList.add("hidden");
+  }
+
+  if (restartButton) {
+    restartButton.classList.add("hidden");
+  }
+
+  if (mistakesButton) {
+    mistakesButton.classList.add("hidden");
+  }
+
+  if (mistakesElement) {
+    mistakesElement.classList.add("hidden");
+    mistakesElement.innerHTML = "";
+  }
+
+  if (progressElement) {
+    progressElement.textContent = "Score: 0 / 0";
+  }
+
+  showQuizStartScreen(direction);
+}
+
 // ===============================
 // LOCAL STORAGE
 // ===============================
@@ -547,6 +678,7 @@ function startQuiz(direction) {
   quiz.answered = false;
   quiz.mistakes = [];
 
+  showQuizActiveScreen(direction);
   updateQuizScreen(direction);
 }
 
@@ -579,6 +711,10 @@ function updateQuizScreen(direction) {
 
   const nextButton = document.getElementById(
     direction === "eng-ita" ? "next-eng-ita-button" : "next-ita-eng-button"
+  );
+
+  const restartButton = document.getElementById(
+    direction === "eng-ita" ? "restart-eng-ita-button" : "restart-ita-eng-button"
   );
 
   const endButton = document.getElementById(
@@ -617,9 +753,12 @@ function updateQuizScreen(direction) {
   feedbackElement.className = "feedback-card hidden";
   feedbackElement.innerHTML = "";
 
-  startButton.classList.add("hidden");
   checkButton.classList.remove("hidden");
   nextButton.classList.add("hidden");
+
+  if (restartButton) {
+    restartButton.classList.add("hidden");
+  }
 
   if (endButton) {
     endButton.classList.remove("hidden");
@@ -792,6 +931,10 @@ function finishQuiz(direction) {
     direction === "eng-ita" ? "next-eng-ita-button" : "next-ita-eng-button"
   );
 
+  const restartButton = document.getElementById(
+    direction === "eng-ita" ? "restart-eng-ita-button" : "restart-ita-eng-button"
+  );
+
   const endButton = document.getElementById(
     direction === "eng-ita" ? "end-eng-ita-button" : "end-ita-eng-button"
   );
@@ -818,11 +961,16 @@ function finishQuiz(direction) {
     <strong>${quiz.score} / ${quiz.queue.length}</strong>
   `;
 
-  startButton.textContent = "Restart quiz";
-  startButton.classList.remove("hidden");
+  startButton.innerHTML = direction === "eng-ita"
+    ? "START QUIZ<br><span>English → Italian</span>"
+    : "START QUIZ<br><span>Italian → English</span>";
 
   checkButton.classList.add("hidden");
   nextButton.classList.add("hidden");
+
+  if (restartButton) {
+    restartButton.classList.remove("hidden");
+  }
 
   if (endButton) {
     endButton.classList.add("hidden");
@@ -962,6 +1110,10 @@ function setupEvents() {
     toggleMistakes("eng-ita");
   });
 
+  document.getElementById("restart-eng-ita-button").addEventListener("click", () => {
+    resetQuizToStart("eng-ita");
+  });
+
   document.getElementById("end-eng-ita-button").addEventListener("click", () => {
     endQuiz("eng-ita");
   });
@@ -990,6 +1142,10 @@ function setupEvents() {
 
   document.getElementById("view-ita-eng-mistakes-button").addEventListener("click", () => {
     toggleMistakes("ita-eng");
+  });
+
+  document.getElementById("restart-ita-eng-button").addEventListener("click", () => {
+    resetQuizToStart("ita-eng");
   });
 
   document.getElementById("end-ita-eng-button").addEventListener("click", () => {
