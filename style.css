@@ -24,18 +24,19 @@
 }
 
 html {
+  min-height: 100%;
   background: var(--bg);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
   padding: 34px;
-  padding-top: max(34px, env(safe-area-inset-top));
-  padding-bottom: max(34px, env(safe-area-inset-bottom));
+  padding-top: calc(env(safe-area-inset-top) + 34px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 34px);
   position: relative;
 }
 
@@ -45,6 +46,17 @@ body::before {
   inset: 0;
   background: var(--bg);
   z-index: -1;
+  pointer-events: none;
+}
+
+.safe-area-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(env(safe-area-inset-top) + 8px);
+  background: var(--bg);
+  z-index: 9999;
   pointer-events: none;
 }
 
@@ -599,17 +611,6 @@ button:hover {
 .fake-file-button:hover {
   transform: translateY(-1px);
   filter: brightness(0.98);
-}
-
-.safe-area-top {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: env(safe-area-inset-top);
-  background: var(--bg);
-  z-index: 9999;
-  pointer-events: none;
 }
 
 @media (max-width: 820px) {
