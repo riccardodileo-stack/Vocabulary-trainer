@@ -67,22 +67,6 @@ body::before {
   pointer-events: none;
 }
 
-/* Extra iPhone status bar layer */
-.safe-area-top {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-
-  height: calc(env(safe-area-inset-top) + 20px);
-
-  background-color: var(--bg) !important;
-  background: var(--bg) !important;
-
-  z-index: 999999;
-  pointer-events: none;
-}
-
 .page {
   max-width: 980px;
   margin: auto;
