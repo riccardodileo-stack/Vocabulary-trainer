@@ -24,27 +24,62 @@
 }
 
 html {
-  background: var(--bg);
+  width: 100%;
+  min-height: 100%;
+  background-color: var(--bg) !important;
+  background: var(--bg) !important;
 }
 
 body {
   margin: 0;
+  width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
+
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif;
-  background: var(--bg);
+
+  background-color: var(--bg) !important;
+  background: var(--bg) !important;
   color: var(--text);
+
   padding: 34px;
-  padding-top: max(34px, env(safe-area-inset-top));
-  padding-bottom: max(34px, env(safe-area-inset-bottom));
+  padding-top: calc(env(safe-area-inset-top) + 34px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 34px);
+
   position: relative;
+  overflow-x: hidden;
 }
 
+/* Fixed background layer */
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
-  background: var(--bg);
+
+  top: calc(-1 * env(safe-area-inset-top));
+  left: 0;
+  right: 0;
+  bottom: calc(-1 * env(safe-area-inset-bottom));
+
+  background-color: var(--bg) !important;
+  background: var(--bg) !important;
+
   z-index: -1;
+  pointer-events: none;
+}
+
+/* Extra iPhone status bar layer */
+.safe-area-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+
+  height: calc(env(safe-area-inset-top) + 20px);
+
+  background-color: var(--bg) !important;
+  background: var(--bg) !important;
+
+  z-index: 999999;
   pointer-events: none;
 }
 
@@ -599,17 +634,6 @@ button:hover {
 .fake-file-button:hover {
   transform: translateY(-1px);
   filter: brightness(0.98);
-}
-
-.safe-area-top {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: calc(env(safe-area-inset-top) + 8px);
-  background: var(--bg);
-  z-index: 9999;
-  pointer-events: none;
 }
 
 /* SEARCH BOX */
