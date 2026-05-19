@@ -309,6 +309,15 @@ function scrollCurrentSectionTabsToTop(sectionId) {
     return;
   }
 
+  const tabsPosition = tabs.getBoundingClientRect();
+  const stickyLimit = parseFloat(getComputedStyle(tabs).top) || 0;
+
+  const isAlreadySticky = tabsPosition.top <= stickyLimit + 2;
+
+  if (!isAlreadySticky) {
+    return;
+  }
+
   tabs.scrollIntoView({
     behavior: "smooth",
     block: "start"
