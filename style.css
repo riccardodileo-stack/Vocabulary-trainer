@@ -129,7 +129,7 @@ h1 {
   border: 1px solid var(--border);
   border-radius: 30px;
   box-shadow: var(--shadow);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .tabs {
@@ -222,8 +222,9 @@ h2 {
   border: 1px solid var(--border);
 
   position: sticky;
+  position: -webkit-sticky;
   top: calc(env(safe-area-inset-top) + 14px);
-  z-index: 30;
+  z-index: 100;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   box-shadow: 0 10px 24px rgba(0,0,0,0.06);
