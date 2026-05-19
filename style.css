@@ -72,7 +72,7 @@ body::before {
   top: 0;
   left: 0;
   right: 0;
-  height: calc(env(safe-area-inset-top) + 20px);
+  height: calc(env(safe-area-inset-top) + 90px);
   background: linear-gradient(
     180deg,
     rgba(238, 248, 239, 0.96) 0%,
@@ -81,7 +81,7 @@ body::before {
   );
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  z-index: 50;
+  z-index: 0;
   pointer-events: none;
 }
 
