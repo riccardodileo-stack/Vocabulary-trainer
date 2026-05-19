@@ -271,10 +271,19 @@ function setupVocabularySubTabs() {
 
   vocabularyTabButtons.forEach((button) => {
     button.addEventListener("click", () => {
+      const selectedTab = button.dataset.vocabularyTab;
+      const wasAlreadyActive = button.classList.contains("active");
+
+      if (wasAlreadyActive) {
+        if (selectedTab === "list") {
+          scrollWordListToTop();
+        }
+
+        return;
+      }
+
       vocabularyTabButtons.forEach((btn) => btn.classList.remove("active"));
       button.classList.add("active");
-
-      const selectedTab = button.dataset.vocabularyTab;
 
       wordListPanel.classList.remove("active");
       addWordPanel.classList.remove("active");
@@ -291,34 +300,18 @@ function setupVocabularySubTabs() {
       if (selectedTab === "backup") {
         backupPanel.classList.add("active");
       }
-      scrollCurrentSectionTabsToTop("vocabulary-section");
     });
   });
 }
 
-function scrollCurrentSectionTabsToTop(sectionId) {
-  const section = document.getElementById(sectionId);
+function scrollWordListToTop() {
+  const wordListPanel = document.getElementById("word-list-panel");
 
-  if (!section) {
+  if (!wordListPanel) {
     return;
   }
 
-  const tabs = section.querySelector(".sub-tabs");
-
-  if (!tabs) {
-    return;
-  }
-
-  const tabsPosition = tabs.getBoundingClientRect();
-  const stickyLimit = parseFloat(getComputedStyle(tabs).top) || 0;
-
-  const isAlreadySticky = tabsPosition.top <= stickyLimit + 2;
-
-  if (!isAlreadySticky) {
-    return;
-  }
-
-  tabs.scrollIntoView({
+  wordListPanel.scrollIntoView({
     behavior: "smooth",
     block: "start"
   });
