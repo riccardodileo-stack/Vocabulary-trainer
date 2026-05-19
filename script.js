@@ -291,7 +291,27 @@ function setupVocabularySubTabs() {
       if (selectedTab === "backup") {
         backupPanel.classList.add("active");
       }
+      scrollCurrentSectionTabsToTop("vocabulary-section");
     });
+  });
+}
+
+function scrollCurrentSectionTabsToTop(sectionId) {
+  const section = document.getElementById(sectionId);
+
+  if (!section) {
+    return;
+  }
+
+  const tabs = section.querySelector(".sub-tabs");
+
+  if (!tabs) {
+    return;
+  }
+
+  tabs.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
   });
 }
 
