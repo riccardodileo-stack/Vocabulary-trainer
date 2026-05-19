@@ -223,7 +223,7 @@ h2 {
 
   position: sticky;
   position: -webkit-sticky;
-  top: calc(env(safe-area-inset-top) + 14px);
+  top: calc(env(safe-area-inset-top) + 0px);
   z-index: 100;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
