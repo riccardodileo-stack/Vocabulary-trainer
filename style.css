@@ -67,9 +67,29 @@ body::before {
   pointer-events: none;
 }
 
+.top-fade {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(env(safe-area-inset-top) + 90px);
+  background: linear-gradient(
+    180deg,
+    rgba(238, 248, 239, 0.96) 0%,
+    rgba(238, 248, 239, 0.72) 45%,
+    rgba(238, 248, 239, 0.00) 100%
+  );
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 50;
+  pointer-events: none;
+}
+
 .page {
   max-width: 980px;
   margin: auto;
+  position: relative;
+  z-index: 1;
 }
 
 .hero {
