@@ -4,10 +4,13 @@
 
 // Key used to save words inside the browser
 const STORAGE_KEY = "vocabularyTrainerWords";
+const QUIZ_COMPLETIONS_KEY = "vocabularyTrainerQuizCompletions";
+const QUIZ_PACKAGE_SIZE = 50;
 
 // Main data
 let words = [];
 let wordSearchQuery = "";
+let quizCompletions = {};
 
 // Quiz states
 let engItaQuiz = {
@@ -16,7 +19,10 @@ let engItaQuiz = {
   currentIndex: 0,
   score: 0,
   answered: false,
-  mistakes: []
+  mistakes: [],
+  selectedQuizId: null,
+  selectedQuizName: "",
+  completionRegistered: false
 };
 
 let itaEngQuiz = {
@@ -25,7 +31,10 @@ let itaEngQuiz = {
   currentIndex: 0,
   score: 0,
   answered: false,
-  mistakes: []
+  mistakes: [],
+  selectedQuizId: null,
+  selectedQuizName: "",
+  completionRegistered: false
 };
 
 // ===============================
@@ -83,17 +92,37 @@ function showQuizStartScreen(direction) {
     direction === "eng-ita" ? "eng-ita-start-screen" : "ita-eng-start-screen"
   );
 
+  const selectionScreen = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-selection-screen" : "ita-eng-selection-screen"
+  );
+
   const quizScreen = document.getElementById(
     direction === "eng-ita" ? "eng-ita-quiz-screen" : "ita-eng-quiz-screen"
   );
 
-  if (startScreen) {
-    startScreen.classList.remove("hidden");
-  }
+  startScreen.classList.remove("hidden");
+  selectionScreen.classList.add("hidden");
+  quizScreen.classList.add("hidden");
+}
 
-  if (quizScreen) {
-    quizScreen.classList.add("hidden");
-  }
+function showQuizSelectionScreen(direction) {
+  const startScreen = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-start-screen" : "ita-eng-start-screen"
+  );
+
+  const selectionScreen = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-selection-screen" : "ita-eng-selection-screen"
+  );
+
+  const quizScreen = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-quiz-screen" : "ita-eng-quiz-screen"
+  );
+
+  startScreen.classList.add("hidden");
+  selectionScreen.classList.remove("hidden");
+  quizScreen.classList.add("hidden");
+
+  renderQuizSelection(direction);
 }
 
 function showQuizActiveScreen(direction) {
@@ -101,17 +130,83 @@ function showQuizActiveScreen(direction) {
     direction === "eng-ita" ? "eng-ita-start-screen" : "ita-eng-start-screen"
   );
 
+  const selectionScreen = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-selection-screen" : "ita-eng-selection-screen"
+  );
+
   const quizScreen = document.getElementById(
     direction === "eng-ita" ? "eng-ita-quiz-screen" : "ita-eng-quiz-screen"
   );
 
-  if (startScreen) {
-    startScreen.classList.add("hidden");
+  startScreen.classList.add("hidden");
+  selectionScreen.classList.add("hidden");
+  quizScreen.classList.remove("hidden");
+}
+
+function openQuizSelection(direction) {
+  if (words.length === 0) {
+    showToast("Add at least one word before starting a quiz");
+    return;
   }
 
-  if (quizScreen) {
-    quizScreen.classList.remove("hidden");
+  showQuizSelectionScreen(direction);
+}
+
+function renderQuizSelection(direction) {
+  const optionsElement = document.getElementById(
+    direction === "eng-ita" ? "eng-ita-quiz-options" : "ita-eng-quiz-options"
+  );
+
+  if (!optionsElement) {
+    return;
   }
+
+  const packages = getQuizPackages();
+
+  optionsElement.innerHTML = packages
+    .map((quizPackage) => {
+      const completionCount = getQuizCompletionCount(direction, quizPackage.id);
+      const completedLabel = completionCount === 1 ? "1 time" : `${completionCount} times`;
+
+      const wordRange = quizPackage.isGeneral
+        ? "All saved words"
+        : `Words ${quizPackage.startWordNumber}–${quizPackage.endWordNumber}`;
+
+      return `
+        <div class="quiz-option-card ${quizPackage.isGeneral ? "general-quiz" : ""}">
+          <div class="quiz-option-info">
+            <div class="quiz-option-title">${escapeHtml(quizPackage.name)}</div>
+
+            <div class="quiz-option-details">
+              <span class="quiz-option-detail-pill">
+                ${quizPackage.words.length} words
+              </span>
+
+              <span class="quiz-option-detail-pill">
+                ${escapeHtml(wordRange)}
+              </span>
+
+              <span class="quiz-option-detail-pill">
+                Completed: ${completedLabel}
+              </span>
+            </div>
+          </div>
+
+          <button class="quiz-option-button" data-start-package="${quizPackage.id}">
+            Start
+          </button>
+        </div>
+      `;
+    })
+    .join("");
+
+  const packageButtons = optionsElement.querySelectorAll("[data-start-package]");
+
+  packageButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      startQuiz(direction, button.dataset.startPackage);
+    });
+  });
 }
 
 function resetQuizToStart(direction) {
@@ -122,6 +217,9 @@ function resetQuizToStart(direction) {
   quiz.score = 0;
   quiz.answered = false;
   quiz.mistakes = [];
+  quiz.selectedQuizId = null;
+  quiz.selectedQuizName = "";
+  quiz.completionRegistered = false;
 
   const questionElement = document.getElementById(
     direction === "eng-ita" ? "eng-ita-question" : "ita-eng-question"
@@ -231,6 +329,72 @@ function loadWords() {
 
 function saveWords() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
+}
+
+function loadQuizCompletions() {
+  const savedCompletions = localStorage.getItem(QUIZ_COMPLETIONS_KEY);
+
+  if (!savedCompletions) {
+    quizCompletions = {};
+    return;
+  }
+
+  try {
+    quizCompletions = JSON.parse(savedCompletions);
+  } catch (error) {
+    quizCompletions = {};
+  }
+}
+
+function saveQuizCompletions() {
+  localStorage.setItem(QUIZ_COMPLETIONS_KEY, JSON.stringify(quizCompletions));
+}
+
+function getQuizCompletionKey(direction, quizId) {
+  return `${direction}:${quizId}`;
+}
+
+function getQuizCompletionCount(direction, quizId) {
+  const key = getQuizCompletionKey(direction, quizId);
+  return quizCompletions[key] || 0;
+}
+
+function registerQuizCompletion(direction, quizId) {
+  const key = getQuizCompletionKey(direction, quizId);
+
+  quizCompletions[key] = getQuizCompletionCount(direction, quizId) + 1;
+  saveQuizCompletions();
+}
+
+function getQuizPackages() {
+  const packages = [];
+
+  for (let startIndex = 0; startIndex < words.length; startIndex += QUIZ_PACKAGE_SIZE) {
+    const endIndex = Math.min(startIndex + QUIZ_PACKAGE_SIZE, words.length);
+    const packageNumber = Math.floor(startIndex / QUIZ_PACKAGE_SIZE) + 1;
+
+    packages.push({
+      id: `package-${packageNumber}`,
+      name: `Quiz ${packageNumber}`,
+      words: words.slice(startIndex, endIndex),
+      startWordNumber: startIndex + 1,
+      endWordNumber: endIndex,
+      isGeneral: false
+    });
+  }
+
+  if (words.length > 0) {
+    packages.push({
+      id: "general",
+      name: "General Quiz",
+      words: [...words],
+      startWordNumber: 1,
+      endWordNumber: words.length,
+      isGeneral: true
+    });
+  }
+
+  return packages;
 }
 
 // ===============================
@@ -726,19 +890,26 @@ function escapeHtml(text) {
 // QUIZ - GENERAL LOGIC
 // ===============================
 
-function startQuiz(direction) {
-  if (words.length === 0) {
-    showToast("Add at least one word before starting a quiz");
+function startQuiz(direction, selectedQuizId) {
+  const selectedPackage = getQuizPackages().find((quizPackage) => {
+    return quizPackage.id === selectedQuizId;
+  });
+
+  if (!selectedPackage || selectedPackage.words.length === 0) {
+    showToast("No words available for this quiz");
     return;
   }
 
   const quiz = direction === "eng-ita" ? engItaQuiz : itaEngQuiz;
 
-  quiz.queue = shuffleArray(words);
+  quiz.queue = shuffleArray(selectedPackage.words);
   quiz.currentIndex = 0;
   quiz.score = 0;
   quiz.answered = false;
   quiz.mistakes = [];
+  quiz.selectedQuizId = selectedPackage.id;
+  quiz.selectedQuizName = selectedPackage.name;
+  quiz.completionRegistered = false;
 
   showQuizActiveScreen(direction);
   updateQuizScreen(direction);
@@ -942,7 +1113,7 @@ function nextQuestion(direction) {
   quiz.answered = false;
 
   if (quiz.currentIndex >= quiz.queue.length) {
-    finishQuiz(direction);
+    finishQuiz(direction, true);
     return;
   }
 
@@ -963,10 +1134,10 @@ function endQuiz(direction) {
 
   quiz.queue = quiz.queue.slice(0, Math.max(answeredQuestions, 0));
 
-  finishQuiz(direction);
+  finishQuiz(direction, false);
 }
 
-function finishQuiz(direction) {
+function finishQuiz(direction, completedNaturally) {
   const quiz = direction === "eng-ita" ? engItaQuiz : itaEngQuiz;
 
   const questionElement = document.getElementById(
@@ -979,10 +1150,6 @@ function finishQuiz(direction) {
 
   const feedbackElement = document.getElementById(
     direction === "eng-ita" ? "eng-ita-feedback" : "ita-eng-feedback"
-  );
-
-  const startButton = document.getElementById(
-    direction === "eng-ita" ? "start-eng-ita-button" : "start-ita-eng-button"
   );
 
   const checkButton = document.getElementById(
@@ -1013,19 +1180,30 @@ function finishQuiz(direction) {
     direction === "eng-ita" ? "eng-ita-progress" : "ita-eng-progress"
   );
 
-  questionElement.textContent = "Quiz completed";
+  if (completedNaturally && quiz.selectedQuizId && !quiz.completionRegistered) {
+    registerQuizCompletion(direction, quiz.selectedQuizId);
+    quiz.completionRegistered = true;
+  }
+
+  const completionCount = quiz.selectedQuizId
+    ? getQuizCompletionCount(direction, quiz.selectedQuizId)
+    : 0;
+
+  questionElement.textContent = completedNaturally ? "Quiz completed" : "Quiz ended";
+
   answerInput.value = "";
   answerInput.disabled = true;
 
   feedbackElement.className = "feedback-card feedback-correct";
   feedbackElement.innerHTML = `
-    🎉 Final score:<br>
+    ${completedNaturally ? "🎉 Final score:" : "Current score:"}<br>
     <strong>${quiz.score} / ${quiz.queue.length}</strong>
+    ${
+      completedNaturally
+        ? `<br><br>${escapeHtml(quiz.selectedQuizName)} completed: <strong>${completionCount} ${completionCount === 1 ? "time" : "times"}</strong>`
+        : ""
+    }
   `;
-
-  startButton.innerHTML = direction === "eng-ita"
-    ? "START QUIZ<br><span>English → Italian</span>"
-    : "START QUIZ<br><span>Italian → English</span>";
 
   checkButton.classList.add("hidden");
   nextButton.classList.add("hidden");
@@ -1047,9 +1225,11 @@ function finishQuiz(direction) {
     mistakesElement.innerHTML = "";
   }
 
-  progressElement.textContent = `Final score: ${quiz.score} / ${quiz.queue.length}`;
+  progressElement.textContent = completedNaturally
+    ? `Final score: ${quiz.score} / ${quiz.queue.length}`
+    : `Score when ended: ${quiz.score} / ${quiz.queue.length}`;
 
-  showToast("Quiz completed");
+  showToast(completedNaturally ? "Quiz completed" : "Quiz ended");
 }
 
 function toggleMistakes(direction) {
@@ -1152,7 +1332,11 @@ function setupEvents() {
   });
 
   document.getElementById("start-eng-ita-button").addEventListener("click", () => {
-    startQuiz("eng-ita");
+    openQuizSelection("eng-ita");
+  });
+
+  document.getElementById("back-eng-ita-start-button").addEventListener("click", () => {
+    showQuizStartScreen("eng-ita");
   });
 
   document.getElementById("check-eng-ita-button").addEventListener("click", () => {
@@ -1186,7 +1370,11 @@ function setupEvents() {
   });
 
   document.getElementById("start-ita-eng-button").addEventListener("click", () => {
-    startQuiz("ita-eng");
+    openQuizSelection("ita-eng");
+  });
+
+  document.getElementById("back-ita-eng-start-button").addEventListener("click", () => {
+    showQuizStartScreen("ita-eng");
   });
 
   document.getElementById("check-ita-eng-button").addEventListener("click", () => {
@@ -1227,6 +1415,7 @@ function setupEvents() {
 
 function initApp() {
   loadWords();
+  loadQuizCompletions();
 
   setupMainTabs();
   setupVocabularySubTabs();
