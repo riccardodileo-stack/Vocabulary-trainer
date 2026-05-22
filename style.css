@@ -72,11 +72,11 @@ body::before {
   top: 0;
   left: 0;
   right: 0;
-  height: calc(env(safe-area-inset-top) + 0px);
+  height: calc(env(safe-area-inset-top) + 60px); /* +60px di sfumatura visibile */
   background: linear-gradient(
     180deg,
     rgba(238, 248, 239, 0.96) 0%,
-    rgba(238, 248, 239, 0.72) 45%,
+    rgba(238, 248, 239, 0.72) 55%,
     rgba(238, 248, 239, 0.00) 100%
   );
   backdrop-filter: blur(14px);
@@ -820,6 +820,7 @@ button:hover {
   .quiz-word {
     font-size: 34px;
   }
+
 }
 
 /* SMALL IPHONE */
