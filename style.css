@@ -72,15 +72,12 @@ body::before {
   top: 0;
   left: 0;
   right: 0;
-  height: calc(env(safe-area-inset-top) + 60px); /* +60px di sfumatura visibile */
+  height: calc(env(safe-area-inset-top) + 60px);
   background: linear-gradient(
     180deg,
-    rgba(238, 248, 239, 0.96) 0%,
-    rgba(238, 248, 239, 0.72) 55%,
+    rgba(238, 248, 239, 1.00) 0%,
     rgba(238, 248, 239, 0.00) 100%
   );
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   z-index: 50;
   pointer-events: none;
 }
