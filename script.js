@@ -540,6 +540,46 @@ function clearInputs() {
   document.getElementById("italian-input").value = "";
 }
 
+function updateDictionaryAvailability() {
+  const button = document.getElementById("open-wordreference-button");
+  const offlineMessage = document.getElementById("dictionary-offline-message");
+
+  if (!button || !offlineMessage) {
+    return;
+  }
+
+  if (navigator.onLine) {
+    button.disabled = false;
+    button.classList.remove("dictionary-button-disabled");
+    offlineMessage.classList.add("hidden");
+  } else {
+    button.disabled = true;
+    button.classList.add("dictionary-button-disabled");
+    offlineMessage.classList.remove("hidden");
+  }
+}
+
+function openWordReference() {
+  const englishInput = document.getElementById("english-input");
+  const englishWord = englishInput.value.trim();
+
+  if (!navigator.onLine) {
+    showToast("Translation suggestions unavailable while offline");
+    updateDictionaryAvailability();
+    return;
+  }
+
+  if (!englishWord) {
+    showToast("Insert an English word first");
+    return;
+  }
+
+  const encodedWord = encodeURIComponent(englishWord);
+  const wordReferenceUrl = `https://www.wordreference.com/enit/${encodedWord}`;
+
+  window.open(wordReferenceUrl, "_blank", "noopener,noreferrer");
+}
+
 function exportWords() {
   if (words.length === 0) {
     showToast("No words to export");
@@ -1081,6 +1121,11 @@ function setupEvents() {
   document.getElementById("save-word-button").addEventListener("click", addWord);
   document.getElementById("clear-inputs-button").addEventListener("click", clearInputs);
 
+  document.getElementById("open-wordreference-button").addEventListener("click", openWordReference);
+
+  window.addEventListener("online", updateDictionaryAvailability);
+  window.addEventListener("offline", updateDictionaryAvailability);
+
   document.getElementById("export-words-button").addEventListener("click", exportWords);
 
   document.getElementById("import-file-input").addEventListener("change", importWordsFromFile);
@@ -1189,6 +1234,7 @@ function initApp() {
   setupEvents();
 
   renderWordList();
+  updateDictionaryAvailability();
 }
 
 initApp();

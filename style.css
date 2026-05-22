@@ -764,6 +764,72 @@ button:hover {
   opacity: 0.88;
 }
 
+/* WORDREFERENCE SUGGESTION CARD */
+
+.dictionary-card {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  margin-top: 34px;
+  padding: 22px;
+  border-radius: 24px;
+  background: rgba(255,255,255,0.66);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.05);
+}
+
+.dictionary-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(47,191,113,0.13);
+  font-size: 24px;
+}
+
+.dictionary-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.dictionary-title {
+  font-size: 20px;
+  font-weight: 950;
+  letter-spacing: -0.4px;
+  margin-bottom: 7px;
+}
+
+.dictionary-text {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.dictionary-status {
+  margin: 0 0 16px;
+  padding: 11px 13px;
+  border-radius: 14px;
+  background: rgba(255,149,0,0.13);
+  color: #a65f00;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.dictionary-button {
+  background: rgba(47,191,113,0.13);
+  color: var(--deep-green);
+}
+
+.dictionary-button-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 /* TABLET / MOBILE */
 
 @media (max-width: 820px) {
@@ -891,4 +957,16 @@ button:hover {
   .mistake-row .arrow {
     display: none;
   }
+
+  .dictionary-card {
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 28px;
+    padding: 18px;
+  }
+
+  .dictionary-button {
+    width: 100%;
+  }
+
 }
