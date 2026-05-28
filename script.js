@@ -547,6 +547,7 @@ function setupMainTabs() {
       if (selectedTab === "quiz") {
         quizSection.classList.add("active");
       }
+      requestAnimationFrame(updateStickyTabsAppearance);
     });
   });
 }
@@ -629,6 +630,41 @@ function setupQuizSubTabs() {
       }
     });
   });
+}
+
+function updateStickyTabsAppearance() {
+  const visibleSection = document.querySelector(".section.active");
+
+  if (!visibleSection) {
+    return;
+  }
+
+  const visibleTabs = visibleSection.querySelector(".sub-tabs");
+
+  document.querySelectorAll(".sub-tabs").forEach((tabs) => {
+    tabs.classList.remove("is-stuck");
+  });
+
+  if (!visibleTabs) {
+    return;
+  }
+
+  const stickyTop = parseFloat(getComputedStyle(visibleTabs).top) || 0;
+  const currentTop = visibleTabs.getBoundingClientRect().top;
+
+  const isStuck = currentTop <= stickyTop + 1;
+
+  visibleTabs.classList.toggle("is-stuck", isStuck);
+}
+
+function setupStickyTabsAppearance() {
+  window.addEventListener("scroll", updateStickyTabsAppearance, {
+    passive: true
+  });
+
+  window.addEventListener("resize", updateStickyTabsAppearance);
+
+  updateStickyTabsAppearance();
 }
 
 // ===============================
@@ -1550,6 +1586,7 @@ function initApp() {
   setupVocabularySubTabs();
   setupQuizSubTabs();
   setupEvents();
+  setupStickyTabsAppearance();
 
   renderWordList();
   updateDictionaryAvailability();
