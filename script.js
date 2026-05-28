@@ -10,6 +10,7 @@ const QUIZ_PACKAGE_SIZE = 50;
 // Main data
 let words = [];
 let wordSearchQuery = "";
+let sharedTranslationsVisible = false;
 let quizCompletions = {};
 
 // Quiz states
@@ -62,6 +63,129 @@ function isFlexibleAnswerCorrect(userAnswer, correctAnswer) {
 
   return userOptions.every((userOption) => {
     return correctOptions.includes(userOption);
+  });
+}
+
+function getSharedTranslationGroups() {
+  const groupsMap = new Map();
+
+  words.forEach((word, originalIndex) => {
+    const individualTranslations = [...new Set(splitAnswerOptions(word.italian))];
+
+    individualTranslations.forEach((translation) => {
+      if (!groupsMap.has(translation)) {
+        groupsMap.set(translation, {
+          meaning: translation,
+          firstOccurrenceIndex: originalIndex,
+          words: []
+        });
+      }
+
+      groupsMap.get(translation).words.push({
+        english: word.english,
+        italian: word.italian,
+        originalIndex: originalIndex
+      });
+    });
+  });
+
+  return Array.from(groupsMap.values())
+    .filter((group) => group.words.length >= 2)
+    .sort((groupA, groupB) => {
+      return groupA.firstOccurrenceIndex - groupB.firstOccurrenceIndex;
+    });
+}
+
+function toggleSharedTranslations() {
+  sharedTranslationsVisible = !sharedTranslationsVisible;
+  renderSharedTranslations();
+}
+
+function renderSharedTranslations() {
+  const panel = document.getElementById("shared-translations-panel");
+  const arrow = document.getElementById("shared-button-arrow");
+
+  if (!panel || !arrow) {
+    return;
+  }
+
+  if (!sharedTranslationsVisible) {
+    panel.classList.add("hidden");
+    arrow.classList.remove("open");
+    panel.innerHTML = "";
+    return;
+  }
+
+  arrow.classList.add("open");
+  panel.classList.remove("hidden");
+
+  const groups = getSharedTranslationGroups();
+
+  if (groups.length === 0) {
+    panel.innerHTML = `
+      <div class="no-shared-translations">
+        No shared Italian translations found in your vocabulary list.
+      </div>
+    `;
+    return;
+  }
+
+  panel.innerHTML = `
+    <div class="shared-results-header">
+      <div class="shared-results-title">Shared translations</div>
+
+      <div class="counter-pill">
+        ${groups.length} groups
+      </div>
+    </div>
+
+    ${groups
+      .map((group) => {
+        return `
+          <div class="shared-group-card">
+            <div class="shared-group-meaning">
+              ${escapeHtml(group.meaning)}
+            </div>
+
+            <div class="shared-group-words">
+              ${group.words
+                .map((word) => {
+                  return `
+                    <div class="shared-word-row">
+                      <div class="shared-word-info">
+                        <div class="shared-english-word">
+                          ${escapeHtml(word.english)}
+                        </div>
+
+                        <div class="shared-full-translation">
+                          ${escapeHtml(word.italian)}
+                        </div>
+                      </div>
+
+                      <button
+                        class="shared-edit-button"
+                        data-shared-edit-index="${word.originalIndex}"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  `;
+                })
+                .join("")}
+            </div>
+          </div>
+        `;
+      })
+      .join("")}
+  `;
+
+  const editButtons = panel.querySelectorAll("[data-shared-edit-index]");
+
+  editButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const index = Number(button.dataset.sharedEditIndex);
+      editWord(index);
+    });
   });
 }
 
@@ -518,6 +642,7 @@ function renderWordList() {
 
   wordList.innerHTML = "";
   wordCount.textContent = words.length;
+  renderSharedTranslations();
 
   const filteredWords = words
     .map((word, originalIndex) => {
@@ -1313,6 +1438,10 @@ function setupEvents() {
   document.getElementById("word-search-input").addEventListener("input", (event) => {
     wordSearchQuery = event.target.value;
     renderWordList();
+  });
+
+  document.getElementById("toggle-shared-translations-button").addEventListener("click", () => {
+    toggleSharedTranslations();
   });
 
   document.getElementById("import-file-input").addEventListener("change", () => {
