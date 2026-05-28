@@ -635,15 +635,17 @@ function setupQuizSubTabs() {
 function updateStickyTabsAppearance() {
   const visibleSection = document.querySelector(".section.active");
 
+  document.querySelectorAll(".sub-tabs").forEach((tabs) => {
+    tabs.classList.remove("is-stuck");
+  });
+
+  document.body.classList.remove("sticky-menu-active");
+
   if (!visibleSection) {
     return;
   }
 
   const visibleTabs = visibleSection.querySelector(".sub-tabs");
-
-  document.querySelectorAll(".sub-tabs").forEach((tabs) => {
-    tabs.classList.remove("is-stuck");
-  });
 
   if (!visibleTabs) {
     return;
@@ -654,7 +656,10 @@ function updateStickyTabsAppearance() {
 
   const isStuck = currentTop <= stickyTop + 1;
 
-  visibleTabs.classList.toggle("is-stuck", isStuck);
+  if (isStuck) {
+    visibleTabs.classList.add("is-stuck");
+    document.body.classList.add("sticky-menu-active");
+  }
 }
 
 function setupStickyTabsAppearance() {
