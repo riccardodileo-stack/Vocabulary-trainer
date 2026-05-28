@@ -18,7 +18,7 @@
   --border: rgba(0, 0, 0, 0.08);
   --shadow: 0 18px 45px rgba(0, 0, 0, 0.10);
 
-  --sticky-tabs-top: calc(env(safe-area-inset-top) + 2px);
+  --sticky-tabs-top: calc(env(safe-area-inset-top) + 8px);
 }
 
 * {
@@ -242,7 +242,7 @@ h2 {
   transform: translateX(-50%);
   bottom: 100%;
 
-  width: calc(100% - 80px);
+  width: calc(100%);
   height: calc(var(--sticky-tabs-top) + 1px);
 
   background: rgba(255, 255, 255, 0.55);
