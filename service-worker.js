@@ -1,4 +1,4 @@
-const CACHE_NAME = "vocabulary-trainer-v3.12";
+const CACHE_NAME = "vocabulary-trainer-v3.13";
 
 const FILES_TO_CACHE = [
   "./",
