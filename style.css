@@ -71,13 +71,16 @@ body::before {
 
 .top-fade {
   position: fixed;
-  top: 0;
+  top: -4px;                          /* ← copre il micro-gap in alto */
   left: 0;
   right: 0;
-  /* Aumenta l'altezza per coprire bene il gap */
-  height: calc(env(safe-area-inset-top) + 2px);
-  /* Colore solido, non sfumato — copre la status bar e basta */
-  background: var(--bg);
+  height: calc(env(safe-area-inset-top) + 20px);
+  background: linear-gradient(
+    180deg,
+    rgba(238, 248, 239, 1.00) 0%,
+    rgba(238, 248, 239, 1.00) 55%,   /* ← solido fino al 55% */
+    rgba(238, 248, 239, 0.00) 100%
+  );
   z-index: 50;
   pointer-events: none;
   transition: opacity 0.18s ease;
