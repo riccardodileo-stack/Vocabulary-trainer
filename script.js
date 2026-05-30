@@ -654,7 +654,7 @@ function updateStickyTabsAppearance() {
   const stickyTop = parseFloat(getComputedStyle(visibleTabs).top) || 0;
   const currentTop = visibleTabs.getBoundingClientRect().top;
 
-  const isStuck = currentTop <= stickyTop + 1;
+  const isStuck = currentTop <= stickyTop + 1 && window.scrollY > 120;
 
   if (isStuck) {
     visibleTabs.classList.add("is-stuck");
