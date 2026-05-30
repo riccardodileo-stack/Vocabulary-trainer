@@ -19,6 +19,7 @@
   --shadow: 0 18px 45px rgba(0, 0, 0, 0.10);
 
   --sticky-tabs-top: calc(env(safe-area-inset-top) + 12px);
+  --sticky-cover-height: calc(env(safe-area-inset-top) + 22px);
 }
 
 * {
@@ -243,7 +244,7 @@ h2 {
   bottom: 100%;
 
   width: calc(100%);
-  height: calc(var(--sticky-tabs-top) + 2px);
+  height: var(--sticky-cover-height);
 
   background: rgba(255, 255, 255, 0.55);
 
