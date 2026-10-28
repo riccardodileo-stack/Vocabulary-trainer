@@ -1,11 +1,48 @@
-const CACHE_NAME = "vocabulary-trainer-v3.22";
+const CACHE_NAME = "vocabulary-trainer-v4.0";
 
+// Remember to add here every new CSS / JS file, so the app works offline
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
-  "./style.css",
-  "./script.js",
   "./manifest.json",
+
+  "./css/base.css",
+  "./css/layout.css",
+  "./css/components.css",
+  "./css/vocabulary/word-list.css",
+  "./css/vocabulary/shared-translations.css",
+  "./css/vocabulary/add-word.css",
+  "./css/vocabulary/backup.css",
+  "./css/quiz/quiz.css",
+  "./css/quiz/selection.css",
+  "./css/quiz/mistakes.css",
+
+  "./js/main.js",
+  "./js/config.js",
+  "./js/utils/text.js",
+  "./js/utils/array.js",
+  "./js/data/storage.js",
+  "./js/data/wordStore.js",
+  "./js/data/completionStore.js",
+  "./js/ui/toast.js",
+  "./js/ui/tabs.js",
+  "./js/ui/stickyTabs.js",
+  "./js/vocabulary/wordList.js",
+  "./js/vocabulary/wordActions.js",
+  "./js/vocabulary/sharedTranslations.js",
+  "./js/vocabulary/dictionary.js",
+  "./js/vocabulary/backup.js",
+  "./js/quiz/quizState.js",
+  "./js/quiz/quizElements.js",
+  "./js/quiz/packages.js",
+  "./js/quiz/screens.js",
+  "./js/quiz/selection.js",
+  "./js/quiz/quizView.js",
+  "./js/quiz/quizEngine.js",
+  "./js/quiz/mistakes.js",
+  "./js/quiz/quizSetup.js",
+
+
   "./icon-192.png",
   "./icon-512.png"
 ];
