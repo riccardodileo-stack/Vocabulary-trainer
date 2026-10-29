@@ -1,4 +1,4 @@
-// Quiz setup: direction, all words or mistakes only, number of questions.
+// Quiz setup: direction, which words (to review / all / mistakes), number of questions.
 
 import { Stack, router } from 'expo-router';
 import { useState } from 'react';
@@ -10,7 +10,7 @@ import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { LANGUAGES } from '@/domain/languages';
-import { isMistake, QUIZ_COUNTS, type QuizDirection, type QuizMode } from '@/domain/quiz';
+import { QUIZ_COUNTS, quizPool, type QuizDirection, type QuizMode } from '@/domain/quiz';
 import { useT } from '@/i18n';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
@@ -20,15 +20,21 @@ export default function TrainScreen() {
   const pair = useActivePair();
   const words = useWordsOfPair(pair);
   const [direction, setDirection] = useState<QuizDirection>('forward');
-  const [mode, setMode] = useState<QuizMode>('all');
+  // Start on the review when there is something to review
+  const [mode, setMode] = useState<QuizMode>(() => (quizPool(words, { mode: 'due' }).length > 0 ? 'due' : 'all'));
   const [count, setCount] = useState<string>(String(QUIZ_COUNTS[0]));
 
-  const availableCount = mode === 'mistakes' ? words.filter(isMistake).length : words.length;
+  const availableCount = quizPool(words, { mode }).length;
   const source = LANGUAGES[pair.source].flag;
   const target = LANGUAGES[pair.target].flag;
 
-  const start = () =>
-    router.push({ pathname: '/train/quiz', params: { direction, mode, count } });
+  const modeHints: Record<QuizMode, string> = {
+    due: t.train.modeDueHint,
+    all: t.train.modeAllHint,
+    mistakes: t.train.modeMistakesHint,
+  };
+
+  const start = () => router.push({ pathname: '/train/quiz', params: { direction, mode, count } });
 
   return (
     <>
@@ -46,9 +52,10 @@ export default function TrainScreen() {
           />
         </Section>
 
-        <Section title={t.train.mode}>
+        <Section title={t.train.mode} hint={modeHints[mode]}>
           <SegmentedControl
             options={[
+              { value: 'due', label: t.train.modeDue },
               { value: 'all', label: t.train.modeAll },
               { value: 'mistakes', label: t.train.modeMistakes },
             ]}

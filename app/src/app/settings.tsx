@@ -1,4 +1,4 @@
-// Settings modal: theme, app language, native language, studied language and backup.
+// Settings modal: theme, studied and native language, words of the day, app language, backup.
 
 import { Alert } from 'react-native';
 
@@ -8,15 +8,26 @@ import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { parseBackup } from '@/domain/backup';
+import type { DailyLevel } from '@/domain/dailyWords';
 import { LANGUAGE_CODES, LANGUAGES, studyLanguagesFor, type LanguageCode } from '@/domain/languages';
 import { UI_LANGUAGES, useT, type UiLanguage } from '@/i18n';
 import { pickBackupText, shareBackup } from '@/services/backupFiles';
+import { useDailyStore, useKnownIds } from '@/store/dailyStore';
 import { useSettingsStore, type ThemePreference } from '@/store/settingsStore';
 import { useWordStore } from '@/store/wordStore';
 
 export default function SettingsScreen() {
   const t = useT();
   const settings = useSettingsStore();
+  const knownIds = useKnownIds(settings.studyLanguage);
+  const clearKnown = useDailyStore((state) => state.clearKnown);
+
+  const dailyLevelOptions: { value: DailyLevel; label: string }[] = [
+    { value: 'all', label: t.settings.dailyLevelAll },
+    { value: 'beginner', label: 'A1–A2' },
+    { value: 'intermediate', label: 'B1' },
+    { value: 'advanced', label: 'B2' },
+  ];
 
   const languageOption = (code: LanguageCode) => ({
     value: code,
@@ -100,6 +111,17 @@ export default function SettingsScreen() {
           value={settings.nativeLanguage}
           onChange={settings.setNativeLanguage}
         />
+      </Section>
+
+      <Section title={t.settings.dailyLevel} hint={t.settings.dailyLevelHint}>
+        <SegmentedControl options={dailyLevelOptions} value={settings.dailyLevel} onChange={settings.setDailyLevel} />
+        {knownIds.length > 0 ? (
+          <Button
+            label={t.settings.resetKnown(knownIds.length)}
+            tone="secondary"
+            onPress={() => clearKnown(settings.studyLanguage)}
+          />
+        ) : null}
       </Section>
 
       <Section title={t.settings.appLanguage}>

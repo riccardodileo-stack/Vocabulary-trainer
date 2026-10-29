@@ -15,12 +15,32 @@ export type Meaning = {
 export type WordStats = {
   correct: number;
   wrong: number;
-  /** Correct answers in a row; used to take a word out of the mistakes quiz. */
+  /**
+   * Correct answers in a row. It takes a word out of the mistakes review
+   * and is also its spaced-repetition box (see domain/review.ts).
+   */
   streak: number;
   lastWrongAt?: string;
+  /** Last time the word was asked in a quiz; undefined for words never asked. */
+  lastAnsweredAt?: string;
 };
 
-export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+/** Stats after one quiz answer. */
+export function statsAfterAnswer(stats: WordStats, correct: boolean, now: Date = new Date()): WordStats {
+  const lastAnsweredAt = now.toISOString();
+
+  return correct
+    ? { ...stats, correct: stats.correct + 1, streak: stats.streak + 1, lastAnsweredAt }
+    : { ...stats, wrong: stats.wrong + 1, streak: 0, lastWrongAt: lastAnsweredAt, lastAnsweredAt };
+}
+
+export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
+
+export type CefrLevel = (typeof CEFR_LEVELS)[number];
+
+export function isCefrLevel(value: unknown): value is CefrLevel {
+  return typeof value === 'string' && (CEFR_LEVELS as readonly string[]).includes(value);
+}
 
 export type Word = {
   id: string;

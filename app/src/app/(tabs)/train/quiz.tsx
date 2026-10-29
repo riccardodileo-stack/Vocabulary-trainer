@@ -1,5 +1,8 @@
-// A quiz session. Options arrive as route params, so Home can open
-// the mistakes review directly. Every answer updates the word stats.
+// A quiz session. Options arrive as route params, so Home can open the review,
+// the mistakes or the new words directly. Every answer updates the word stats.
+//
+// Params: direction=forward|backward, mode=due|all|mistakes, count=number (0 = all),
+//         ids=comma separated word ids (optional, limits the quiz to those words)
 
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -9,27 +12,31 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { DictionaryLinks } from '@/components/DictionaryLinks';
+import { HeaderButton } from '@/components/HeaderButton';
 import { Pill } from '@/components/Pill';
+import { ProgressBar } from '@/components/ProgressBar';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
 import { TextField, type TextFieldRef } from '@/components/TextField';
-import { buildQuiz, type QuizDirection, type QuizMode, type QuizOptions, type QuizQuestion } from '@/domain/quiz';
-import { isAnswerAccepted } from '@/domain/text';
+import { buildQuiz, QUIZ_MODES, type QuizMode, type QuizOptions, type QuizQuestion } from '@/domain/quiz';
+import { evaluateAnswer, type AnswerVerdict } from '@/domain/text';
 import { meaningsToText } from '@/domain/word';
 import { useT } from '@/i18n';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordStore, useWordsOfPair } from '@/store/wordStore';
 import { spacing } from '@/theme';
 
-type QuizParams = { direction?: string; mode?: string; count?: string };
+type QuizParams = { direction?: string; mode?: string; count?: string; ids?: string };
 
 type Mistake = { question: QuizQuestion; given: string };
 
 function optionsFromParams(params: QuizParams): QuizOptions {
+  const ids = params.ids?.split(',').filter(Boolean);
   return {
-    direction: (params.direction === 'backward' ? 'backward' : 'forward') satisfies QuizDirection,
-    mode: (params.mode === 'mistakes' ? 'mistakes' : 'all') satisfies QuizMode,
+    direction: params.direction === 'backward' ? 'backward' : 'forward',
+    mode: QUIZ_MODES.includes(params.mode as QuizMode) ? (params.mode as QuizMode) : 'all',
     count: Number(params.count) || 0,
+    wordIds: ids && ids.length > 0 ? ids : undefined,
   };
 }
 
@@ -45,18 +52,19 @@ export default function QuizScreen() {
   const [questions, setQuestions] = useState(() => buildQuiz(words, options));
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState('');
-  const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
+  const [verdict, setVerdict] = useState<AnswerVerdict | null>(null);
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
 
   const question = questions[index];
   const finished = index >= questions.length;
   const isLast = index === questions.length - 1;
+  const answeredCount = index + (verdict ? 1 : 0);
 
   const submit = (given: string) => {
-    const correct = isAnswerAccepted(given, question.accepted);
-    recordAnswer(question.word.id, correct);
-    setResult(correct ? 'correct' : 'wrong');
-    if (!correct) {
+    const result = given.trim() ? evaluateAnswer(given, question.accepted, question.answerLanguage) : 'wrong';
+    recordAnswer(question.word.id, result !== 'wrong');
+    setVerdict(result);
+    if (result === 'wrong') {
       setMistakes((current) => [...current, { question, given }]);
     }
   };
@@ -70,16 +78,27 @@ export default function QuizScreen() {
   const next = () => {
     setIndex(index + 1);
     setAnswer('');
-    setResult(null);
+    setVerdict(null);
     inputRef.current?.focus();
   };
 
-  const restart = () => {
-    setQuestions(buildQuiz(words, options));
+  const startRound = (roundOptions: QuizOptions) => {
+    setQuestions(buildQuiz(words, roundOptions));
     setIndex(0);
     setAnswer('');
-    setResult(null);
+    setVerdict(null);
     setMistakes([]);
+  };
+
+  /** Ends now: the results count only the questions already answered. */
+  const endEarly = () => {
+    if (answeredCount === 0) {
+      router.back();
+      return;
+    }
+    setQuestions(questions.slice(0, answeredCount));
+    setIndex(answeredCount);
+    setVerdict(null);
   };
 
   if (questions.length === 0) {
@@ -99,17 +118,21 @@ export default function QuizScreen() {
 
   if (finished) {
     const correctCount = questions.length - mistakes.length;
+    const mistakeIds = mistakes.map(({ question: wrong }) => wrong.word.id);
 
     return (
       <>
-        <Stack.Screen options={{ title: t.quiz.resultTitle, headerLargeTitle: false }} />
+        <Stack.Screen options={{ title: t.quiz.resultTitle, headerLargeTitle: false, headerRight: () => null }} />
 
         <Screen>
-          <Card tone="primary">
-            <AppText variant="hero">
+          <Card tone="primary" style={styles.centeredCard}>
+            <AppText variant="display">
               {correctCount} / {questions.length}
             </AppText>
             <AppText color="textMuted">{t.quiz.score(correctCount, questions.length)}</AppText>
+            <View style={styles.fullWidth}>
+              <ProgressBar progress={correctCount / questions.length} />
+            </View>
           </Card>
 
           <Section title={t.quiz.mistakes}>
@@ -124,14 +147,24 @@ export default function QuizScreen() {
                     {wrong.prompt} → {wrong.correctText}
                   </AppText>
                   <AppText variant="small" color="textMuted">
-                    {t.quiz.yourAnswer} {given || '–'}
+                    {t.quiz.yourAnswer} {given.trim() || '–'}
                   </AppText>
                 </Card>
               ))
             )}
           </Section>
 
-          <Button label={t.quiz.again} onPress={restart} />
+          {mistakes.length > 0 ? (
+            <Button
+              label={t.quiz.retryMistakes}
+              onPress={() => startRound({ ...options, mode: 'all', count: 0, wordIds: mistakeIds })}
+            />
+          ) : null}
+          <Button
+            label={t.quiz.again}
+            tone={mistakes.length > 0 ? 'secondary' : 'primary'}
+            onPress={() => startRound(options)}
+          />
           <Button label={t.quiz.done} tone="secondary" onPress={() => router.back()} />
         </Screen>
       </>
@@ -142,11 +175,22 @@ export default function QuizScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t.quiz.progress(index + 1, questions.length), headerLargeTitle: false }} />
+      <Stack.Screen
+        options={{
+          title: t.quiz.progress(index + 1, questions.length),
+          headerLargeTitle: false,
+          headerRight: () => <HeaderButton label={t.quiz.end} onPress={endEarly} />,
+        }}
+      />
 
       <Screen>
+        <ProgressBar
+          progress={answeredCount / questions.length}
+          accessibilityLabel={t.quiz.progressAccessibility(index + 1, questions.length)}
+        />
+
         <Card style={styles.questionCard}>
-          <AppText variant="hero" style={styles.centered}>
+          <AppText variant="hero" style={styles.centered} accessibilityRole="header">
             {question.prompt}
           </AppText>
           {question.note ? (
@@ -161,20 +205,29 @@ export default function QuizScreen() {
           value={answer}
           onChangeText={setAnswer}
           placeholder={t.quiz.answerPlaceholder}
+          accessibilityLabel={t.quiz.answerPlaceholder}
           autoCapitalize="none"
           autoCorrect={false}
           autoFocus
-          returnKeyType={result === null ? 'done' : 'next'}
+          returnKeyType={verdict === null ? 'done' : 'next'}
           submitBehavior="submit"
-          onSubmitEditing={result === null ? check : next}
+          onSubmitEditing={verdict === null ? check : next}
         />
 
-        {result ? (
-          <Card tone={result === 'correct' ? 'primary' : 'default'}>
-            <Pill label={result === 'correct' ? t.quiz.correct : t.quiz.wrong} tone={result === 'correct' ? 'primary' : 'warning'} />
-            {result === 'wrong' ? (
+        {verdict ? (
+          <Card tone={verdict === 'wrong' ? 'default' : 'primary'} accessibilityLiveRegion="polite">
+            <Pill
+              label={{ correct: t.quiz.correct, almost: t.quiz.almost, wrong: t.quiz.wrong }[verdict]}
+              tone={verdict === 'wrong' ? 'warning' : 'primary'}
+            />
+            {verdict === 'wrong' ? (
               <AppText>
                 {t.quiz.correctAnswer} <AppText variant="bodyBold">{question.correctText}</AppText>
+              </AppText>
+            ) : null}
+            {verdict === 'almost' ? (
+              <AppText>
+                {t.quiz.almostHint} <AppText variant="bodyBold">{question.correctText}</AppText>
               </AppText>
             ) : null}
             <AppText color="textMuted">
@@ -183,7 +236,7 @@ export default function QuizScreen() {
           </Card>
         ) : null}
 
-        {result && examples.length > 0 ? (
+        {verdict && examples.length > 0 ? (
           <Section title={t.quiz.examples}>
             <Card>
               {examples.map((example) => (
@@ -193,10 +246,10 @@ export default function QuizScreen() {
           </Section>
         ) : null}
 
-        {result ? <DictionaryLinks pair={pair} term={question.word.term} /> : null}
+        {verdict ? <DictionaryLinks pair={pair} term={question.word.term} /> : null}
 
         <View style={styles.actions}>
-          {result === null ? (
+          {verdict === null ? (
             <>
               <Button label={t.quiz.check} onPress={check} disabled={!answer.trim()} />
               <Button label={t.quiz.skip} tone="secondary" onPress={() => submit('')} />
@@ -213,6 +266,12 @@ export default function QuizScreen() {
 const styles = StyleSheet.create({
   centered: {
     textAlign: 'center',
+  },
+  centeredCard: {
+    alignItems: 'center',
+  },
+  fullWidth: {
+    alignSelf: 'stretch',
   },
   questionCard: {
     paddingVertical: spacing.xl,

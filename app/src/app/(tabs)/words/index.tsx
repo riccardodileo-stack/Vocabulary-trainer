@@ -10,9 +10,11 @@ import { Card } from '@/components/Card';
 import { HeaderButton } from '@/components/HeaderButton';
 import { LanguagePairChip } from '@/components/LanguagePairChip';
 import { Pill } from '@/components/Pill';
+import { MasteryMeter } from '@/components/MasteryMeter';
 import { ListScreen } from '@/components/Screen';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { TextField } from '@/components/TextField';
+import { MASTERED_BOX, reviewBox } from '@/domain/review';
 import { normalizeText } from '@/domain/text';
 import { meaningsToText, type Word } from '@/domain/word';
 import { useT } from '@/i18n';
@@ -48,14 +50,17 @@ function openWord(id: string) {
 }
 
 /** Memoized: re-sorting moves rows around without re-rendering each of them. */
-const WordRow = memo(function WordRow({ word, errorsLabel }: { word: Word; errorsLabel?: string }) {
+type WordRowProps = { word: Word; errorsLabel?: string; masteryLabel: string };
+
+const WordRow = memo(function WordRow({ word, errorsLabel, masteryLabel }: WordRowProps) {
   return (
-    <Card onPress={() => openWord(word.id)}>
+    <Card onPress={() => openWord(word.id)} accessibilityRole="button">
       <View style={styles.row}>
         <AppText variant="bodyBold" style={styles.term}>
           {word.term}
         </AppText>
         {errorsLabel ? <Pill label={errorsLabel} tone="warning" /> : null}
+        <MasteryMeter box={reviewBox(word)} accessibilityLabel={masteryLabel} />
       </View>
       <AppText color="textMuted" numberOfLines={2}>
         {meaningsToText(word)}
@@ -131,7 +136,11 @@ export default function WordsScreen() {
         keyExtractor={(word) => word.id}
         ListHeaderComponent={header}
         renderItem={({ item }) => (
-          <WordRow word={item} errorsLabel={item.stats.wrong > 0 ? t.words.errorsCount(item.stats.wrong) : undefined} />
+          <WordRow
+            word={item}
+            errorsLabel={item.stats.wrong > 0 ? t.words.errorsCount(item.stats.wrong) : undefined}
+            masteryLabel={t.words.mastery(reviewBox(item), MASTERED_BOX)}
+          />
         )}
       />
     </>

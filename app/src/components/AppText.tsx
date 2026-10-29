@@ -2,7 +2,7 @@ import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { fontSize, fontWeight, useTheme, type ThemeColors } from '@/theme';
 
-type Variant = 'hero' | 'title' | 'body' | 'bodyBold' | 'small' | 'caption';
+type Variant = 'display' | 'hero' | 'title' | 'body' | 'bodyBold' | 'small' | 'caption';
 
 export type AppTextProps = TextProps & {
   variant?: Variant;
@@ -16,6 +16,7 @@ export function AppText({ variant = 'body', color = 'text', style, ...rest }: Ap
 }
 
 const styles = StyleSheet.create({
+  display: { fontSize: fontSize.display, fontWeight: fontWeight.heavy, letterSpacing: -1.2, fontVariant: ['tabular-nums'] },
   hero: { fontSize: fontSize.hero, fontWeight: fontWeight.heavy, letterSpacing: -0.8 },
   title: { fontSize: fontSize.title, fontWeight: fontWeight.heavy, letterSpacing: -0.4 },
   body: { fontSize: fontSize.body, fontWeight: fontWeight.regular, lineHeight: 22 },

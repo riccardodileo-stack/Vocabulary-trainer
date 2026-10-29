@@ -25,7 +25,7 @@ export function DictionaryLinks({ pair, term }: DictionaryLinksProps) {
       {dictionariesFor(pair, term.trim()).map((dictionary) => (
         <View key={dictionary.name} style={styles.item}>
           <Button
-            label={`📖 ${dictionary.name}`}
+            label={`${dictionary.name} ↗`}
             tone="secondary"
             onPress={() => WebBrowser.openBrowserAsync(dictionary.url, { controlsColor: colors.primary })}
           />

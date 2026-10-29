@@ -1,4 +1,4 @@
-// Screen to edit or delete an existing word.
+// Screen to see the progress of a word, edit it or delete it.
 
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Alert } from 'react-native';
@@ -7,6 +7,7 @@ import { AppText } from '@/components/AppText';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { WordForm } from '@/components/WordForm';
+import { WordStatsCard } from '@/components/WordStatsCard';
 import { belongsToPair, hasSameTerm, type Word } from '@/domain/word';
 import { useT } from '@/i18n';
 import { useWord, useWordStore } from '@/store/wordStore';
@@ -46,6 +47,8 @@ export default function EditWordScreen() {
       <Stack.Screen options={{ title: t.wordForm.editTitle, headerLargeTitle: false }} />
 
       <Screen>
+        {word ? <WordStatsCard word={word} /> : null}
+
         {word ? (
           <WordForm
             pair={{ source: word.sourceLang, target: word.targetLang }}

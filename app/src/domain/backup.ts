@@ -3,7 +3,7 @@
 
 import { isLanguageCode, type LanguagePair } from './languages';
 import { normalizeText } from './text';
-import { createWord, emptyStats, meaningsFromSlashText, type Meaning, type Word } from './word';
+import { createWord, emptyStats, isCefrLevel, meaningsFromSlashText, type Meaning, type Word } from './word';
 
 const BACKUP_APP_NAME = 'Vocabulary Trainer';
 const BACKUP_VERSION = 2;
@@ -65,7 +65,9 @@ function parseAppWord(item: Record<string, unknown>): Word | null {
       wrong: typeof stats.wrong === 'number' ? stats.wrong : 0,
       streak: typeof stats.streak === 'number' ? stats.streak : 0,
       lastWrongAt: typeof stats.lastWrongAt === 'string' ? stats.lastWrongAt : undefined,
+      lastAnsweredAt: typeof stats.lastAnsweredAt === 'string' ? stats.lastAnsweredAt : undefined,
     },
+    level: isCefrLevel(item.level) ? item.level : undefined,
     tags: Array.isArray(item.tags) ? item.tags.filter((tag): tag is string => typeof tag === 'string') : [],
     createdAt: typeof item.createdAt === 'string' ? item.createdAt : word.createdAt,
   };

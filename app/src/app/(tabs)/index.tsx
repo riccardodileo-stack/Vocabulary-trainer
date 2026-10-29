@@ -1,16 +1,24 @@
-// Home: entry point with the daily words, mistakes review and quick stats.
+// Home: what to do today. Streak and stats, today's review, the words of the day
+// and, if there are any, the mistakes to fix.
 
 import { router } from 'expo-router';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { DailyWordsCard } from '@/components/DailyWordsCard';
+import { IconButton } from '@/components/IconButton';
 import { LanguagePairChip } from '@/components/LanguagePairChip';
 import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
+import { StatTile } from '@/components/StatTile';
+import { dayKey } from '@/domain/dates';
 import { isMistake } from '@/domain/quiz';
+import { isDue, isMastered } from '@/domain/review';
 import { useT } from '@/i18n';
+import { useStreak } from '@/store/activityStore';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
 import { spacing } from '@/theme';
@@ -19,45 +27,65 @@ function openSettings() {
   router.push('/settings');
 }
 
+function openQuiz(mode: 'due' | 'mistakes') {
+  router.push({ pathname: '/train/quiz', params: { direction: 'forward', mode, count: mode === 'due' ? '20' : '0' } });
+}
+
 export default function HomeScreen() {
   const t = useT();
   const insets = useSafeAreaInsets();
   const pair = useActivePair();
   const words = useWordsOfPair(pair);
-  const mistakesCount = words.filter(isMistake).length;
+  const streak = useStreak();
 
-  const openMistakesQuiz = () =>
-    router.push({ pathname: '/train/quiz', params: { direction: 'forward', mode: 'mistakes', count: '0' } });
+  const today = dayKey();
+  const dueCount = words.filter((word) => isDue(word, today)).length;
+  const masteredCount = words.filter(isMastered).length;
+  const mistakesCount = words.filter(isMistake).length;
 
   return (
     // On iOS the ScrollView already avoids the notch; Android needs the inset by hand
     <Screen tab="/" contentContainerStyle={Platform.OS === 'android' && { paddingTop: insets.top + spacing.lg }}>
       <View style={styles.header}>
-        <AppText variant="hero">{t.home.greeting}</AppText>
-
-        <Pressable onPress={openSettings} hitSlop={12} accessibilityRole="button" accessibilityLabel={t.settings.title}>
-          <AppText style={styles.gear}>⚙️</AppText>
-        </Pressable>
+        <AppText variant="hero" accessibilityRole="header">
+          {t.home.greeting}
+        </AppText>
+        <IconButton icon="⚙️" onPress={openSettings} accessibilityLabel={t.settings.title} />
       </View>
 
       <LanguagePairChip pair={pair} onPress={openSettings} />
 
-      <Card>
-        <AppText variant="title">☀️ {t.home.dailyWordsTitle}</AppText>
-        <AppText color="textMuted">{t.home.dailyWordsEmpty}</AppText>
-        <Pill label={t.common.comingSoon} />
+      <View style={styles.stats}>
+        <StatTile icon="🔥" value={streak} label={t.home.streak(streak)} />
+        <StatTile icon="📚" value={words.length} label={t.home.wordsStat(words.length)} />
+        <StatTile icon="🏆" value={masteredCount} label={t.home.masteredStat} />
+      </View>
+
+      <Card tone="primary">
+        <AppText variant="title" accessibilityRole="header">
+          🧠 {t.home.reviewTitle}
+        </AppText>
+        {words.length === 0 ? (
+          <AppText color="textMuted">{t.home.reviewNoWords}</AppText>
+        ) : dueCount > 0 ? (
+          <>
+            <AppText color="textMuted">{t.home.reviewDue(dueCount)}</AppText>
+            <Button label={t.home.reviewStart} onPress={() => openQuiz('due')} />
+          </>
+        ) : (
+          <AppText color="textMuted">{t.home.reviewDone}</AppText>
+        )}
       </Card>
 
-      <Card tone="primary" onPress={mistakesCount > 0 ? openMistakesQuiz : undefined}>
-        <AppText variant="title">⚠️ {t.home.mistakesTitle}</AppText>
-        <AppText color="textMuted">{mistakesCount > 0 ? t.home.mistakesSubtitle : t.home.mistakesNone}</AppText>
-        {mistakesCount > 0 ? <Pill label={t.home.mistakesCount(mistakesCount)} tone="warning" /> : null}
-      </Card>
+      <DailyWordsCard />
 
-      <Card onPress={() => router.push('/words')}>
-        <AppText variant="title">📊 {t.home.statsTitle}</AppText>
-        <Pill label={t.common.words(words.length)} tone="primary" />
-      </Card>
+      {mistakesCount > 0 ? (
+        <Card onPress={() => openQuiz('mistakes')} accessibilityRole="button">
+          <AppText variant="title">⚠️ {t.home.mistakesTitle}</AppText>
+          <AppText color="textMuted">{t.home.mistakesSubtitle}</AppText>
+          <Pill label={t.home.mistakesCount(mistakesCount)} tone="warning" />
+        </Card>
+      ) : null}
     </Screen>
   );
 }
@@ -68,7 +96,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  gear: {
-    fontSize: 26,
+  stats: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
 });

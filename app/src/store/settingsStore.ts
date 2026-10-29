@@ -1,9 +1,10 @@
-// User preferences: theme, app language, native and studied language.
+// User preferences: theme, app language, native and studied language, daily words level.
 
 import { getLocales } from 'expo-localization';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import type { DailyLevel } from '@/domain/dailyWords';
 import { isLanguageCode, studyLanguagesFor, type LanguageCode, type LanguagePair } from '@/domain/languages';
 import type { UiLanguage } from '@/i18n';
 
@@ -17,7 +18,10 @@ type SettingsState = {
   uiLanguage: UiLanguage | 'system';
   nativeLanguage: LanguageCode;
   studyLanguage: LanguageCode;
+  /** Difficulty of the words of the day. */
+  dailyLevel: DailyLevel;
 
+  setDailyLevel: (level: DailyLevel) => void;
   setThemePreference: (preference: ThemePreference) => void;
   setUiLanguage: (language: UiLanguage | 'system') => void;
   setNativeLanguage: (language: LanguageCode) => void;
@@ -42,7 +46,9 @@ export const useSettingsStore = create<SettingsState>()(
       uiLanguage: 'system',
       nativeLanguage: initialNativeLanguage,
       studyLanguage: defaultStudyLanguage(initialNativeLanguage),
+      dailyLevel: 'all',
 
+      setDailyLevel: (dailyLevel) => set({ dailyLevel }),
       setThemePreference: (themePreference) => set({ themePreference }),
       setUiLanguage: (uiLanguage) => set({ uiLanguage }),
 
@@ -59,6 +65,8 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'settings',
+      // New fields with a default (like dailyLevel) need no migration:
+      // persist fills them from the initial state above.
       version: 1,
       storage: persistStorage,
     }

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { radius, spacing, useTheme } from '@/theme';
+import { radius, spacing, touchTarget, useTheme } from '@/theme';
 
 import { AppText } from './AppText';
 
@@ -27,8 +27,12 @@ export function SegmentedControl<T extends string>({ options, value, onChange }:
             accessibilityRole="button"
             accessibilityState={{ selected }}
             onPress={() => onChange(option.value)}
-            style={[styles.segment, selected && { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
-            <AppText variant={selected ? 'bodyBold' : 'body'} color={selected ? 'text' : 'textMuted'}>
+            style={[styles.segment, selected && [styles.selected, { backgroundColor: colors.card, shadowColor: colors.shadow }]]}>
+            <AppText
+              variant={selected ? 'bodyBold' : 'body'}
+              color={selected ? 'text' : 'textMuted'}
+              numberOfLines={1}
+              adjustsFontSizeToFit>
               {option.label}
             </AppText>
           </Pressable>
@@ -49,10 +53,17 @@ const styles = StyleSheet.create({
   segment: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+    minHeight: touchTarget - spacing.xs,
+    paddingHorizontal: spacing.xs,
     borderRadius: radius.sm,
+  },
+  // Only the selected segment is raised: a shadow on a transparent view
+  // would draw around the text on iOS
+  selected: {
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
 });

@@ -3,10 +3,13 @@
 
 import { useSyncExternalStore } from 'react';
 
+import { useActivityStore } from './activityStore';
+import { useDailyStore } from './dailyStore';
 import { useSettingsStore } from './settingsStore';
 import { useWordStore } from './wordStore';
 
-const PERSISTED_STORES = [useSettingsStore, useWordStore];
+/** Every store that uses `persist`. Add new persisted stores here. */
+const PERSISTED_STORES = [useSettingsStore, useWordStore, useActivityStore, useDailyStore];
 
 function allHydrated(): boolean {
   return PERSISTED_STORES.every((store) => store.persist.hasHydrated());

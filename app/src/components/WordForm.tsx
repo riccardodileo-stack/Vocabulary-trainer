@@ -1,7 +1,7 @@
 // Form shared by the "new word" and "edit word" screens.
 
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { LanguagePair } from '@/domain/languages';
 import { normalizeText } from '@/domain/text';
@@ -136,11 +136,9 @@ ${example}` : example });
               multiline
             />
             {drafts.length > 1 ? (
-              <Pressable onPress={() => removeDraft(index)} hitSlop={8} style={styles.remove}>
-                <AppText variant="small" color="danger">
-                  {t.wordForm.removeMeaning}
-                </AppText>
-              </Pressable>
+              <View style={styles.remove}>
+                <Button label={t.wordForm.removeMeaning} tone="danger" size="sm" onPress={() => removeDraft(index)} />
+              </View>
             ) : null}
           </Card>
         ))}

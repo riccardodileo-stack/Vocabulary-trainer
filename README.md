@@ -1,5 +1,7 @@
 # Vocabulary Trainer
 
+> 📱 La nuova app nativa (iOS + Android, Expo) è nella cartella [`app/`](app/README.md): lì trovi come avviarla, le scelte di design e come funziona ogni opzione. Questo README descrive la vecchia web app.
+
 Web app (PWA) per costruire un vocabolario personale inglese ↔ italiano e allenarsi con quiz casuali.
 Funziona offline e salva tutto nel browser (`localStorage`). Non ci sono dipendenze né build: solo HTML, CSS e JavaScript.
 

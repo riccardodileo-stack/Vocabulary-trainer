@@ -7,8 +7,9 @@ import { persist } from 'zustand/middleware';
 
 import { mergeWords, type MergeResult } from '@/domain/backup';
 import type { LanguagePair } from '@/domain/languages';
-import { belongsToPair, createWord, type NewWordInput, type Word } from '@/domain/word';
+import { belongsToPair, createWord, statsAfterAnswer, type NewWordInput, type Word } from '@/domain/word';
 
+import { useActivityStore } from './activityStore';
 import { persistStorage } from './persistStorage';
 
 type WordState = {
@@ -19,9 +20,28 @@ type WordState = {
   removeWord: (id: string) => void;
   /** Adds the words of a backup without creating duplicates. */
   importWords: (imported: Word[]) => Omit<MergeResult, 'words'>;
-  /** Updates the stats of a word after a quiz answer. */
+  /** Updates the stats of a word after a quiz answer and marks today as a training day. */
   recordAnswer: (id: string, correct: boolean) => void;
 };
+
+/**
+ * Saved data of older versions -> current shape. `version` is the number saved
+ * with the data; every step upgrades by one version.
+ */
+function migrate(persisted: unknown, version: number): { words: Word[] } {
+  const state = persisted as { words: Word[] };
+
+  if (version < 2) {
+    // v2 adds stats.lastAnsweredAt (spaced repetition). The best guess for
+    // old words is the last mistake; words never wrong become "new" (due at once).
+    state.words = state.words.map((word) => ({
+      ...word,
+      stats: { ...word.stats, lastAnsweredAt: word.stats.lastAnsweredAt ?? word.stats.lastWrongAt },
+    }));
+  }
+
+  return state;
+}
 
 export const useWordStore = create<WordState>()(
   persist(
@@ -50,27 +70,18 @@ export const useWordStore = create<WordState>()(
         return result;
       },
 
-      recordAnswer: (id, correct) =>
+      recordAnswer: (id, correct) => {
         set((state) => ({
-          words: state.words.map((word) => {
-            if (word.id !== id) {
-              return word;
-            }
-
-            const { stats } = word;
-            return {
-              ...word,
-              stats: correct
-                ? { ...stats, correct: stats.correct + 1, streak: stats.streak + 1 }
-                : { ...stats, wrong: stats.wrong + 1, streak: 0, lastWrongAt: new Date().toISOString() },
-            };
-          }),
-        })),
+          words: state.words.map((word) => (word.id === id ? { ...word, stats: statsAfterAnswer(word.stats, correct) } : word)),
+        }));
+        useActivityStore.getState().markToday();
+      },
     }),
     {
       name: 'words',
-      // Increase and add a `migrate` function when the Word shape changes
-      version: 1,
+      // Increase and extend `migrate` when the saved Word shape changes
+      version: 2,
+      migrate,
       storage: persistStorage,
     }
   )

@@ -1,7 +1,7 @@
 // Looks up example sentences for a word on Tatoeba and lets the user keep some.
 
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import type { LanguagePair } from '@/domain/languages';
 import { useT } from '@/i18n';
@@ -58,11 +58,15 @@ export function ExampleFinder({ pair, term, onAdd }: ExampleFinderProps) {
           <Card key={sentence.id}>
             <AppText variant="bodyBold">{sentence.text}</AppText>
             <AppText color="textMuted">{sentence.translation}</AppText>
-            <Pressable onPress={() => add(sentence)} disabled={added} hitSlop={8} style={styles.add}>
-              <AppText variant="small" color={added ? 'textMuted' : 'primary'}>
-                {added ? t.examples.added : t.examples.add}
-              </AppText>
-            </Pressable>
+            <View style={styles.add}>
+              <Button
+                label={added ? t.examples.added : t.examples.add}
+                tone="secondary"
+                size="sm"
+                disabled={added}
+                onPress={() => add(sentence)}
+              />
+            </View>
           </Card>
         );
       })}

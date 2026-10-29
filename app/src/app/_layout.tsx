@@ -4,9 +4,8 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { Pressable } from 'react-native';
 
-import { AppText } from '@/components/AppText';
+import { HeaderButton } from '@/components/HeaderButton';
 import { useT } from '@/i18n';
 import { useStoresHydrated } from '@/store/useStoresHydrated';
 import { useApplyThemePreference, useTheme } from '@/theme';
@@ -56,13 +55,7 @@ export default function RootLayout() {
           options={{
             presentation: 'modal',
             title: t.settings.title,
-            headerRight: () => (
-              <Pressable onPress={() => router.back()} hitSlop={12}>
-                <AppText variant="bodyBold" color="primary">
-                  {t.settings.done}
-                </AppText>
-              </Pressable>
-            ),
+            headerRight: () => <HeaderButton label={t.settings.done} onPress={() => router.back()} />,
           }}
         />
       </Stack>
