@@ -18,8 +18,8 @@ export type DailyLevel = 'all' | 'beginner' | 'intermediate' | 'advanced';
 export const DAILY_LEVELS: Record<DailyLevel, CefrLevel[]> = {
   all: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
   beginner: ['A1', 'A2'],
-  intermediate: ['B1'],
-  advanced: ['B2', 'C1', 'C2'],
+  intermediate: ['B1', 'B2'],
+  advanced: ['C1', 'C2'],
 };
 
 export type DailySuggestion = {
@@ -103,5 +103,19 @@ export function pickDailySuggestions(entries: BankEntry[], options: PickOptions)
     [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
   }
 
-  return candidates.slice(0, count).map((entry) => suggestionFromEntry(entry, pair));
+  // Two concepts can share a word in some languages (improve / enhance -> "migliorare"):
+  // never suggest the same word twice on the same day
+  const suggestions: DailySuggestion[] = [];
+  const terms = new Set<string>();
+  for (const entry of candidates) {
+    if (suggestions.length >= count) {
+      break;
+    }
+    const suggestion = suggestionFromEntry(entry, pair);
+    if (!terms.has(normalizeText(suggestion.term))) {
+      terms.add(normalizeText(suggestion.term));
+      suggestions.push(suggestion);
+    }
+  }
+  return suggestions;
 }

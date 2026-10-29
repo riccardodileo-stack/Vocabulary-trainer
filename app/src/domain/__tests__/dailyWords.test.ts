@@ -67,6 +67,22 @@ describe('pickDailySuggestions', () => {
     }
   });
 
+  it('suggests C1 and C2 words at the advanced level', () => {
+    const levels = new Set(pick({ level: 'advanced' }).map((suggestion) => suggestion.level));
+    expect([...levels].every((level) => level === 'C1' || level === 'C2')).toBe(true);
+    expect(WORD_BANK.some((entry) => entry.level === 'C2')).toBe(true);
+  });
+
+  it('never suggests the same word twice on one day', () => {
+    // In Italian "improve" and "enhance" both start with "migliorare"
+    for (let day = 1; day <= 28; day++) {
+      const terms = pick({ pair: { source: 'it', target: 'en' }, day: `2026-02-${String(day).padStart(2, '0')}` }).map(
+        (suggestion) => normalizeText(suggestion.term)
+      );
+      expect(new Set(terms).size).toBe(terms.length);
+    }
+  });
+
   it('returns fewer words when the level is exhausted', () => {
     const allIds = new Set(WORD_BANK.map((entry) => entry.id));
     expect(pick({ knownIds: allIds })).toEqual([]);

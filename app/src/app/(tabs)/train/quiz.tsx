@@ -21,6 +21,7 @@ import { TextField, type TextFieldRef } from '@/components/TextField';
 import { buildQuiz, QUIZ_MODES, type QuizMode, type QuizOptions, type QuizQuestion } from '@/domain/quiz';
 import { evaluateAnswer, type AnswerVerdict } from '@/domain/text';
 import { meaningsToText } from '@/domain/word';
+import { useFocusAfterTransition } from '@/hooks/useFocusAfterTransition';
 import { useT } from '@/i18n';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordStore, useWordsOfPair } from '@/store/wordStore';
@@ -47,6 +48,7 @@ export default function QuizScreen() {
   const words = useWordsOfPair(pair);
   const recordAnswer = useWordStore((state) => state.recordAnswer);
   const inputRef = useRef<TextFieldRef>(null);
+  useFocusAfterTransition(inputRef);
 
   // The questions are chosen once per round, so stats updates don't reshuffle them
   const [questions, setQuestions] = useState(() => buildQuiz(words, options));
@@ -88,6 +90,8 @@ export default function QuizScreen() {
     setAnswer('');
     setVerdict(null);
     setMistakes([]);
+    // The answer field appears again with the new round
+    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   /** Ends now: the results count only the questions already answered. */
@@ -208,7 +212,6 @@ export default function QuizScreen() {
           accessibilityLabel={t.quiz.answerPlaceholder}
           autoCapitalize="none"
           autoCorrect={false}
-          autoFocus
           returnKeyType={verdict === null ? 'done' : 'next'}
           submitBehavior="submit"
           onSubmitEditing={verdict === null ? check : next}

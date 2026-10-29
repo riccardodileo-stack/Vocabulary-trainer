@@ -11,21 +11,33 @@ type TabSwipeProps = {
 /**
  * Scrollable page with the app background.
  * contentInsetAdjustmentBehavior keeps content clear of the header and tab bar on iOS.
+ *
+ * The ScrollView is the first view of the screen whenever possible: iOS computes the
+ * space under the header from it, and a wrapper can leave content hidden behind the
+ * header. Only tab roots need the wrapper, to catch the swipe between tabs.
  */
 export function Screen({ tab, contentContainerStyle, style, ...rest }: ScrollViewProps & TabSwipeProps) {
   const { colors } = useTheme();
   const swipeHandlers = useTabSwipe(tab);
 
+  const scrollView = (
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
+      style={[{ backgroundColor: colors.background }, style]}
+      contentContainerStyle={[styles.content, contentContainerStyle]}
+      {...rest}
+    />
+  );
+
+  if (!swipeHandlers) {
+    return scrollView;
+  }
+
   return (
     <View style={styles.container} {...swipeHandlers}>
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        keyboardShouldPersistTaps="handled"
-        automaticallyAdjustKeyboardInsets
-        style={[{ backgroundColor: colors.background }, style]}
-        contentContainerStyle={[styles.content, contentContainerStyle]}
-        {...rest}
-      />
+      {scrollView}
     </View>
   );
 }

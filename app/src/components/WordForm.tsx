@@ -1,11 +1,12 @@
 // Form shared by the "new word" and "edit word" screens.
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { LanguagePair } from '@/domain/languages';
 import { normalizeText } from '@/domain/text';
 import type { NewWordInput, Word } from '@/domain/word';
+import { useFocusAfterTransition } from '@/hooks/useFocusAfterTransition';
 import { useT } from '@/i18n';
 import type { ExampleSentence } from '@/services/tatoeba';
 import { spacing } from '@/theme';
@@ -16,7 +17,7 @@ import { Card } from './Card';
 import { DictionaryLinks } from './DictionaryLinks';
 import { ExampleFinder } from './ExampleFinder';
 import { Section } from './Section';
-import { TextField } from './TextField';
+import { TextField, type TextFieldRef } from './TextField';
 
 type MeaningDraft = { text: string; note: string; examples: string };
 
@@ -75,6 +76,9 @@ export function WordForm({ pair, initialWord, onSave, onDelete }: WordFormProps)
   const [drafts, setDrafts] = useState(() => draftsFromWord(initialWord));
   const [tags, setTags] = useState(initialWord?.tags.join(', ') ?? '');
   const [error, setError] = useState<string | null>(null);
+  const termRef = useRef<TextFieldRef>(null);
+  // New word: start typing at once (but only after the screen has slid in)
+  useFocusAfterTransition(termRef, !initialWord);
 
   const updateDraft = (index: number, changes: Partial<MeaningDraft>) =>
     setDrafts((current) => current.map((draft, i) => (i === index ? { ...draft, ...changes } : draft)));
@@ -110,7 +114,7 @@ ${example}` : example });
           placeholder={t.wordForm.termPlaceholder}
           autoCapitalize="none"
           autoCorrect={false}
-          autoFocus={!initialWord}
+          ref={termRef}
         />
       </Section>
 

@@ -16,11 +16,11 @@ Il README ha due parti:
 
 | Schermata | A cosa serve |
 |-----------|--------------|
-| **Home** | Il "cosa faccio oggi": serie di giorni 🔥, numero di parole e parole imparate, **Ripasso di oggi**, **Parole del giorno**, errori da correggere. |
+| **Home** | Il "cosa faccio oggi": in alto il selettore delle lingue (🇬🇧 Inglese → 🇮🇹, apre le Impostazioni), serie di giorni 🔥, numero di parole e parole imparate, **Ripasso di oggi**, **+ Aggiungi parola**, **Parole del giorno**, errori da correggere. |
 | **Parole** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti, errori), barra di "quanto la so" per ogni parola. Tocca una parola per vedere i progressi e modificarla. |
 | **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da ripassare*, *tutte*, *errori*), quante domande. |
 | **Sfide** | In arrivo (rimandata di proposito). |
-| **Impostazioni** (⚙️) | Tema, lingua studiata, lingua madre, livello delle parole del giorno, lingua dell'app, backup. |
+| **Impostazioni** (dal selettore delle lingue in Home o in Parole) | Tema, lingua studiata, lingua madre, livello delle parole del giorno, lingua dell'app, backup. |
 
 ## Le scelte di design, in una riga ciascuna
 
@@ -33,6 +33,8 @@ Il README ha due parti:
 - **Due lingue dell'interfaccia** (it, en), **cinque lingue di studio** (en, it, es, fr, de), tema chiaro/scuro.
 
 ## Avviare l'app sul telefono
+
+> 📱 Guida dettagliata passo passo per iPhone (Windows, firewall, reti universitarie, problemi comuni): **[SETUP-IPHONE.md](SETUP-IPHONE.md)**.
 
 1. Installa **Expo Go** sul telefono (App Store / Play Store).
 2. Nella cartella `app/`:
@@ -166,7 +168,7 @@ Ogni parola sta in una **"scatola"** che è semplicemente il suo `streak` (rispo
 File: `src/content/wordBank.ts` (dati), `src/domain/dailyWords.ts` (regole), `src/services/dailyWords.ts` (sorgente), `src/store/dailyStore.ts` (memoria), `src/hooks/useDailyWords.ts` (collante), `src/components/DailyWordsCard.tsx` (UI).
 
 ### La lista integrata
-186 parole (39 A1, 50 A2, 53 B1, 44 B2), **ogni riga è un concetto in tutte e cinque le lingue**:
+258 parole, dall'A1 al C2 (39 A1, 50 A2, 53 B1, 44 B2, 40 C1, 32 C2), **ogni riga è un concetto in tutte e cinque le lingue**:
 ```ts
 ['B1', 'battery', 'batteria / pila', 'batería / pila', 'batterie / pile', 'Batterie'],
 //      en         it                 es                fr                 de
@@ -174,10 +176,10 @@ File: `src/content/wordBank.ts` (dati), `src/domain/dailyWords.ts` (regole), `sr
 Così la stessa lista funziona per qualunque coppia: se studi italiano con lingua madre inglese, la parola è `batteria` e la traduzione `battery`. Le alternative separate da ` / ` sono: la **prima** è la parola suggerita, **tutte** sono accettate come traduzione.
 
 ### Come vengono scelte
-1. Si tengono le parole del **livello** scelto (Impostazioni: Tutti / A1–A2 / B1 / B2).
+1. Si tengono le parole del **livello** scelto (Impostazioni: Tutti / A1–A2 / B1–B2 / C1–C2).
 2. Si tolgono quelle **già nel vocabolario** (qualsiasi alternativa) e quelle segnate **"La so già"**.
 3. Si mescolano con un generatore casuale **con seme** = `giorno + coppia di lingue`: lo stesso giorno escono sempre le stesse parole, il giorno dopo altre.
-4. Si prendono le prime 5.
+4. Si prendono le prime 5, saltando i doppioni: in alcune lingue due concetti hanno la stessa parola (*improve* e *enhance* → "migliorare") e non devono uscire insieme.
 
 Il risultato viene **salvato** in `dailyStore` (con giorno e livello): così aggiungendo una parola la lista non cambia sotto le dita. Si ricalcola solo quando cambia il giorno, la coppia di lingue o il livello.
 
@@ -309,15 +311,17 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 - Minimo 44 pt per bottoni, segmenti, chip e bottoni-icona.
 - Etichette per screen reader su icone e azioni ripetute ("Aggiungi *quiet* alle mie parole").
 - La barra di avanzamento e il misuratore annunciano il loro valore; il risultato della risposta è una *live region*.
+- I campi che devono essere pronti per scrivere (risposta del quiz, nuova parola) prendono il focus **solo a fine animazione** (`hooks/useFocusAfterTransition.ts`), non con `autoFocus`: su iOS la tastiera aperta durante l'animazione faceva scorrere la pagina sotto l'intestazione.
+- `Screen` mette lo ScrollView come prima vista della schermata (il contenitore extra serve solo alle tab per lo swipe): iOS calcola da lì lo spazio sotto l'intestazione.
 
 ## 10. Test
 
-`npm test` esegue i test in `src/domain/__tests__/` (36 test): correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello), serie di giorni.
+`npm test` esegue i test in `src/domain/__tests__/` (38 test): correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello), serie di giorni.
 Sono test della logica pura: girano in un secondo, senza telefono.
 
 ## 11. Limiti noti e prossimi passi
 
 - **Sfide**: rimandate. L'idea più semplice senza server è un codice/link che contiene le parole e il punteggio da battere.
 - **Versione web**: non è un obiettivo. Funziona per prove veloci (`npx expo start --web`), ma la barra delle tab nativa sul web si sovrappone all'intestazione.
-- **Parole del giorno**: la lista integrata ha 186 parole. Con 5 al giorno bastano per più di un mese col livello *Tutti*, ma per circa 10 giorni con un livello singolo. Il passo naturale è il server descritto sopra (o allungare la lista: basta aggiungere righe).
+- **Parole del giorno**: la lista integrata ha 258 parole. Con 5 al giorno bastano per circa 50 giorni col livello *Tutti* e per 2–3 settimane con un livello singolo (A1–A2: 89, B1–B2: 97, C1–C2: 72). Il passo naturale è il server descritto sopra (o allungare la lista: basta aggiungere righe).
 - **Notifiche** ("hai 12 parole da ripassare"): richiedono `expo-notifications` e una development build.

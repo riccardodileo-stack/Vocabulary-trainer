@@ -16,7 +16,7 @@ export const en = {
     save: 'Save',
     retry: 'Try again',
     languagePair: (source: string, target: string) => `${source} to ${target}`,
-    changeLanguages: 'Opens the settings to change languages',
+    changeLanguages: 'Opens the settings: languages, theme, backup',
   },
   home: {
     greeting: 'Hi!',
@@ -29,6 +29,7 @@ export const en = {
     reviewStart: 'Start review',
     reviewDone: 'All reviewed. Come back tomorrow!',
     reviewNoWords: 'Add some words (or the words of the day) to start reviewing.',
+    addWord: '+ Add word',
     mistakesTitle: 'Fix your mistakes',
     mistakesSubtitle: 'Train only on the words you got wrong.',
     mistakesCount: (count: number) => (count === 1 ? '1 word to fix' : `${count} words to fix`),
@@ -157,7 +158,7 @@ export const en = {
     done: 'Done',
     dailyLevel: 'Words of the day',
     dailyLevelAll: 'All',
-    dailyLevelHint: 'Level of the suggested words: A1–A2 beginner, B1 intermediate, B2 advanced.',
+    dailyLevelHint: 'Level of the suggested words: A1–A2 beginner, B1–B2 intermediate, C1–C2 advanced.',
     resetKnown: (count: number) =>
       count === 1 ? 'Suggest again 1 word marked as known' : `Suggest again ${count} words marked as known`,
     backup: 'Backup',

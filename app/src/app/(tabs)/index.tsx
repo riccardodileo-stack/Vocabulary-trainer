@@ -9,7 +9,6 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { DailyWordsCard } from '@/components/DailyWordsCard';
-import { IconButton } from '@/components/IconButton';
 import { LanguagePairChip } from '@/components/LanguagePairChip';
 import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
@@ -25,6 +24,10 @@ import { spacing } from '@/theme';
 
 function openSettings() {
   router.push('/settings');
+}
+
+function openNewWord() {
+  router.push('/words/new');
 }
 
 function openQuiz(mode: 'due' | 'mistakes') {
@@ -50,10 +53,9 @@ export default function HomeScreen() {
         <AppText variant="hero" accessibilityRole="header">
           {t.home.greeting}
         </AppText>
-        <IconButton icon="⚙️" onPress={openSettings} accessibilityLabel={t.settings.title} />
+        {/* The chip is also the way to the settings (languages, theme, backup) */}
+        <LanguagePairChip pair={pair} onPress={openSettings} />
       </View>
-
-      <LanguagePairChip pair={pair} onPress={openSettings} />
 
       <View style={styles.stats}>
         <StatTile icon="🔥" value={streak} label={t.home.streak(streak)} />
@@ -77,6 +79,9 @@ export default function HomeScreen() {
         )}
       </Card>
 
+      {/* With no words to review, adding one is the main action of the screen */}
+      <Button label={t.home.addWord} tone={words.length === 0 ? 'primary' : 'secondary'} onPress={openNewWord} />
+
       <DailyWordsCard />
 
       {mistakesCount > 0 ? (
@@ -95,6 +100,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: spacing.md,
   },
   stats: {
     flexDirection: 'row',

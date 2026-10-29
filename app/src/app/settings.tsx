@@ -25,8 +25,8 @@ export default function SettingsScreen() {
   const dailyLevelOptions: { value: DailyLevel; label: string }[] = [
     { value: 'all', label: t.settings.dailyLevelAll },
     { value: 'beginner', label: 'A1–A2' },
-    { value: 'intermediate', label: 'B1' },
-    { value: 'advanced', label: 'B2' },
+    { value: 'intermediate', label: 'B1–B2' },
+    { value: 'advanced', label: 'C1–C2' },
   ];
 
   const languageOption = (code: LanguageCode) => ({

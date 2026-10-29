@@ -17,7 +17,7 @@ export const it: Translations = {
     save: 'Salva',
     retry: 'Riprova',
     languagePair: (source: string, target: string) => `Da ${source} a ${target}`,
-    changeLanguages: 'Apre le impostazioni per cambiare lingua',
+    changeLanguages: 'Apre le impostazioni: lingue, tema, backup',
   },
   home: {
     greeting: 'Ciao!',
@@ -30,6 +30,7 @@ export const it: Translations = {
     reviewStart: 'Inizia il ripasso',
     reviewDone: 'Tutto ripassato. Torna domani!',
     reviewNoWords: 'Aggiungi qualche parola (o le parole del giorno) per iniziare a ripassare.',
+    addWord: '+ Aggiungi parola',
     mistakesTitle: 'Correggi i tuoi errori',
     mistakesSubtitle: 'Allenati solo sulle parole che hai sbagliato.',
     mistakesCount: (count: number) => (count === 1 ? '1 parola da correggere' : `${count} parole da correggere`),
@@ -158,7 +159,7 @@ export const it: Translations = {
     done: 'Fine',
     dailyLevel: 'Parole del giorno',
     dailyLevelAll: 'Tutti',
-    dailyLevelHint: 'Livello delle parole suggerite: A1–A2 base, B1 intermedio, B2 avanzato.',
+    dailyLevelHint: 'Livello delle parole suggerite: A1–A2 base, B1–B2 intermedio, C1–C2 avanzato.',
     resetKnown: (count: number) =>
       count === 1 ? 'Suggerisci di nuovo 1 parola segnata come conosciuta' : `Suggerisci di nuovo ${count} parole segnate come conosciute`,
     backup: 'Backup',
