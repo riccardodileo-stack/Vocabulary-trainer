@@ -1,6 +1,6 @@
 // Root of the app: loads saved data, applies the theme and declares
-// the top-level screens (the tab bar, the settings, the language sheet and the
-// medal sheet). It also mounts the tracker that dates the medal levels.
+// the top-level screens (the tab bar, the settings, the language sheet, the
+// medal sheet and the medals-per-level sheet). It also mounts the tracker that dates the medal levels.
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -69,6 +69,16 @@ export default function RootLayout() {
             presentation: 'formSheet',
             sheetGrabberVisible: true,
             sheetAllowedDetents: [0.75, 1],
+            sheetCornerRadius: 28,
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="medals"
+          options={{
+            presentation: 'formSheet',
+            sheetGrabberVisible: true,
+            sheetAllowedDetents: [0.6, 1],
             sheetCornerRadius: 28,
             headerShown: false,
           }}

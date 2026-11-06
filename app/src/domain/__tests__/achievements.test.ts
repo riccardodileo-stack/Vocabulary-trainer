@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { longestStreak } from '../activity';
-import { computeAchievements, estimateReachedAt, missingFor, reachedTiers, tierKey, tiersEarned } from '../achievements';
+import { computeAchievements, estimateReachedAt, missingFor, reachedTiers, tierCounts, tierKey, tiersEarned } from '../achievements';
 import { createWord } from '../word';
 import { makeWord } from './helpers';
 
@@ -31,11 +31,14 @@ describe('achievements', () => {
     expect(diamond.progress).toBe(1);
   });
 
-  it('measures progress from the current tier to the next one', () => {
+  it('measures progress as value / next target, like the "60/100" shown under the bar', () => {
     const medal = byId(computeAchievements({ words: words(60), bestStreak: 0, perfectQuizzes: 0 })).words;
     expect(medal.tier).toBe('bronze');
     expect(medal.next).toEqual({ tier: 'silver', target: 100 });
-    expect(medal.progress).toBeCloseTo((60 - 20) / (100 - 20));
+    expect(medal.progress).toBeCloseTo(0.6);
+
+    // The reported case: 729 words toward diamond (1000) is 73%, not 46%
+    expect(byId(computeAchievements({ words: words(729), bestStreak: 0, perfectQuizzes: 0 })).words.progress).toBeCloseTo(0.729);
   });
 
   it('counts learned words, correct answers, best streak and perfect quizzes', () => {
@@ -47,6 +50,8 @@ describe('achievements', () => {
     expect(medals.streak.tier).toBe('silver'); // best streak 8
     expect(medals.perfect.tier).toBe('silver');
     expect(tiersEarned(Object.values(medals))).toBe(1 + 1 + 2 + 2);
+    // Every level counts one: 4 bronzes (all four medals) and 2 silvers
+    expect(tierCounts(Object.values(medals))).toEqual({ bronze: 4, silver: 2, gold: 0, diamond: 0 });
   });
 
   it('counts studied languages for "polyglot"', () => {

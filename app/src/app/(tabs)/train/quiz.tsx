@@ -12,13 +12,14 @@ import { AppText } from '@/components/AppText';
 import { Appear } from '@/components/Appear';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { DictionaryLinks } from '@/components/DictionaryLinks';
 import { HeaderButton } from '@/components/HeaderButton';
+import { HighlightedText } from '@/components/HighlightedText';
 import { Pill } from '@/components/Pill';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
 import { TextField, type TextFieldRef } from '@/components/TextField';
+import { splitExample } from '@/domain/highlight';
 import { buildQuiz, QUIZ_MODES, type QuizMode, type QuizOptions, type QuizQuestion } from '@/domain/quiz';
 import { evaluateAnswer, type AnswerVerdict } from '@/domain/text';
 import { meaningsToText } from '@/domain/word';
@@ -259,14 +260,27 @@ export default function QuizScreen() {
         {verdict && examples.length > 0 ? (
           <Section title={t.quiz.examples}>
             <Card>
-              {examples.map((example) => (
-                <AppText key={example}>• {example}</AppText>
-              ))}
+              {examples.map((example) => {
+                // The word in bold in the sentence, its translations in bold in the translation
+                const { sentence, translation } = splitExample(example);
+                return (
+                  <View key={example}>
+                    <HighlightedText text={`• ${sentence}`} terms={[question.word.term]} language={pair.source} />
+                    {translation ? (
+                      <HighlightedText
+                        text={translation}
+                        terms={question.word.meanings.map((meaning) => meaning.text)}
+                        language={pair.target}
+                        color="textMuted"
+                        style={styles.translation}
+                      />
+                    ) : null}
+                  </View>
+                );
+              })}
             </Card>
           </Section>
         ) : null}
-
-        {verdict ? <DictionaryLinks pair={pair} term={question.word.term} /> : null}
 
         <View style={styles.actions}>
           {verdict === null ? (
@@ -298,5 +312,8 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: spacing.md,
+  },
+  translation: {
+    marginLeft: spacing.md,
   },
 });

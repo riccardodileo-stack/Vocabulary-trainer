@@ -4,6 +4,7 @@ import { MEDAL_TIERS, type Achievement } from '@/domain/achievements';
 import { barHeight, fontSize, radius, spacing, useTheme } from '@/theme';
 
 import { AppText } from './AppText';
+import { ProgressBar } from './ProgressBar';
 
 type MedalBadgeProps = {
   achievement: Achievement;
@@ -50,16 +51,15 @@ export function MedalBadge({ achievement, title, tierLabel, accessibilityLabel, 
         ))}
       </View>
 
-      {tierLabel ? (
-        <AppText variant="caption" color="textMuted">
-          {tierLabel}
-        </AppText>
-      ) : null}
+      {/* Always one line, empty when no level is reached yet: every badge has the same height */}
+      <AppText variant="caption" color="textMuted" numberOfLines={1}>
+        {tierLabel ?? ' '}
+      </AppText>
 
       {next ? (
         <View style={styles.progressRow}>
-          <View style={[styles.track, { backgroundColor: colors.track }]}>
-            <View style={[styles.fill, { width: `${progress * 100}%`, backgroundColor: colors[next.tier] }]} />
+          <View style={styles.bar}>
+            <ProgressBar progress={progress} color={colors[next.tier]} size="sm" />
           </View>
           <AppText variant="caption" color="textMuted">
             {value}/{next.target}
@@ -113,15 +113,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
-  track: {
+  bar: {
     alignSelf: 'stretch',
-    height: barHeight / 2,
-    borderRadius: radius.pill,
-    overflow: 'hidden',
     marginHorizontal: spacing.sm,
-  },
-  fill: {
-    height: '100%',
-    borderRadius: radius.pill,
   },
 });

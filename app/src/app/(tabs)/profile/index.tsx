@@ -16,7 +16,7 @@ import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
 import { StatTile } from '@/components/StatTile';
-import type { Achievement } from '@/domain/achievements';
+import { MEDAL_TIERS, tiersEarned, type Achievement } from '@/domain/achievements';
 import { LANGUAGES } from '@/domain/languages';
 import { useAchievements } from '@/hooks/useAchievements';
 import { useT, useUiLanguage } from '@/i18n';
@@ -48,8 +48,9 @@ export default function ProfileScreen() {
   // The user's name is the page title; "Profile" until a name is chosen
   const title = profile.name || t.profile.title;
   const achievements = useAchievements();
-  /** Medals with at least bronze. */
-  const medalsWon = achievements.filter((achievement) => achievement.tier).length;
+  // Every level counts one (a gold medal = bronze + silver + gold): "9/24"
+  const levelsWon = tiersEarned(achievements);
+  const levelsTotal = achievements.length * MEDAL_TIERS.length;
 
   const memberSince = new Intl.DateTimeFormat(uiLanguage, { month: 'long', year: 'numeric' }).format(
     new Date(profile.createdAt)
@@ -116,7 +117,13 @@ export default function ProfileScreen() {
         <View style={styles.stats}>
           <StatTile icon="👥" value={profile.friendsCount} label={t.profile.friendsStat(profile.friendsCount)} />
           <StatTile icon="🔥" value={bestStreak} label={t.profile.bestStreakStat} />
-          <StatTile icon="🏅" value={`${medalsWon}/${achievements.length}`} label={t.profile.medalsStat} />
+          <StatTile
+            icon="🏅"
+            value={`${levelsWon}/${levelsTotal}`}
+            label={t.profile.medalsStat}
+            onPress={() => router.push('/medals')}
+            accessibilityHint={t.medalsSheet.hint}
+          />
         </View>
 
         <Section title={t.profile.medalsTitle}>

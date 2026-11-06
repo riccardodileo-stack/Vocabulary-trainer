@@ -8,13 +8,11 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ProgressBar } from '@/components/ProgressBar';
-import { MEDAL_TIERS, missingFor, tierKey, type MedalTier } from '@/domain/achievements';
+import { MEDAL_TIERS, missingFor, TIER_ICONS, tierKey } from '@/domain/achievements';
 import { useAchievements } from '@/hooks/useAchievements';
 import { useT, useUiLanguage } from '@/i18n';
 import { useAchievementStore } from '@/store/achievementStore';
 import { fontSize, radius, spacing, useTheme } from '@/theme';
-
-const TIER_ICONS: Record<MedalTier, string> = { bronze: '🥉', silver: '🥈', gold: '🥇', diamond: '💎' };
 
 const MEDAL_SIZE = 88;
 

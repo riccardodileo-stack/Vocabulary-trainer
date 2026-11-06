@@ -31,7 +31,8 @@ const LEADING_WORDS: Record<LanguageCode, string[]> = {
   de: ['der', 'die', 'das', 'ein', 'eine', 'einen'],
 };
 
-function stripLeadingWord(text: string, language: LanguageCode | undefined): string {
+/** "the battery" -> "battery", "to run" -> "run" (only the first word, only for that language). */
+export function stripLeadingWord(text: string, language: LanguageCode | undefined): string {
   if (!language) {
     return text;
   }

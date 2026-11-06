@@ -98,8 +98,15 @@ export const it: Translations = {
     deleteConfirmMessage: 'Anche le sue statistiche andranno perse.',
     notFound: 'Questa parola non esiste più.',
   },
+  meanings: {
+    find: '📖 Cerca significati',
+    none: 'Nessun significato trovato per questa parola.',
+    error: 'Impossibile caricare i significati. Controlla la connessione.',
+    addAccessibility: (meaning: string) => `Aggiungi ${meaning} ai significati`,
+    credit: 'Tocca un significato per aggiungerlo. Traduzioni da MyMemory.',
+  },
   examples: {
-    title: 'Esempi e dizionari',
+    title: 'Frasi di esempio',
     find: '🔎 Cerca frasi di esempio',
     none: 'Nessuna frase trovata per questa parola.',
     error: 'Impossibile caricare le frasi. Controlla la connessione.',
@@ -264,6 +271,13 @@ export const it: Translations = {
     share: 'Condividi il mio codice',
     shareMessage: (code: string) => `Aggiungimi su Vocabulary Trainer! Il mio codice amico è ${code}`,
     codeAccessibility: (code: string) => `Codice amico ${code.split('').join(' ')}`,
+  },
+  medalsSheet: {
+    title: 'Le tue medaglie',
+    subtitle: 'Ogni livello vale uno: una medaglia d\'oro conta come bronzo, argento e oro.',
+    total: 'Livelli conquistati',
+    count: (count: number, total: number) => `${count} su ${total}`,
+    hint: 'Mostra quante medaglie hai per livello',
   },
   medalSheet: {
     yourProgress: 'I tuoi progressi',

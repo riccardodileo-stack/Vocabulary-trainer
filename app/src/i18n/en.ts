@@ -97,8 +97,15 @@ export const en = {
     deleteConfirmMessage: 'Its statistics will be lost too.',
     notFound: 'This word no longer exists.',
   },
+  meanings: {
+    find: '📖 Find meanings',
+    none: 'No meanings found for this word.',
+    error: 'Meanings could not be loaded. Check your connection.',
+    addAccessibility: (meaning: string) => `Add ${meaning} to the meanings`,
+    credit: 'Tap a meaning to add it. Translations from MyMemory.',
+  },
   examples: {
-    title: 'Examples and dictionaries',
+    title: 'Example sentences',
     find: '🔎 Find example sentences',
     none: 'No sentences found for this word.',
     error: 'Sentences could not be loaded. Check your connection.',
@@ -263,6 +270,13 @@ export const en = {
     share: 'Share my code',
     shareMessage: (code: string) => `Add me on Vocabulary Trainer! My friend code is ${code}`,
     codeAccessibility: (code: string) => `Friend code ${code.split('').join(' ')}`,
+  },
+  medalsSheet: {
+    title: 'Your medals',
+    subtitle: 'Every level counts one: a gold medal counts as bronze, silver and gold.',
+    total: 'Levels won',
+    count: (count: number, total: number) => `${count} of ${total}`,
+    hint: 'Shows how many medals you have per level',
   },
   medalSheet: {
     yourProgress: 'Your progress',

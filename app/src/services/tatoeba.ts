@@ -27,7 +27,7 @@ function exactQuery(term: string): string {
 export async function fetchExampleSentences(
   { source, target }: LanguagePair,
   term: string,
-  limit = 5
+  limit = 3
 ): Promise<ExampleSentence[]> {
   const params = new URLSearchParams({
     lang: LANGUAGES[source].tatoeba,

@@ -1,13 +1,13 @@
 // Languages the user can study or use as native (translation) language.
-// To add a language: add it here, then check its dictionary links in dictionaries.ts.
-// `englishName` is used in Reverso links, `tatoeba` is the code of the sentences service.
+// To add a language: add it here (and its words to the word bank).
+// `tatoeba` is the code of the sentences service.
 
 export const LANGUAGES = {
-  en: { flag: '🇬🇧', nativeName: 'English', englishName: 'english', tatoeba: 'eng' },
-  it: { flag: '🇮🇹', nativeName: 'Italiano', englishName: 'italian', tatoeba: 'ita' },
-  es: { flag: '🇪🇸', nativeName: 'Español', englishName: 'spanish', tatoeba: 'spa' },
-  fr: { flag: '🇫🇷', nativeName: 'Français', englishName: 'french', tatoeba: 'fra' },
-  de: { flag: '🇩🇪', nativeName: 'Deutsch', englishName: 'german', tatoeba: 'deu' },
+  en: { flag: '🇬🇧', nativeName: 'English', tatoeba: 'eng' },
+  it: { flag: '🇮🇹', nativeName: 'Italiano', tatoeba: 'ita' },
+  es: { flag: '🇪🇸', nativeName: 'Español', tatoeba: 'spa' },
+  fr: { flag: '🇫🇷', nativeName: 'Français', tatoeba: 'fra' },
+  de: { flag: '🇩🇪', nativeName: 'Deutsch', tatoeba: 'deu' },
 } as const;
 
 export type LanguageCode = keyof typeof LANGUAGES;

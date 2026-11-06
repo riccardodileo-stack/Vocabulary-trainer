@@ -117,7 +117,7 @@ npm test            # test della logica (jest)
                    src/domain/  (zero React, zero salvataggio, testato)
                    word · quiz · review · text · dates · dailyWords · activity · backup
                                ▲
-   src/services/ ──────────────┘   (mondo esterno: file, Tatoeba, sorgente parole del giorno)
+   src/services/ ──────────────┘   (mondo esterno: file, Tatoeba, MyMemory, sorgente parole del giorno)
    src/content/wordBank.ts          (dati: lista integrata delle parole del giorno)
 ```
 
@@ -233,7 +233,7 @@ File: `src/domain/quiz.ts`, `src/app/(tabs)/train/quiz.tsx`.
 
 **Numero di domande**: 10, 20, *Tutte* o *Altro*. Con *Altro* compare un selettore − [numero] + (si può anche scrivere il numero): da 1 a 200 (`clampQuizCount` in `domain/quiz.ts`). Se le parole disponibili sono meno, il quiz le chiede tutte. L'ultima scelta e il numero personalizzato restano salvati (`quizCountChoice`, `quizCustomCount` in `settingsStore`).
 
-**Durante il quiz**: barra di avanzamento; *Non lo so* conta come errore; **Termina** (in alto) chiude il quiz e mostra il risultato delle sole domande risposte. Dopo la risposta compaiono esempi e link ai dizionari (WordReference, Reverso).
+**Durante il quiz**: barra di avanzamento; *Non lo so* conta come errore; **Termina** (in alto) chiude il quiz e mostra il risultato delle sole domande risposte. Dopo la risposta compaiono le frasi di esempio della parola, con la parola in grassetto (e la traduzione in grassetto nella frase tradotta).
 **Risultati**: punteggio, elenco errori, **Rifai gli errori** (un nuovo giro solo su quelle parole), *Allenati ancora*.
 
 Ogni risposta aggiorna subito le statistiche della parola e segna oggi come giorno di allenamento.
@@ -264,7 +264,10 @@ Un giorno conta se hai risposto ad almeno una domanda. La serie è il numero di 
 - **Lista** (`words/index.tsx`): `FlatList` virtualizzata (fluida con centinaia di parole), ricerca su parola/traduzioni/tag, ordinamento *A–Z* e *Recenti*. **Errori** è anche un filtro: mostra solo le parole sbagliate almeno una volta (`stats.wrong > 0`, anche se poi corrette), dalla più sbagliata, con i contatori *N errori* e *N giuste*; in alto il numero di parole sbagliate. Quando cambia ordine o filtro le righe scivolano al nuovo posto. Ogni riga mostra la barra a 5 segmenti della scatola Leitner.
 - **Dettaglio** (`words/[id].tsx`): card **Progressi** (giuste/sbagliate, prossimo ripasso: oggi / domani / tra N giorni) + modulo di modifica.
 - **Nuova parola**: niente duplicati nella stessa coppia (confronto senza maiuscole/spazi).
-- **Frasi di esempio**: da [Tatoeba](https://tatoeba.org) (CC BY), con traduzione nella lingua madre; ogni frase aggiunta va sotto la traduzione che contiene.
+- **Cerca significati** (sotto il campo *Parola*): chiede le traduzioni a [MyMemory](https://mymemory.translated.net) (memoria di traduzione gratuita, senza account; limite anonimo ~5000 caratteri al giorno per dispositivo) e le mostra come chip. Toccandone una va nel primo campo traduzione vuoto, o in una traduzione nuova; quelle già presenti hanno ✓. `domain/meanings.ts` (`pickMeanings`) tiene solo le voci per quella parola esatta, toglie duplicati, la parola non tradotta e le frasi lunghe, e ordina per affidabilità (max 6); `services/meanings.ts` fa la chiamata. Per cambiare fonte basta riscrivere `fetchMeanings`.
+- **Frasi di esempio**: da [Tatoeba](https://tatoeba.org) (CC BY), al massimo 3, con traduzione nella lingua madre; ogni frase aggiunta va sotto la traduzione che contiene.
+- **Parola in grassetto negli esempi** (`domain/highlight.ts`, componente `HighlightedText`): nella frase la parola studiata, nella traduzione i suoi significati. Trova anche altre forme (*noioso → noiose*, *run → running*, *try → tries*) senza prendere parole diverse (*run* non evidenzia *runway*); ignora maiuscole, accenti e l'articolo o il "to" iniziale; una parola di più termini (*give up*) è in grassetto solo dove compare intera.
+- Niente più link a WordReference e Reverso: i significati e gli esempi si vedono direttamente nell'app.
 
 ## 8. Backup
 
@@ -302,9 +305,9 @@ La **versione 3** di `profileStore` trasforma il vecchio "nome utente" in *nome*
 | 🎉 Quiz perfetti | quiz completati di almeno 5 domande senza errori | 1 | 5 | 20 | 50 |
 | 🌍 Poliglotta | lingue studiate con almeno una parola | 2 | 3 | 4 | 5 |
 
-Ogni medaglia mostra: il cerchio del colore del livello raggiunto (grigio e sbiadito se nessuno), quattro pallini per i livelli, il nome del livello e una barra verso il **prossimo** livello, nel suo colore (es. `120/500` verso l'oro). Toccandola sale dal basso una **finestra della medaglia** (`src/app/medal/[id].tsx`, presentata come *form sheet* nativo): i tuoi progressi (es. `120 / 500`, anche oltre il diamante: `1240 / 1000`), e per ognuno dei quattro livelli l'obiettivo, la **data in cui l'hai raggiunto** oppure quanti ne mancano (`Ne mancano 380 · 120/500`), con una barra sul prossimo livello.
+Ogni medaglia mostra: il cerchio del colore del livello raggiunto (grigio e sbiadito se nessuno), quattro pallini per i livelli, il nome del livello e una barra verso il **prossimo** livello, nel suo colore: è riempita per `valore / obiettivo` (es. `120/500` verso l'oro = 24%), la stessa proporzione dei numeri scritti sotto. Toccandola sale dal basso una **finestra della medaglia** (`src/app/medal/[id].tsx`, presentata come *form sheet* nativo): i tuoi progressi (es. `120 / 500`, anche oltre il diamante: `1240 / 1000`), e per ognuno dei quattro livelli l'obiettivo, la **data in cui l'hai raggiunto** oppure quanti ne mancano (`Ne mancano 380 · 120/500`), con una barra sul prossimo livello.
 
-**Date dei livelli.** Le medaglie sono calcolate, ma le date vanno salvate: `achievementStore` tiene la data di ogni livello (`"words:silver"` → data). Le registra `AchievementTracker` (`hooks/useAchievements.ts`), un componente invisibile nel layout principale che, ogni volta che cambiano parole o attività, data i livelli appena raggiunti, ovunque tu sia nell'app. Per i livelli raggiunti prima che le date esistessero si usa la stima migliore: per *Vocabolario* il giorno in cui hai aggiunto l'N-esima parola, per *Costanza* il giorno in cui hai completato la prima serie abbastanza lunga; per gli altri la data del primo avvio con questa versione. Il riquadro in alto conta le medaglie con almeno il bronzo (es. `4/6`). Il record di giorni e i quiz perfetti sono salvati in `activityStore`; la sua versione 2 ricostruisce il record dai giorni già salvati, quindi chi aveva già l'app non perde nulla.
+**Date dei livelli.** Le medaglie sono calcolate, ma le date vanno salvate: `achievementStore` tiene la data di ogni livello (`"words:silver"` → data). Le registra `AchievementTracker` (`hooks/useAchievements.ts`), un componente invisibile nel layout principale che, ogni volta che cambiano parole o attività, data i livelli appena raggiunti, ovunque tu sia nell'app. Per i livelli raggiunti prima che le date esistessero si usa la stima migliore: per *Vocabolario* il giorno in cui hai aggiunto l'N-esima parola, per *Costanza* il giorno in cui hai completato la prima serie abbastanza lunga; per gli altri la data del primo avvio con questa versione. Il riquadro *medaglie* in alto conta i **livelli** conquistati: ogni livello vale uno, quindi una medaglia d'oro conta 3 (bronzo + argento + oro), su un totale di 6 × 4 = 24 (es. `8/24`). Toccandolo sale dal basso la finestra **Le tue medaglie** (`src/app/medals.tsx`): il totale e, dal diamante al bronzo, quante medaglie hanno quel livello (`2 su 6`) con le loro icone (`tierCounts` in `domain/achievements.ts`). Nella griglia ogni medaglia ha sempre la riga del livello (vuota se non ancora raggiunto), così sono tutte alte uguali e allineate. Il record di giorni e i quiz perfetti sono salvati in `activityStore`; la sua versione 2 ricostruisce il record dai giorni già salvati, quindi chi aveva già l'app non perde nulla.
 
 **Amici.** Il contatore c'è già (sempre 0) e la sezione dice che arriveranno presto: aggiungere amici richiede il server.
 
@@ -404,7 +407,8 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 | `ProgressBar` | avanzamento 0–1, annunciato dallo screen reader |
 | `MasteryMeter` | 5 segmenti = scatola Leitner della parola |
 | `Screen` / `ListScreen` | pagina scorrevole / lista lunga virtualizzata, con swipe tra le tab |
-| `DailyWordsCard`, `WordStatsCard`, `WordForm`, `ExampleFinder`, `DictionaryLinks`, `LanguagePairChip` | blocchi specifici dell'app |
+| `HighlightedText` | testo con alcune parole in grassetto (la parola studiata negli esempi) |
+| `DailyWordsCard`, `WordStatsCard`, `WordForm`, `MeaningFinder`, `ExampleFinder`, `LanguagePairChip` | blocchi specifici dell'app |
 
 ### Accessibilità
 - Contrasto AA su tutti i testi (vedi sopra).

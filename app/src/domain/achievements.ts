@@ -55,7 +55,10 @@ export type Achievement = {
   tier: MedalTier | null;
   /** Next tier and its target, or null when diamond is reached. */
   next: { tier: MedalTier; target: number } | null;
-  /** 0–1 progress from the current tier's target to the next one's. */
+  /**
+   * 0–1 progress toward the next tier: value / its target (729 words -> 729/1000).
+   * Same ratio as the "729/1000" written under the bar, so the two always agree.
+   */
   progress: number;
 };
 
@@ -65,8 +68,7 @@ export function computeAchievement(rule: AchievementRule, stats: AchievementStat
   const tier = reached > 0 ? MEDAL_TIERS[reached - 1] : null;
   const next = reached < MEDAL_TIERS.length ? { tier: MEDAL_TIERS[reached], target: rule.targets[reached] } : null;
 
-  const from = reached > 0 ? rule.targets[reached - 1] : 0;
-  const progress = next ? Math.min(Math.max((value - from) / (next.target - from), 0), 1) : 1;
+  const progress = next ? Math.min(Math.max(value / next.target, 0), 1) : 1;
 
   return { id: rule.id, icon: rule.icon, targets: rule.targets, value, tier, next, progress };
 }
@@ -76,6 +78,22 @@ export function computeAchievements(stats: AchievementStats): Achievement[] {
 }
 
 /** Tiers reached over all medals (e.g. bronze + silver of one medal = 2). */
+/** Emoji of each level, for lists and sheets. */
+export const TIER_ICONS: Record<MedalTier, string> = { bronze: '🥉', silver: '🥈', gold: '🥇', diamond: '💎' };
+
+/**
+ * How many medals reached each level. A medal at gold counts once for bronze,
+ * once for silver and once for gold: every level won counts one.
+ */
+export function tierCounts(achievements: Achievement[]): Record<MedalTier, number> {
+  const counts: Record<MedalTier, number> = { bronze: 0, silver: 0, gold: 0, diamond: 0 };
+  for (const achievement of achievements) {
+    reachedTiers(achievement).forEach((tier) => counts[tier]++);
+  }
+  return counts;
+}
+
+/** Levels won in total (the "9/24" in Profile): the sum of tierCounts. */
 export function tiersEarned(achievements: Achievement[]): number {
   return achievements.reduce((sum, achievement) => sum + (achievement.tier ? MEDAL_TIERS.indexOf(achievement.tier) + 1 : 0), 0);
 }

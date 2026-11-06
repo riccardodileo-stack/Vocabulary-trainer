@@ -1,4 +1,5 @@
 // Looks up example sentences for a word on Tatoeba and lets the user keep some.
+// The word is in bold in the sentence, its translations in bold in the translation.
 
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -11,16 +12,19 @@ import { useTheme } from '@/theme';
 import { AppText } from './AppText';
 import { Button } from './Button';
 import { Card } from './Card';
+import { HighlightedText } from './HighlightedText';
 
 type ExampleFinderProps = {
   pair: LanguagePair;
   term: string;
+  /** Translations typed so far: shown in bold in the translated sentence. */
+  meanings: string[];
   onAdd: (sentence: ExampleSentence) => void;
 };
 
 type Status = 'idle' | 'loading' | 'done' | 'error';
 
-export function ExampleFinder({ pair, term, onAdd }: ExampleFinderProps) {
+export function ExampleFinder({ pair, term, meanings, onAdd }: ExampleFinderProps) {
   const t = useT();
   const { colors } = useTheme();
   const [status, setStatus] = useState<Status>('idle');
@@ -56,8 +60,8 @@ export function ExampleFinder({ pair, term, onAdd }: ExampleFinderProps) {
 
         return (
           <Card key={sentence.id}>
-            <AppText variant="bodyBold">{sentence.text}</AppText>
-            <AppText color="textMuted">{sentence.translation}</AppText>
+            <HighlightedText text={sentence.text} terms={[term]} language={pair.source} />
+            <HighlightedText text={sentence.translation} terms={meanings} language={pair.target} color="textMuted" />
             <View style={styles.add}>
               <Button
                 label={added ? t.examples.added : t.examples.add}

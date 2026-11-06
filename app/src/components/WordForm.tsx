@@ -14,8 +14,8 @@ import { spacing } from '@/theme';
 import { AppText } from './AppText';
 import { Button } from './Button';
 import { Card } from './Card';
-import { DictionaryLinks } from './DictionaryLinks';
 import { ExampleFinder } from './ExampleFinder';
+import { MeaningFinder } from './MeaningFinder';
 import { Section } from './Section';
 import { TextField, type TextFieldRef } from './TextField';
 
@@ -93,6 +93,17 @@ export function WordForm({ pair, initialWord, onSave, onDelete }: WordFormProps)
 ${example}` : example });
   };
 
+  const meaningTexts = drafts.map((draft) => draft.text.trim()).filter(Boolean);
+
+  /** A meaning found online: in the first empty meaning, or in a new one. */
+  const addMeaning = (text: string) =>
+    setDrafts((current) => {
+      const empty = current.findIndex((draft) => !draft.text.trim());
+      return empty >= 0
+        ? current.map((draft, i) => (i === empty ? { ...draft, text } : draft))
+        : [...current, { ...EMPTY_MEANING, text }];
+    });
+
   const save = () => {
     const input = inputFromDrafts(term, drafts, tags);
 
@@ -116,6 +127,8 @@ ${example}` : example });
           autoCorrect={false}
           ref={termRef}
         />
+        {/* Right under the word: the meanings found fill the translation fields below */}
+        <MeaningFinder pair={pair} term={term} meanings={meaningTexts} onAdd={addMeaning} />
       </Section>
 
       <Section title={t.wordForm.meanings}>
@@ -151,8 +164,7 @@ ${example}` : example });
       </Section>
 
       <Section title={t.examples.title}>
-        <ExampleFinder pair={pair} term={term} onAdd={addExample} />
-        <DictionaryLinks pair={pair} term={term} />
+        <ExampleFinder pair={pair} term={term} meanings={meaningTexts} onAdd={addExample} />
       </Section>
 
       <Section title={t.wordForm.tags}>
