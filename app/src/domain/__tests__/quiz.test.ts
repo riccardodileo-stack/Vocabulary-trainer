@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { buildQuiz, quizPool } from '../quiz';
+import { buildQuiz, clampQuizCount, QUIZ_CUSTOM_DEFAULT, QUIZ_CUSTOM_MAX, quizPool } from '../quiz';
 import { makeWord } from './helpers';
 
 const TODAY = '2026-10-29';
@@ -55,5 +55,19 @@ describe('buildQuiz', () => {
     const onTime = makeWord('early', ['presto'], { streak: 1 }, '2026-10-28');
     const questions = buildQuiz([onTime, late], { direction: 'forward', mode: 'due', count: 1 }, TODAY);
     expect(questions.map((question) => question.prompt)).toEqual(['late']);
+  });
+});
+
+describe('clampQuizCount', () => {
+  it('keeps the number within the limits', () => {
+    expect(clampQuizCount(0)).toBe(1);
+    expect(clampQuizCount(-5)).toBe(1);
+    expect(clampQuizCount(37)).toBe(37);
+    expect(clampQuizCount(10_000)).toBe(QUIZ_CUSTOM_MAX);
+  });
+
+  it('rounds and ignores what is not a number', () => {
+    expect(clampQuizCount(12.6)).toBe(13);
+    expect(clampQuizCount(Number.NaN)).toBe(QUIZ_CUSTOM_DEFAULT);
   });
 });

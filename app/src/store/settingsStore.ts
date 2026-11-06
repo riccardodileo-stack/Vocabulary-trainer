@@ -1,17 +1,20 @@
 // User preferences: theme, app language, native and studied language, daily words level,
-// sounds and the daily reminder.
+// sounds, the daily reminder and the last number of quiz questions.
 
 import { getLocales } from 'expo-localization';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 import type { DailyLevel } from '@/domain/dailyWords';
+import { clampQuizCount, QUIZ_CUSTOM_DEFAULT } from '@/domain/quiz';
 import { isLanguageCode, studyLanguagesFor, type LanguageCode, type LanguagePair } from '@/domain/languages';
 import type { UiLanguage } from '@/i18n';
 
 import { persistStorage } from './persistStorage';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
+
+export type QuizCountChoice = '10' | '20' | '0' | 'custom';
 
 type SettingsState = {
   themePreference: ThemePreference;
@@ -27,7 +30,13 @@ type SettingsState = {
   reminderEnabled: boolean;
   /** Time of the reminder, minutes after midnight (e.g. 1080 = 18:00). */
   reminderTime: number;
+  /** Last choice of the number of questions: '10', '20', '0' (all) or 'custom'. */
+  quizCountChoice: QuizCountChoice;
+  /** The number used when quizCountChoice is 'custom'. */
+  quizCustomCount: number;
 
+  setQuizCountChoice: (choice: QuizCountChoice) => void;
+  setQuizCustomCount: (count: number) => void;
   setSoundsEnabled: (enabled: boolean) => void;
   setReminderEnabled: (enabled: boolean) => void;
   setReminderTime: (minutes: number) => void;
@@ -60,6 +69,11 @@ export const useSettingsStore = create<SettingsState>()(
       soundsEnabled: true,
       reminderEnabled: false,
       reminderTime: 18 * 60,
+      quizCountChoice: '10',
+      quizCustomCount: QUIZ_CUSTOM_DEFAULT,
+
+      setQuizCountChoice: (quizCountChoice) => set({ quizCountChoice }),
+      setQuizCustomCount: (count) => set({ quizCustomCount: clampQuizCount(count) }),
 
       setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
       setReminderEnabled: (reminderEnabled) => set({ reminderEnabled }),

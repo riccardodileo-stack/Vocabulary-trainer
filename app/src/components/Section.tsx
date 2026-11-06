@@ -3,6 +3,7 @@ import { StyleSheet, View, type ViewProps } from 'react-native';
 import { spacing } from '@/theme';
 
 import { AppText } from './AppText';
+import { Appear } from './Appear';
 
 type SectionProps = ViewProps & {
   title: string;
@@ -17,10 +18,13 @@ export function Section({ title, hint, children, style, ...rest }: SectionProps)
         {title.toUpperCase()}
       </AppText>
       {children}
+      {/* Keyed by its text: when a choice changes the hint, the new one fades in */}
       {hint ? (
-        <AppText variant="small" color="textMuted" style={styles.hint}>
-          {hint}
-        </AppText>
+        <Appear key={hint}>
+          <AppText variant="small" color="textMuted" style={styles.hint}>
+            {hint}
+          </AppText>
+        </Appear>
       ) : null}
     </View>
   );

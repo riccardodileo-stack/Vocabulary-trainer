@@ -45,6 +45,19 @@ export const MISTAKE_CLEAR_STREAK = 2;
 
 export const QUIZ_COUNTS = [10, 20, 0] as const;
 
+/** Limits of the custom number of questions. */
+export const QUIZ_CUSTOM_MIN = 1;
+export const QUIZ_CUSTOM_MAX = 200;
+export const QUIZ_CUSTOM_DEFAULT = 15;
+
+/** A custom number of questions, made whole and kept within the limits. */
+export function clampQuizCount(count: number): number {
+  if (!Number.isFinite(count)) {
+    return QUIZ_CUSTOM_DEFAULT;
+  }
+  return Math.min(Math.max(Math.round(count), QUIZ_CUSTOM_MIN), QUIZ_CUSTOM_MAX);
+}
+
 export function isMistake(word: Word): boolean {
   return word.stats.lastWrongAt !== undefined && word.stats.streak < MISTAKE_CLEAR_STREAK;
 }

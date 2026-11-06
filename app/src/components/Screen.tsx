@@ -1,7 +1,9 @@
-import { FlatList, ScrollView, StyleSheet, View, type FlatListProps, type ScrollViewProps } from 'react-native';
+import { ScrollView, StyleSheet, View, type FlatListProps, type ScrollViewProps } from 'react-native';
+
+import Animated, { LayoutAnimationConfig, LinearTransition } from 'react-native-reanimated';
 
 import { useTabSwipe, type TabRoute } from '@/navigation/tabSwipe';
-import { spacing, useTheme } from '@/theme';
+import { motion, spacing, useTheme } from '@/theme';
 
 type TabSwipeProps = {
   /** Set on the root screen of a tab to switch tabs with a horizontal swipe. */
@@ -16,7 +18,7 @@ type TabSwipeProps = {
  * space under the header from it, and a wrapper can leave content hidden behind the
  * header. Only tab roots need the wrapper, to catch the swipe between tabs.
  */
-export function Screen({ tab, contentContainerStyle, style, ...rest }: ScrollViewProps & TabSwipeProps) {
+export function Screen({ tab, contentContainerStyle, style, children, ...rest }: ScrollViewProps & TabSwipeProps) {
   const { colors } = useTheme();
   const swipeHandlers = useTabSwipe(tab);
 
@@ -27,8 +29,10 @@ export function Screen({ tab, contentContainerStyle, style, ...rest }: ScrollVie
       automaticallyAdjustKeyboardInsets
       style={[{ backgroundColor: colors.background }, style]}
       contentContainerStyle={[styles.content, contentContainerStyle]}
-      {...rest}
-    />
+      {...rest}>
+      {/* What is on screen when it opens appears at once; later changes animate (see Appear) */}
+      <LayoutAnimationConfig skipEntering>{children}</LayoutAnimationConfig>
+    </ScrollView>
   );
 
   if (!swipeHandlers) {
@@ -42,6 +46,8 @@ export function Screen({ tab, contentContainerStyle, style, ...rest }: ScrollVie
   );
 }
 
+const ROW_TRANSITION = LinearTransition.duration(motion.normal);
+
 function Separator() {
   return <View style={styles.separator} />;
 }
@@ -49,14 +55,21 @@ function Separator() {
 /**
  * Like Screen, for long lists: only the rows near the visible area are rendered,
  * so hundreds of words scroll and re-sort without lag.
+ * When the order or the filter changes, the rows slide to their new place.
  */
-export function ListScreen<T>({ tab, contentContainerStyle, style, ...rest }: FlatListProps<T> & TabSwipeProps) {
+export function ListScreen<T>({
+  tab,
+  contentContainerStyle,
+  style,
+  ...rest
+}: Omit<FlatListProps<T>, 'CellRendererComponent'> & TabSwipeProps) {
   const { colors } = useTheme();
   const swipeHandlers = useTabSwipe(tab);
 
   return (
     <View style={styles.container} {...swipeHandlers}>
-      <FlatList
+      <Animated.FlatList
+        itemLayoutAnimation={ROW_TRANSITION}
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"

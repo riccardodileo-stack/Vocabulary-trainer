@@ -46,3 +46,20 @@ export const touchTarget = 44;
 
 /** Thickness of progress bars and the mastery meter. */
 export const barHeight = 8;
+
+/**
+ * Motion: one spring and two durations for every animation in the app,
+ * so switching a choice feels the same on every screen.
+ * Reanimated already skips the animation when the phone has "Reduce motion" on.
+ */
+export const motion = {
+  /** Selection indicators that move (segmented control, rings): quick, no bounce. */
+  spring: { damping: 22, stiffness: 260, mass: 0.7 },
+  /** Fades and small appear / disappear. */
+  fast: 180,
+  /** Content that changes (progress bars, new sections). */
+  normal: 260,
+} as const;
+
+/** Screen width the text sizes are designed for (iPhone 15/16/17). */
+export const DESIGN_SCREEN_WIDTH = 393;

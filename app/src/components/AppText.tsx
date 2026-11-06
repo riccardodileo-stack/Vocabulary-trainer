@@ -1,6 +1,6 @@
-import { StyleSheet, Text, type TextProps } from 'react-native';
+import { Text, type TextProps, type TextStyle } from 'react-native';
 
-import { fontSize, fontWeight, useTheme, type ThemeColors } from '@/theme';
+import { fontSize, fontWeight, useTextScale, useTheme, type ThemeColors } from '@/theme';
 
 type Variant = 'display' | 'hero' | 'title' | 'body' | 'bodyBold' | 'small' | 'caption';
 
@@ -12,10 +12,12 @@ export type AppTextProps = TextProps & {
 /** Text with the app typography and theme colors. Use it instead of <Text>. */
 export function AppText({ variant = 'body', color = 'text', style, ...rest }: AppTextProps) {
   const { colors } = useTheme();
-  return <Text style={[styles[variant], { color: colors[color] }, style]} {...rest} />;
+  const scale = useTextScale();
+  return <Text style={[scaled(VARIANTS[variant], scale), { color: colors[color] }, style]} {...rest} />;
 }
 
-const styles = StyleSheet.create({
+/** Sizes are for a 393pt wide screen; useTextScale adapts them to the actual width. */
+const VARIANTS: Record<Variant, TextStyle> = {
   display: { fontSize: fontSize.display, fontWeight: fontWeight.heavy, letterSpacing: -1.2, fontVariant: ['tabular-nums'] },
   hero: { fontSize: fontSize.hero, fontWeight: fontWeight.heavy, letterSpacing: -0.8 },
   title: { fontSize: fontSize.title, fontWeight: fontWeight.heavy, letterSpacing: -0.4 },
@@ -23,4 +25,15 @@ const styles = StyleSheet.create({
   bodyBold: { fontSize: fontSize.body, fontWeight: fontWeight.bold, lineHeight: 22 },
   small: { fontSize: fontSize.small, fontWeight: fontWeight.regular, lineHeight: 20 },
   caption: { fontSize: fontSize.caption, fontWeight: fontWeight.bold, letterSpacing: 0.3 },
-});
+};
+
+function scaled(style: TextStyle, scale: number): TextStyle {
+  if (scale === 1) {
+    return style;
+  }
+  return {
+    ...style,
+    fontSize: style.fontSize && style.fontSize * scale,
+    lineHeight: style.lineHeight && Math.round(style.lineHeight * scale),
+  };
+}

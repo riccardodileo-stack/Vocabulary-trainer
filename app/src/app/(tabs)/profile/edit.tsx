@@ -4,7 +4,7 @@
 
 import { Stack, router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
@@ -12,6 +12,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
+import { SelectableCircle } from '@/components/SelectableCircle';
 import { TextField } from '@/components/TextField';
 import { AVATAR_PRESETS } from '@/content/avatars';
 import { isValidEmail, NICKNAME_MAX_LENGTH, nicknameProblem, normalizeNickname } from '@/domain/profile';
@@ -91,19 +92,13 @@ export default function EditProfileScreen() {
                 const selected = sameAvatar(option, avatar);
 
                 return (
-                  <Pressable
+                  <SelectableCircle
                     key={preset.id}
+                    selected={selected}
                     onPress={() => setAvatar(option)}
-                    accessibilityRole="button"
-                    accessibilityLabel={t.editProfile.avatarLabel(index + 1)}
-                    accessibilityState={{ selected }}
-                    style={({ pressed }) => [
-                      styles.option,
-                      { borderColor: selected ? colors.primary : 'transparent' },
-                      pressed && styles.pressed,
-                    ]}>
+                    accessibilityLabel={t.editProfile.avatarLabel(index + 1)}>
                     <Avatar avatar={option} size={56} />
-                  </Pressable>
+                  </SelectableCircle>
                 );
               })}
             </View>
@@ -188,14 +183,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: spacing.sm,
-  },
-  option: {
-    padding: 3,
-    borderWidth: 3,
-    borderRadius: radius.pill,
-  },
-  pressed: {
-    opacity: 0.7,
   },
   nickField: {
     flexDirection: 'row',

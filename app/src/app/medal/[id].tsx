@@ -12,7 +12,7 @@ import { MEDAL_TIERS, missingFor, tierKey, type MedalTier } from '@/domain/achie
 import { useAchievements } from '@/hooks/useAchievements';
 import { useT, useUiLanguage } from '@/i18n';
 import { useAchievementStore } from '@/store/achievementStore';
-import { barHeight, fontSize, radius, spacing, useTheme } from '@/theme';
+import { fontSize, radius, spacing, useTheme } from '@/theme';
 
 const TIER_ICONS: Record<MedalTier, string> = { bronze: '🥉', silver: '🥈', gold: '🥇', diamond: '💎' };
 
@@ -124,10 +124,8 @@ export default function MedalSheet() {
                       {t.medalSheet.toGo(missing)} · {value}/{target}
                     </AppText>
                     {isNext ? (
-                      <View style={[styles.track, { backgroundColor: colors.track }]}>
-                        <View
-                          style={[styles.fill, { width: `${achievement.progress * 100}%`, backgroundColor: colors[levelTier] }]}
-                        />
+                      <View style={styles.levelBar}>
+                        <ProgressBar progress={achievement.progress} color={colors[levelTier]} size="sm" />
                       </View>
                     ) : null}
                   </>
@@ -204,14 +202,7 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  track: {
-    height: barHeight / 2,
-    borderRadius: radius.pill,
-    overflow: 'hidden',
+  levelBar: {
     marginTop: spacing.xs,
-  },
-  fill: {
-    height: '100%',
-    borderRadius: radius.pill,
   },
 });

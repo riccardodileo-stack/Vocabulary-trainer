@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated, { FadeOut, ZoomIn } from 'react-native-reanimated';
 
-import { radius, spacing, useTheme } from '@/theme';
+import { motion, radius, spacing, useTheme } from '@/theme';
 
 import { AppText } from './AppText';
 
@@ -11,6 +12,9 @@ type OptionListProps<T extends string> = {
   value: T;
   onChange: (value: T) => void;
 };
+
+const CHECK_IN = ZoomIn.springify().damping(motion.spring.damping).stiffness(motion.spring.stiffness);
+const CHECK_OUT = FadeOut.duration(motion.fast);
 
 /** Vertical list with a check mark on the selected row (iOS settings style). */
 export function OptionList<T extends string>({ options, value, onChange }: OptionListProps<T>) {
@@ -34,10 +38,13 @@ export function OptionList<T extends string>({ options, value, onChange }: Optio
             ]}>
             {option.icon ? <AppText style={styles.icon}>{option.icon}</AppText> : null}
             <AppText style={styles.label}>{option.label}</AppText>
+            {/* The check mark pops in on the new row and fades out on the old one */}
             {selected ? (
-              <AppText variant="bodyBold" color="primary">
-                ✓
-              </AppText>
+              <Animated.View entering={CHECK_IN} exiting={CHECK_OUT}>
+                <AppText variant="bodyBold" color="primary">
+                  ✓
+                </AppText>
+              </Animated.View>
             ) : null}
           </Pressable>
         );

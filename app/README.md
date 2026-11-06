@@ -17,8 +17,8 @@ Il README ha due parti:
 | Schermata | A cosa serve |
 |-----------|--------------|
 | **Home** | Il "cosa faccio oggi": il saluto (con il tuo nome) e in alto a destra il selettore delle lingue 🇬🇧 → 🇮🇹, che apre una finestra con solo lingue e livello, serie di giorni 🔥, numero di parole e parole imparate, **Ripasso di oggi**, **+ Aggiungi parola**, **Parole del giorno**, errori da correggere. |
-| **Dizionario** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti, errori), barra di "quanto la so" per ogni parola. Tocca una parola per vedere i progressi e modificarla. |
-| **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da ripassare*, *tutte*, *errori*), quante domande. |
+| **Dizionario** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti) e filtro **Errori** (solo le parole sbagliate, con i contatori errori/giuste), barra di "quanto la so" per ogni parola. Tocca una parola per vedere i progressi e modificarla. |
+| **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da imparare*, *tutte*, *errori*), quante domande (10, 20, tutte o **Altro**: un numero a scelta da 1 a 200). |
 | **Sfide** | In arrivo (rimandata di proposito). |
 | **Utente** | Il tuo nome come titolo della pagina; immagine profilo (12 avatar illustrati o una foto) con accanto il nick (`@stefano`), lingua studiata e data di inizio; contatore amici, record di giorni di fila, **6 medaglie a 4 livelli** (bronzo, argento, oro, diamante), sezione amici con la pagina **Aggiungi amici** e il tuo **codice amico**. In alto a destra ⚙️ apre le Impostazioni. |
 | **Impostazioni** (⚙️ in Utente) | Il tema chiaro/scuro direttamente nella pagina, poi quattro categorie che si aprono da destra: **Lingue** (lingua studiata, lingua madre, livello delle parole del giorno, lingua dell'app), **Suoni**, **Notifiche** (promemoria e orario), **Backup**. Accanto a ogni categoria si vede il valore attuale (es. `🇬🇧 → 🇮🇹 · B1–B2`, `On`, `18:00`). |
@@ -32,6 +32,8 @@ Il README ha due parti:
 - **Correzione indulgente ma onesta**: articoli ("la batteria", "to run") e accenti mancanti non sono errori; una lettera sbagliata in una parola lunga vale "Quasi!" e mostra come si scrive.
 - **Local-first**: nessun account, nessun server, dati in AsyncStorage. Backup in un file JSON.
 - **Accessibile**: tutti i testi hanno contrasto WCAG AA (4.5:1), ogni elemento toccabile è almeno 44 pt, i bottoni-icona hanno un'etichetta per lo screen reader.
+- **Uguale su ogni iPhone**: il testo scala con la larghezza dello schermo, quindi le righe vanno a capo negli stessi punti su un iPhone normale e su un Max.
+- **Le scelte si muovono, non saltano**: cambiando un'opzione l'indicatore scivola, la spunta compare con un piccolo rimbalzo, i contenuti nuovi entrano in dissolvenza. Animazioni brevi (≤ 260 ms) e disattivate se il telefono ha "Riduci movimento".
 - **Due lingue dell'interfaccia** (it, en), **cinque lingue di studio** (en, it, es, fr, de), tema chiaro/scuro.
 
 ## Avviare l'app sul telefono
@@ -164,11 +166,11 @@ Ogni parola sta in una **"scatola"** che è semplicemente il suo `streak` (rispo
 
 - Risposta **giusta** (o "quasi") → `streak + 1` → la parola sale di scatola e torna più tardi.
 - Risposta **sbagliata** → `streak = 0` → torna nel ripasso di oggi.
-- Parola **mai chiesta** → è "da ripassare" subito.
+- Parola **mai chiesta** → è subito tra quelle "da imparare".
 - **Imparata** 🏆 = scatola 5 (5 giuste di fila). È il numero "imparate" in Home e la barra piena nella lista.
 - I conti sono in **giorni di calendario**, non in ore (`domain/dates.ts`): una parola ripassata alle 23:50 con intervallo 1 torna disponibile alle 00:00, e i cambi di ora legale non spostano nulla.
 
-**Quiz "Da ripassare"**: prende le parole scadute; se sono più del numero di domande sceglie le **più in ritardo**, poi le mescola. Il ripasso dalla Home chiede al massimo 20 parole.
+**Quiz "Da imparare"**: prende le parole scadute; se sono più del numero di domande sceglie le **più in ritardo**, poi le mescola. Il ripasso dalla Home chiede al massimo 20 parole.
 
 > Si è scelto Leitner e non SM-2 (Anki) perché non richiede dati in più (usa lo `streak` che esisteva già), è spiegabile in una tabella e non chiede all'utente di valutare "quanto era facile".
 
@@ -221,13 +223,15 @@ File: `src/domain/quiz.ts`, `src/app/(tabs)/train/quiz.tsx`.
 
 | Modalità | Parole usate |
 |---|---|
-| `due` — Da ripassare | scadute oggi secondo il ripasso spaziato (le più in ritardo prima) |
+| `due` — Da imparare | scadute oggi secondo il ripasso spaziato (le più in ritardo prima) |
 | `all` — Tutte | tutte, in ordine casuale |
 | `mistakes` — Errori | sbagliate almeno una volta e non ancora corrette con **2 giuste di fila** |
 
 **Direzioni**
 - *Avanti* (🇬🇧→🇮🇹): mostra la parola, accetta **una qualsiasi** delle sue traduzioni.
 - *Indietro* (🇮🇹→🇬🇧): mostra **una** traduzione a caso e accetta **tutte** le parole del vocabolario con quella traduzione (chiedendo "noioso" valgono sia *boring* che *dull*). Due parole con la stessa traduzione non generano due domande uguali.
+
+**Numero di domande**: 10, 20, *Tutte* o *Altro*. Con *Altro* compare un selettore − [numero] + (si può anche scrivere il numero): da 1 a 200 (`clampQuizCount` in `domain/quiz.ts`). Se le parole disponibili sono meno, il quiz le chiede tutte. L'ultima scelta e il numero personalizzato restano salvati (`quizCountChoice`, `quizCustomCount` in `settingsStore`).
 
 **Durante il quiz**: barra di avanzamento; *Non lo so* conta come errore; **Termina** (in alto) chiude il quiz e mostra il risultato delle sole domande risposte. Dopo la risposta compaiono esempi e link ai dizionari (WordReference, Reverso).
 **Risultati**: punteggio, elenco errori, **Rifai gli errori** (un nuovo giro solo su quelle parole), *Allenati ancora*.
@@ -257,7 +261,7 @@ Un giorno conta se hai risposto ad almeno una domanda. La serie è il numero di 
 
 ## 7. Dizionario: lista, dettaglio, esempi
 
-- **Lista** (`words/index.tsx`): `FlatList` virtualizzata (fluida con centinaia di parole), ricerca su parola/traduzioni/tag, ordinamento. Ogni riga mostra la barra a 5 segmenti della scatola Leitner e il numero di errori.
+- **Lista** (`words/index.tsx`): `FlatList` virtualizzata (fluida con centinaia di parole), ricerca su parola/traduzioni/tag, ordinamento *A–Z* e *Recenti*. **Errori** è anche un filtro: mostra solo le parole sbagliate almeno una volta (`stats.wrong > 0`, anche se poi corrette), dalla più sbagliata, con i contatori *N errori* e *N giuste*; in alto il numero di parole sbagliate. Quando cambia ordine o filtro le righe scivolano al nuovo posto. Ogni riga mostra la barra a 5 segmenti della scatola Leitner.
 - **Dettaglio** (`words/[id].tsx`): card **Progressi** (giuste/sbagliate, prossimo ripasso: oggi / domani / tra N giorni) + modulo di modifica.
 - **Nuova parola**: niente duplicati nella stessa coppia (confronto senza maiuscole/spazi).
 - **Frasi di esempio**: da [Tatoeba](https://tatoeba.org) (CC BY), con traduzione nella lingua madre; ogni frase aggiunta va sotto la traduzione che contiene.
@@ -343,6 +347,24 @@ File: `src/theme/` e `src/components/`.
 | `iconSize` | sm 18 · md 22 · lg 26 |
 | `touchTarget` | 44 (minimo per qualsiasi cosa toccabile) |
 | `barHeight` | 8 (barre di avanzamento) |
+| `motion` | `spring` (indicatori che si spostano) · `fast` 180 ms (dissolvenze) · `normal` 260 ms (barre, contenuti nuovi) |
+
+**Testo proporzionale allo schermo**: i `fontSize` sono pensati per uno schermo largo 393 pt (iPhone 15/16/17). `useTextScale()` (`theme/index.ts`) li moltiplica per `larghezza / 393`, limitato tra 0.9 e 1.1, e `AppText` / `TextField` lo applicano da soli. Così una scritta che va a capo su un iPhone normale va a capo nello stesso punto su un Max. Le dimensioni di sistema scelte dall'utente (Testo più grande) si sommano come prima.
+
+### Animazioni
+Tutte con Reanimated e i token `motion`; con "Riduci movimento" attivo Reanimated le salta.
+
+| Dove | Cosa si muove |
+|---|---|
+| `SegmentedControl` (ovunque) | la parte in rilievo scivola sotto l'opzione scelta |
+| `OptionList` (lingue) | la spunta compare con un rimbalzo, quella vecchia sfuma |
+| `SelectableCircle` (avatar in Modifica profilo) | l'anello cresce attorno all'avatar scelto; l'anteprima grande sfuma nel nuovo |
+| `Section` | il suggerimento sotto (es. la spiegazione della modalità del quiz) sfuma nel nuovo testo |
+| `ProgressBar` | la barra scorre al nuovo valore (quiz, finestra medaglia) |
+| `ListScreen` (Dizionario) | le righe scivolano al nuovo posto quando cambiano ordine o filtro |
+| `Appear` | contenuto che compare: orario del promemoria, selettore del numero di domande, esito della risposta, bottoni delle parole del giorno, domanda successiva (da destra) |
+
+`Screen` avvolge il contenuto in `LayoutAnimationConfig skipEntering`: quando una pagina si apre tutto è già al suo posto, si animano solo i cambi successivi.
 
 ### Colori (`theme/colors.ts`)
 Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
@@ -367,7 +389,10 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 | `HeaderButton` | testo o simbolo nell'intestazione ("+", "Fine", "Termina") |
 | `Card` | blocco di contenuto; con `onPress` diventa tutta toccabile; `tone="primary"` per evidenziare |
 | `Pill` | etichetta piccola (livello, "2 errori", "Aggiunta ✓") |
-| `SegmentedControl` | 2–4 scelte esclusive su una riga |
+| `SegmentedControl` | 2–4 scelte esclusive su una riga, con indicatore che scivola |
+| `NumberStepper` | − [numero] + per un numero intero tra un minimo e un massimo (si può anche scrivere) |
+| `SelectableCircle` | scelta rotonda in una griglia (avatar) con anello animato |
+| `Appear` | fa entrare/uscire con un'animazione un contenuto che compare dopo una scelta |
 | `OptionList` | elenco con spunta (stile Impostazioni iOS) |
 | `ListGroup` + `ListRow` | righe raggruppate con icona, valore a destra, freccia o interruttore (Impostazioni, Account) |
 | `Avatar` | immagine profilo rotonda: avatar disegnato o foto, con anello opzionale |

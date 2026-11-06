@@ -2,6 +2,7 @@
 
 import { Alert, Platform } from 'react-native';
 
+import { Appear } from '@/components/Appear';
 import { ListGroup, ListRow } from '@/components/ListGroup';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
@@ -46,13 +47,15 @@ export default function NotificationsSettingsScreen() {
       </Section>
 
       {settings.reminderEnabled ? (
-        <Section title={t.settings.reminderTimeTitle}>
-          <SegmentedControl
-            options={reminderOptions}
-            value={String(settings.reminderTime)}
-            onChange={(value) => settings.setReminderTime(Number(value))}
-          />
-        </Section>
+        <Appear from="down">
+          <Section title={t.settings.reminderTimeTitle}>
+            <SegmentedControl
+              options={reminderOptions}
+              value={String(settings.reminderTime)}
+              onChange={(value) => settings.setReminderTime(Number(value))}
+            />
+          </Section>
+        </Appear>
       ) : null}
     </Screen>
   );

@@ -3,8 +3,10 @@ import { StyleSheet, View } from 'react-native';
 
 import { avatarPreset } from '@/content/avatars';
 import type { ProfileAvatar } from '@/store/profileStore';
-import { radius, useTheme } from '@/theme';
+import { motion, radius, useTheme } from '@/theme';
 
+/** Cross-fade when the picture changes (e.g. picking another avatar). */
+const AVATAR_FADE = motion.fast;
 
 type AvatarProps = {
   avatar: ProfileAvatar;
@@ -28,9 +30,13 @@ export function Avatar({ avatar, size, ring = false }: AvatarProps) {
         { width: size, height: size, borderWidth: ringWidth, borderColor: ring ? colors.accent : 'transparent' },
       ]}>
       {avatar.kind === 'photo' ? (
-        <Image source={{ uri: avatar.uri }} style={[styles.circle, { width: inner, height: inner }]} contentFit="cover" />
+        <Image source={{ uri: avatar.uri }} style={[styles.circle, { width: inner, height: inner }]} contentFit="cover" transition={AVATAR_FADE} />
       ) : (
-        <Image source={avatarPreset(avatar.id).image} style={[styles.circle, { width: inner, height: inner }]} />
+        <Image
+          source={avatarPreset(avatar.id).image}
+          style={[styles.circle, { width: inner, height: inner }]}
+          transition={AVATAR_FADE}
+        />
       )}
     </View>
   );

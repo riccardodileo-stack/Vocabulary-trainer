@@ -1,6 +1,8 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { radius, spacing, touchTarget, useTheme } from '@/theme';
+import { motion, radius, spacing, touchTarget, useTheme } from '@/theme';
 
 import { AppText } from './AppText';
 
@@ -12,43 +14,79 @@ type SegmentedControlProps<T extends string> = {
   onChange: (value: T) => void;
 };
 
-/** A row of mutually exclusive choices, e.g. System / Light / Dark. */
+const GAP = spacing.xs;
+
+/**
+ * A row of mutually exclusive choices, e.g. System / Light / Dark.
+ * The raised "thumb" slides under the chosen option instead of jumping.
+ */
 export function SegmentedControl<T extends string>({ options, value, onChange }: SegmentedControlProps<T>) {
   const { colors } = useTheme();
+  const selectedIndex = options.findIndex((option) => option.value === value);
+
+  // Width of the row of segments: the thumb is as wide as one segment
+  const [rowWidth, setRowWidth] = useState(0);
+  const segmentWidth = rowWidth > 0 ? (rowWidth - GAP * (options.length - 1)) / options.length : 0;
+
+  const position = useSharedValue(Math.max(selectedIndex, 0));
+
+  useEffect(() => {
+    if (selectedIndex >= 0) {
+      position.set(withSpring(selectedIndex, motion.spring));
+    }
+  }, [selectedIndex, position]);
+
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: position.get() * (segmentWidth + GAP) }],
+  }));
+
+  const onLayout = (event: LayoutChangeEvent) => setRowWidth(event.nativeEvent.layout.width);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.cardMuted, borderColor: colors.border }]}>
-      {options.map((option) => {
-        const selected = option.value === value;
+      <View style={styles.row} onLayout={onLayout}>
+        {/* Only the thumb is raised: a shadow on a transparent view would draw around the text on iOS */}
+        {segmentWidth > 0 && selectedIndex >= 0 ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.thumb, { width: segmentWidth, backgroundColor: colors.card, shadowColor: colors.shadow }, thumbStyle]}
+          />
+        ) : null}
 
-        return (
-          <Pressable
-            key={option.value}
-            accessibilityRole="button"
-            accessibilityState={{ selected }}
-            onPress={() => onChange(option.value)}
-            style={[styles.segment, selected && [styles.selected, { backgroundColor: colors.card, shadowColor: colors.shadow }]]}>
-            <AppText
-              variant={selected ? 'bodyBold' : 'body'}
-              color={selected ? 'text' : 'textMuted'}
-              numberOfLines={1}
-              adjustsFontSizeToFit>
-              {option.label}
-            </AppText>
-          </Pressable>
-        );
-      })}
+        {options.map((option) => {
+          const selected = option.value === value;
+
+          return (
+            <Pressable
+              key={option.value}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              onPress={() => onChange(option.value)}
+              style={styles.segment}>
+              <AppText
+                variant={selected ? 'bodyBold' : 'body'}
+                color={selected ? 'text' : 'textMuted'}
+                numberOfLines={1}
+                adjustsFontSizeToFit>
+                {option.label}
+              </AppText>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
     padding: spacing.xs,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    gap: spacing.xs,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: GAP,
   },
   segment: {
     flex: 1,
@@ -56,11 +94,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: touchTarget - spacing.xs,
     paddingHorizontal: spacing.xs,
-    borderRadius: radius.sm,
   },
-  // Only the selected segment is raised: a shadow on a transparent view
-  // would draw around the text on iOS
-  selected: {
+  thumb: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: radius.sm,
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },

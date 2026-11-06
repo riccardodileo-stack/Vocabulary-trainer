@@ -8,6 +8,7 @@ import { useT } from '@/i18n';
 import { fontSize, spacing, useTheme } from '@/theme';
 
 import { AppText } from './AppText';
+import { Appear } from './Appear';
 import { Button } from './Button';
 import { Card } from './Card';
 import { Pill } from './Pill';
@@ -28,7 +29,8 @@ function DailyWordRow({ item, actions }: { item: DailyWordItem; actions: DailyWo
 
       <AppText color="textMuted">{suggestion.meanings.join(' / ')}</AppText>
 
-      <View style={styles.actions}>
+      {/* Keyed by the state: after Add / I know it the new buttons fade in */}
+      <Appear key={state} exit={false} style={styles.actions}>
         {state === 'new' ? (
           <>
             <Button
@@ -55,7 +57,7 @@ function DailyWordRow({ item, actions }: { item: DailyWordItem; actions: DailyWo
             <Button label={t.daily.undo} tone="secondary" size="sm" onPress={() => actions.setKnown(suggestion, false)} />
           </>
         ) : null}
-      </View>
+      </Appear>
     </View>
   );
 }
@@ -108,7 +110,9 @@ export function DailyWordsCard() {
       ) : null}
 
       {addedIds.length > 0 ? (
-        <Button label={t.daily.train(addedIds.length)} tone="secondary" onPress={trainOnNewWords} />
+        <Appear from="down">
+          <Button label={t.daily.train(addedIds.length)} tone="secondary" onPress={trainOnNewWords} />
+        </Appear>
       ) : null}
     </Card>
   );

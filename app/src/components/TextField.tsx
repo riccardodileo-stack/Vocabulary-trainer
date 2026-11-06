@@ -1,7 +1,7 @@
 import type { ComponentRef, Ref } from 'react';
 import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
 
-import { fontSize, radius, spacing, useTheme } from '@/theme';
+import { fontSize, radius, spacing, useTextScale, useTheme } from '@/theme';
 
 export type TextFieldRef = ComponentRef<typeof TextInput>;
 
@@ -10,6 +10,7 @@ type TextFieldProps = Omit<TextInputProps, 'ref'> & { ref?: Ref<TextFieldRef> };
 /** Text input with the app colors. Use it instead of <TextInput>. */
 export function TextField({ ref, style, multiline, ...rest }: TextFieldProps) {
   const { colors } = useTheme();
+  const scale = useTextScale();
 
   return (
     <TextInput
@@ -19,7 +20,7 @@ export function TextField({ ref, style, multiline, ...rest }: TextFieldProps) {
       style={[
         styles.input,
         multiline && styles.multiline,
-        { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
+        { backgroundColor: colors.card, borderColor: colors.border, color: colors.text, fontSize: fontSize.body * scale },
         style,
       ]}
       {...rest}

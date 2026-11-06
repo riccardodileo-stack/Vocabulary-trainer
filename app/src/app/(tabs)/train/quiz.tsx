@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { Appear } from '@/components/Appear';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { DictionaryLinks } from '@/components/DictionaryLinks';
@@ -204,16 +205,19 @@ export default function QuizScreen() {
           accessibilityLabel={t.quiz.progressAccessibility(index + 1, questions.length)}
         />
 
-        <Card style={styles.questionCard}>
-          <AppText variant="hero" style={styles.centered} accessibilityRole="header">
-            {question.prompt}
-          </AppText>
-          {question.note ? (
-            <AppText color="textMuted" style={styles.centered}>
-              ({question.note})
+        {/* Keyed by the question: each new one slides in from the right */}
+        <Appear key={index} from="right" exit={false}>
+          <Card style={styles.questionCard}>
+            <AppText variant="hero" style={styles.centered} accessibilityRole="header">
+              {question.prompt}
             </AppText>
-          ) : null}
-        </Card>
+            {question.note ? (
+              <AppText color="textMuted" style={styles.centered}>
+                ({question.note})
+              </AppText>
+            ) : null}
+          </Card>
+        </Appear>
 
         <TextField
           ref={inputRef}
@@ -229,25 +233,27 @@ export default function QuizScreen() {
         />
 
         {verdict ? (
-          <Card tone={verdict === 'wrong' ? 'default' : 'primary'} accessibilityLiveRegion="polite">
-            <Pill
-              label={{ correct: t.quiz.correct, almost: t.quiz.almost, wrong: t.quiz.wrong }[verdict]}
-              tone={verdict === 'wrong' ? 'warning' : 'primary'}
-            />
-            {verdict === 'wrong' ? (
-              <AppText>
-                {t.quiz.correctAnswer} <AppText variant="bodyBold">{question.correctText}</AppText>
+          <Appear from="down" exit={false}>
+            <Card tone={verdict === 'wrong' ? 'default' : 'primary'} accessibilityLiveRegion="polite">
+              <Pill
+                label={{ correct: t.quiz.correct, almost: t.quiz.almost, wrong: t.quiz.wrong }[verdict]}
+                tone={verdict === 'wrong' ? 'warning' : 'primary'}
+              />
+              {verdict === 'wrong' ? (
+                <AppText>
+                  {t.quiz.correctAnswer} <AppText variant="bodyBold">{question.correctText}</AppText>
+                </AppText>
+              ) : null}
+              {verdict === 'almost' ? (
+                <AppText>
+                  {t.quiz.almostHint} <AppText variant="bodyBold">{question.correctText}</AppText>
+                </AppText>
+              ) : null}
+              <AppText color="textMuted">
+                {question.word.term} → {meaningsToText(question.word)}
               </AppText>
-            ) : null}
-            {verdict === 'almost' ? (
-              <AppText>
-                {t.quiz.almostHint} <AppText variant="bodyBold">{question.correctText}</AppText>
-              </AppText>
-            ) : null}
-            <AppText color="textMuted">
-              {question.word.term} → {meaningsToText(question.word)}
-            </AppText>
-          </Card>
+            </Card>
+          </Appear>
         ) : null}
 
         {verdict && examples.length > 0 ? (

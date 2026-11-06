@@ -1,4 +1,6 @@
 // Word list of the active language pair, with search and sorting.
+// "Mistakes" is also a filter: it shows only the words answered wrong at least once,
+// the most mistaken first, each with its wrong / right counters.
 
 import { Stack, router } from 'expo-router';
 import { memo, useDeferredValue, useMemo, useState } from 'react';
@@ -33,6 +35,11 @@ const COMPARE: Record<SortOrder, (a: Word, b: Word) => number> = {
   mistakes: (a, b) => b.stats.wrong - a.stats.wrong || collator.compare(a.term, b.term),
 };
 
+/** Words answered wrong at least once (the only ones shown in "Mistakes"). */
+function hasMistakes(word: Word): boolean {
+  return word.stats.wrong > 0;
+}
+
 function matchesSearch(word: Word, query: string): boolean {
   return (
     normalizeText(word.term).includes(query) ||
@@ -50,9 +57,9 @@ function openWord(id: string) {
 }
 
 /** Memoized: re-sorting moves rows around without re-rendering each of them. */
-type WordRowProps = { word: Word; errorsLabel?: string; masteryLabel: string };
+type WordRowProps = { word: Word; errorsLabel?: string; correctLabel?: string; masteryLabel: string };
 
-const WordRow = memo(function WordRow({ word, errorsLabel, masteryLabel }: WordRowProps) {
+const WordRow = memo(function WordRow({ word, errorsLabel, correctLabel, masteryLabel }: WordRowProps) {
   return (
     <Card onPress={() => openWord(word.id)} accessibilityRole="button">
       <View style={styles.row}>
@@ -60,6 +67,7 @@ const WordRow = memo(function WordRow({ word, errorsLabel, masteryLabel }: WordR
           {word.term}
         </AppText>
         {errorsLabel ? <Pill label={errorsLabel} tone="warning" /> : null}
+        {correctLabel ? <Pill label={correctLabel} /> : null}
         <MasteryMeter box={reviewBox(word)} accessibilityLabel={masteryLabel} />
       </View>
       <AppText color="textMuted" numberOfLines={2}>
@@ -82,8 +90,14 @@ export default function WordsScreen() {
 
   const visibleWords = useMemo(() => {
     const query = normalizeText(deferredSearch);
-    return words.filter((word) => !query || matchesSearch(word, query)).sort(COMPARE[deferredSortOrder]);
+    return words
+      .filter((word) => deferredSortOrder !== 'mistakes' || hasMistakes(word))
+      .filter((word) => !query || matchesSearch(word, query))
+      .sort(COMPARE[deferredSortOrder]);
   }, [words, deferredSearch, deferredSortOrder]);
+
+  const showingMistakes = sortOrder === 'mistakes';
+  const mistakenCount = words.filter(hasMistakes).length;
 
   const sortOptions: { value: SortOrder; label: string }[] = [
     { value: 'alphabetical', label: t.words.sortAlphabetical },
@@ -96,7 +110,10 @@ export default function WordsScreen() {
     <View style={styles.header}>
       <View style={styles.toolbar}>
         <LanguagePairChip pair={pair} onPress={() => router.push('/languages')} />
-        <Pill label={t.common.words(words.length)} tone="primary" />
+        <Pill
+          label={showingMistakes ? t.words.mistakenWords(mistakenCount) : t.common.words(words.length)}
+          tone={showingMistakes ? 'warning' : 'primary'}
+        />
       </View>
 
       {words.length === 0 ? (
@@ -115,7 +132,9 @@ export default function WordsScreen() {
             clearButtonMode="while-editing"
           />
           <SegmentedControl options={sortOptions} value={sortOrder} onChange={setSortOrder} />
-          {visibleWords.length === 0 ? <AppText color="textMuted">{t.words.noResults}</AppText> : null}
+          {visibleWords.length === 0 ? (
+            <AppText color="textMuted">{showingMistakes && mistakenCount === 0 ? t.words.noMistakes : t.words.noResults}</AppText>
+          ) : null}
         </>
       )}
     </View>
@@ -139,6 +158,7 @@ export default function WordsScreen() {
           <WordRow
             word={item}
             errorsLabel={item.stats.wrong > 0 ? t.words.errorsCount(item.stats.wrong) : undefined}
+            correctLabel={showingMistakes ? t.words.correctCount(item.stats.correct) : undefined}
             masteryLabel={t.words.mastery(reviewBox(item), MASTERED_BOX)}
           />
         )}
