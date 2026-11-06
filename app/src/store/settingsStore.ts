@@ -1,4 +1,5 @@
-// User preferences: theme, app language, native and studied language, daily words level.
+// User preferences: theme, app language, native and studied language, daily words level,
+// sounds and the daily reminder.
 
 import { getLocales } from 'expo-localization';
 import { create } from 'zustand';
@@ -20,7 +21,16 @@ type SettingsState = {
   studyLanguage: LanguageCode;
   /** Difficulty of the words of the day. */
   dailyLevel: DailyLevel;
+  /** Short sounds for right / wrong answers in the quiz. */
+  soundsEnabled: boolean;
+  /** Daily local notification reminding to review. */
+  reminderEnabled: boolean;
+  /** Time of the reminder, minutes after midnight (e.g. 1080 = 18:00). */
+  reminderTime: number;
 
+  setSoundsEnabled: (enabled: boolean) => void;
+  setReminderEnabled: (enabled: boolean) => void;
+  setReminderTime: (minutes: number) => void;
   setDailyLevel: (level: DailyLevel) => void;
   setThemePreference: (preference: ThemePreference) => void;
   setUiLanguage: (language: UiLanguage | 'system') => void;
@@ -47,7 +57,13 @@ export const useSettingsStore = create<SettingsState>()(
       nativeLanguage: initialNativeLanguage,
       studyLanguage: defaultStudyLanguage(initialNativeLanguage),
       dailyLevel: 'all',
+      soundsEnabled: true,
+      reminderEnabled: false,
+      reminderTime: 18 * 60,
 
+      setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
+      setReminderEnabled: (reminderEnabled) => set({ reminderEnabled }),
+      setReminderTime: (reminderTime) => set({ reminderTime }),
       setDailyLevel: (dailyLevel) => set({ dailyLevel }),
       setThemePreference: (themePreference) => set({ themePreference }),
       setUiLanguage: (uiLanguage) => set({ uiLanguage }),

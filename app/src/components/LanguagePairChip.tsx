@@ -9,10 +9,12 @@ import { AppText } from './AppText';
 type LanguagePairChipProps = {
   pair: LanguagePair;
   onPress?: () => void;
+  /** Flags only ("🇬🇧 → 🇮🇹"), for tight spots like the Home header. */
+  compact?: boolean;
 };
 
-/** "🇬🇧 English → 🇮🇹 ▾": shows the active vocabulary; tapping it lets the user change it. */
-export function LanguagePairChip({ pair, onPress }: LanguagePairChipProps) {
+/** "🇬🇧 English → 🇮🇹 ▾": shows the active vocabulary; tapping it opens the language sheet. */
+export function LanguagePairChip({ pair, onPress, compact = false }: LanguagePairChipProps) {
   const t = useT();
   const { colors } = useTheme();
   const source = t.languages[pair.source];
@@ -26,7 +28,8 @@ export function LanguagePairChip({ pair, onPress }: LanguagePairChipProps) {
       accessibilityHint={t.common.changeLanguages}
       style={({ pressed }) => [styles.chip, { backgroundColor: colors.primarySoft }, pressed && styles.pressed]}>
       <AppText variant="bodyBold" color="primaryStrong">
-        {LANGUAGES[pair.source].flag} {source} → {LANGUAGES[pair.target].flag} ▾
+        {LANGUAGES[pair.source].flag}
+        {compact ? '' : ` ${source}`} → {LANGUAGES[pair.target].flag} ▾
       </AppText>
     </Pressable>
   );

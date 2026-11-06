@@ -5,7 +5,7 @@
 //         ids=comma separated word ids (optional, limits the quiz to those words)
 
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -23,6 +23,8 @@ import { evaluateAnswer, type AnswerVerdict } from '@/domain/text';
 import { meaningsToText } from '@/domain/word';
 import { useFocusAfterTransition } from '@/hooks/useFocusAfterTransition';
 import { useT } from '@/i18n';
+import { playSound, preloadSounds } from '@/services/sounds';
+import { useActivityStore } from '@/store/activityStore';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordStore, useWordsOfPair } from '@/store/wordStore';
 import { spacing } from '@/theme';
@@ -47,8 +49,11 @@ export default function QuizScreen() {
   const pair = useActivePair();
   const words = useWordsOfPair(pair);
   const recordAnswer = useWordStore((state) => state.recordAnswer);
+  const recordQuizFinished = useActivityStore((state) => state.recordQuizFinished);
   const inputRef = useRef<TextFieldRef>(null);
   useFocusAfterTransition(inputRef);
+  // Sounds ready before the first answer, so they play without delay
+  useEffect(() => preloadSounds(), []);
 
   // The questions are chosen once per round, so stats updates don't reshuffle them
   const [questions, setQuestions] = useState(() => buildQuiz(words, options));
@@ -66,6 +71,7 @@ export default function QuizScreen() {
     const result = given.trim() ? evaluateAnswer(given, question.accepted, question.answerLanguage) : 'wrong';
     recordAnswer(question.word.id, result !== 'wrong');
     setVerdict(result);
+    playSound(result === 'wrong' ? 'wrong' : 'correct');
     if (result === 'wrong') {
       setMistakes((current) => [...current, { question, given }]);
     }
@@ -78,6 +84,11 @@ export default function QuizScreen() {
   };
 
   const next = () => {
+    if (isLast) {
+      // The quiz is complete (not ended early): it can count for the "perfect quiz" medal
+      recordQuizFinished(questions.length, mistakes.length);
+      playSound('finish');
+    }
     setIndex(index + 1);
     setAnswer('');
     setVerdict(null);

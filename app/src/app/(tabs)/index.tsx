@@ -18,12 +18,16 @@ import { isMistake } from '@/domain/quiz';
 import { isDue, isMastered } from '@/domain/review';
 import { useT } from '@/i18n';
 import { useStreak } from '@/store/activityStore';
+import { useProfileStore } from '@/store/profileStore';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
 import { spacing } from '@/theme';
 
-function openSettings() {
-  router.push('/settings');
+/** Above this length the greeting uses a smaller size, so it fits next to the language chip. */
+const LONG_GREETING = 14;
+
+function openLanguages() {
+  router.push('/languages');
 }
 
 function openNewWord() {
@@ -40,6 +44,8 @@ export default function HomeScreen() {
   const pair = useActivePair();
   const words = useWordsOfPair(pair);
   const streak = useStreak();
+  const name = useProfileStore((state) => state.name);
+  const greeting = name ? t.home.greetingName(name) : t.home.greeting;
 
   const today = dayKey();
   const dueCount = words.filter((word) => isDue(word, today)).length;
@@ -50,11 +56,17 @@ export default function HomeScreen() {
     // On iOS the ScrollView already avoids the notch; Android needs the inset by hand
     <Screen tab="/" contentContainerStyle={Platform.OS === 'android' && { paddingTop: insets.top + spacing.lg }}>
       <View style={styles.header}>
-        <AppText variant="hero" accessibilityRole="header">
-          {t.home.greeting}
+        {/* Long names shrink the greeting to fit one line instead of pushing the chip down */}
+        <AppText
+          variant={greeting.length > LONG_GREETING ? 'title' : 'hero'}
+          accessibilityRole="header"
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+          style={styles.greeting}>
+          {greeting}
         </AppText>
-        {/* The chip is also the way to the settings (languages, theme, backup) */}
-        <LanguagePairChip pair={pair} onPress={openSettings} />
+        <LanguagePairChip pair={pair} onPress={openLanguages} compact />
       </View>
 
       <View style={styles.stats}>
@@ -100,8 +112,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    flexWrap: 'wrap',
     gap: spacing.md,
+  },
+  greeting: {
+    flex: 1,
   },
   stats: {
     flexDirection: 'row',

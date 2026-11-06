@@ -95,7 +95,7 @@ export default function WordsScreen() {
   const header = (
     <View style={styles.header}>
       <View style={styles.toolbar}>
-        <LanguagePairChip pair={pair} onPress={() => router.push('/settings')} />
+        <LanguagePairChip pair={pair} onPress={() => router.push('/languages')} />
         <Pill label={t.common.words(words.length)} tone="primary" />
       </View>
 

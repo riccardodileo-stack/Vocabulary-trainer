@@ -28,3 +28,16 @@ export function currentStreak(days: DayKey[], today: DayKey = dayKey()): number 
   }
   return streak;
 }
+
+/** Longest run of consecutive days in the list (any period, not only up to today). */
+export function longestStreak(days: DayKey[]): number {
+  const sorted = [...new Set(days)].sort();
+  let best = 0;
+  let run = 0;
+
+  sorted.forEach((day, index) => {
+    run = index > 0 && addDays(sorted[index - 1], 1) === day ? run + 1 : 1;
+    best = Math.max(best, run);
+  });
+  return best;
+}

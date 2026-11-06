@@ -45,7 +45,20 @@
           ]
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-audio",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app uses your photos only if you choose one as your profile picture."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "enableRemoteNotifications": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

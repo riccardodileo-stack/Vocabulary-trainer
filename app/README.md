@@ -16,11 +16,13 @@ Il README ha due parti:
 
 | Schermata | A cosa serve |
 |-----------|--------------|
-| **Home** | Il "cosa faccio oggi": in alto il selettore delle lingue (🇬🇧 Inglese → 🇮🇹, apre le Impostazioni), serie di giorni 🔥, numero di parole e parole imparate, **Ripasso di oggi**, **+ Aggiungi parola**, **Parole del giorno**, errori da correggere. |
-| **Parole** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti, errori), barra di "quanto la so" per ogni parola. Tocca una parola per vedere i progressi e modificarla. |
+| **Home** | Il "cosa faccio oggi": il saluto (con il tuo nome) e in alto a destra il selettore delle lingue 🇬🇧 → 🇮🇹, che apre una finestra con solo lingue e livello, serie di giorni 🔥, numero di parole e parole imparate, **Ripasso di oggi**, **+ Aggiungi parola**, **Parole del giorno**, errori da correggere. |
+| **Dizionario** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti, errori), barra di "quanto la so" per ogni parola. Tocca una parola per vedere i progressi e modificarla. |
 | **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da ripassare*, *tutte*, *errori*), quante domande. |
 | **Sfide** | In arrivo (rimandata di proposito). |
-| **Impostazioni** (dal selettore delle lingue in Home o in Parole) | Tema, lingua studiata, lingua madre, livello delle parole del giorno, lingua dell'app, backup. |
+| **Utente** | Il tuo nome come titolo della pagina; immagine profilo (12 avatar illustrati o una foto) con accanto il nick (`@stefano`), lingua studiata e data di inizio; contatore amici, record di giorni di fila, **6 medaglie a 4 livelli** (bronzo, argento, oro, diamante), sezione amici con la pagina **Aggiungi amici** e il tuo **codice amico**. In alto a destra ⚙️ apre le Impostazioni. |
+| **Impostazioni** (⚙️ in Utente) | Il tema chiaro/scuro direttamente nella pagina, poi quattro categorie che si aprono da destra: **Lingue** (lingua studiata, lingua madre, livello delle parole del giorno, lingua dell'app), **Suoni**, **Notifiche** (promemoria e orario), **Backup**. Accanto a ogni categoria si vede il valore attuale (es. `🇬🇧 → 🇮🇹 · B1–B2`, `On`, `18:00`). |
+| **Lingue** (selettore 🇬🇧 → 🇮🇹 in Home o nel Dizionario) | Solo le scelte di studio: lingua studiata, lingua madre, livello delle parole del giorno. |
 
 ## Le scelte di design, in una riga ciascuna
 
@@ -55,7 +57,7 @@ npm run lint        # stile del codice
 npm test            # test della logica (jest)
 ```
 
-> ⚠️ Dopo aver scaricato queste modifiche serve **`npm install`**: sono stati aggiunti `jest`, `jest-expo` e `@jest/globals` (solo per i test). Senza, `npm test` e il controllo dei tipi dei file di test falliscono.
+> ⚠️ Dopo aver scaricato queste modifiche serve **`npm install`**: sono stati aggiunti `expo-audio` (suoni), `expo-notifications` (promemoria) ed `expo-image-picker` (foto profilo), oltre a `jest`, `jest-expo` e `@jest/globals` per i test. Sono tutti inclusi in Expo Go: non serve una development build.
 
 ## "Voglio…" → dove mettere le mani
 
@@ -74,7 +76,12 @@ npm test            # test della logica (jest)
 | aggiungere una lingua dell'interfaccia                    | nuovo `src/i18n/xx.ts` + `TRANSLATIONS` in `src/i18n/index.ts`   |
 | aggiungere una lingua da studiare                         | `src/domain/languages.ts` + una colonna in `wordBank.ts` + nomi in `en.ts`/`it.ts` |
 | aggiungere un campo alla parola                           | `src/domain/word.ts` + `version`/`migrate` in `src/store/wordStore.ts` |
-| aggiungere una preferenza                                 | `src/store/settingsStore.ts` + `src/app/settings.tsx`            |
+| aggiungere una preferenza                                 | `src/store/settingsStore.ts` + la pagina della sua categoria in `src/app/settings/` |
+| aggiungere una categoria di impostazioni                  | nuovo file in `src/app/settings/`, titolo in `settings/_layout.tsx`, riga in `settings/index.tsx` |
+| cambiare o aggiungere un avatar                           | `design/avatars/` (generatore, vedi il suo README) + `src/content/avatars.ts` |
+| aggiungere una medaglia o cambiarne i livelli             | `ACHIEVEMENT_RULES` (`targets`) in `src/domain/achievements.ts` + testi in `achievements` di `en.ts`/`it.ts` |
+| cambiare i suoni                                          | i file in `assets/sounds/` (stessi nomi)                         |
+| cambiare il testo o gli orari del promemoria              | `reminder` in `en.ts`/`it.ts`; `REMINDER_TIMES` in `src/app/settings/notifications.tsx` |
 | cambiare le tab o le loro icone                           | `src/app/(tabs)/_layout.tsx`                                     |
 | aggiungere una pagina                                     | nuovo file in `src/app/`                                         |
 | aggiungere un componente grafico                          | `src/components/` (usa token e `useTheme()`, vedi Parte 2)       |
@@ -96,7 +103,7 @@ npm test            # test della logica (jest)
 
 ```
                 ┌────────────────────────── src/app/ (schermate, Expo Router) ──────────────────────────┐
-                │  Home · Parole · Allenati · Quiz · Dettaglio parola · Impostazioni                     │
+                │  Home · Dizionario · Allenati · Quiz · Utente · Impostazioni                            │
                 └──────────────┬───────────────────────────────┬────────────────────────────────────────┘
                      legge/azioni                         usa componenti
                                ▼                               ▼
@@ -122,9 +129,11 @@ Perché così:
 | Chiave AsyncStorage | Store | Contenuto | Versione |
 |---|---|---|---|
 | `words` | `wordStore` | tutte le parole di tutte le coppie | 2 |
-| `settings` | `settingsStore` | tema, lingue, livello parole del giorno | 1 |
-| `activity` | `activityStore` | giorni in cui ti sei allenato (max 400) | 1 |
+| `settings` | `settingsStore` | tema, lingue, livello parole del giorno, suoni, promemoria (attivo e ora) | 1 |
+| `activity` | `activityStore` | giorni in cui ti sei allenato (max 400), record di giorni di fila, quiz perfetti | 2 |
 | `daily` | `dailyStore` | parole del giorno di oggi per coppia + parole segnate "la so già" | 1 |
+| `achievements` | `achievementStore` | data in cui è stato raggiunto ogni livello di ogni medaglia | 1 |
+| `profile` | `profileStore` | nome, nick, email, avatar (illustrato o foto), codice amico, contatore amici, data di inizio | 3 |
 
 All'avvio la splash screen resta visibile finché tutti gli store non sono caricati (`useStoresHydrated`).
 
@@ -246,7 +255,7 @@ File: `src/domain/text.ts` → `evaluateAnswer(risposta, accettate, lingua)` res
 File: `src/domain/activity.ts`, `src/store/activityStore.ts`.
 Un giorno conta se hai risposto ad almeno una domanda. La serie è il numero di giorni consecutivi fino a oggi; **non si azzera finché oggi non è finito** (se ti sei allenato ieri e oggi non ancora, la serie resta).
 
-## 7. Parole: lista, dettaglio, esempi
+## 7. Dizionario: lista, dettaglio, esempi
 
 - **Lista** (`words/index.tsx`): `FlatList` virtualizzata (fluida con centinaia di parole), ricerca su parola/traduzioni/tag, ordinamento. Ogni riga mostra la barra a 5 segmenti della scatola Leitner e il numero di errori.
 - **Dettaglio** (`words/[id].tsx`): card **Progressi** (giuste/sbagliate, prossimo ripasso: oggi / domani / tra N giorni) + modulo di modifica.
@@ -259,7 +268,68 @@ File: `src/domain/backup.ts`, `src/services/backupFiles.ts`.
 - **Esporta**: file JSON `{ app, version: 2, exportedAt, words }` condiviso col foglio di condivisione (File, AirDrop, mail…). Include statistiche, livello e date di ripasso.
 - **Importa**: accetta il formato dell'app e quello della **vecchia PWA** (`{ english, italian }`, importato come Inglese → Italiano). Una parola già presente non viene duplicata: si aggiungono solo le traduzioni mancanti.
 
-## 9. Design system
+## 9. Utente: profilo, medaglie, amici
+
+File: `src/app/(tabs)/profile/index.tsx` (profilo), `src/app/(tabs)/profile/edit.tsx` (modifica), `src/store/profileStore.ts`, `src/domain/achievements.ts`.
+
+**Profilo locale.** Non ci sono ancora account né server: i dati del profilo sono salvati solo sul telefono (`profileStore`). La struttura è già quella che servirà alla registrazione: quando arriverà il server, questi campi saranno i dati inviati al momento dell'iscrizione.
+
+| Campo | Cos'è | Regole (`domain/profile.ts`) |
+|---|---|---|
+| **Nome** | come ti chiami, è il titolo della pagina Utente e il saluto in Home | testo libero, max 30 caratteri |
+| **Nick** | il tuo nome pubblico e **unico** (`@stefano`), con cui gli amici ti cercheranno | 3–20 caratteri: lettere senza accenti, numeri, `_` e `.`, deve iniziare con una lettera. Si salva in minuscolo e senza `@` (`@Stefano` = `stefano`). L'unicità la verificherà il server: per ora si controlla solo la forma |
+| **Email** | per l'account futuro | controllo leggero di forma; la verifica vera la farà il server |
+| **Codice amico** | es. `K7M2-X9PQ`: con questo gli amici ti aggiungono anche se cambi nick | creato **una sola volta** al primo avvio e **mai modificabile**: `updateProfile` accetta solo nome, nick, email e immagine. 8 caratteri senza quelli che si confondono (niente 0/O, 1/I/L), facili da dettare. Tra codici casuali due uguali sono possibili ma rarissimi (31⁸ ≈ 850 miliardi di combinazioni): sarà il server, alla registrazione, a garantirne l'unicità |
+
+La **versione 3** di `profileStore` trasforma il vecchio "nome utente" in *nome*, aggiunge il nick vuoto e crea il codice amico per chi aveva già l'app.
+
+**Aggiungi amici** (`src/app/(tabs)/profile/friends.tsx`, dal bottone nella sezione Amici): in alto il campo per cercare un amico per nick o codice (disattivato fino all'arrivo del server; `normalizeFriendCode` accetta già `abcd efgh` → `ABCD-EFGH`), sotto **il tuo codice amico** in grande, selezionabile, con il bottone **Condividi il mio codice** (foglio di condivisione del telefono: WhatsApp, Messaggi, copia…).
+
+**Immagine.** Si sceglie fra 12 avatar illustrati (6 donne e 6 uomini con carnagioni, capelli, età e accessori diversi: occhiali, barba, velo, turbante) oppure una foto dalla galleria. Gli avatar sono disegnati in codice: il generatore e i sorgenti SVG sono in `design/avatars/` (fuori dall'app), i PNG usati dall'app in `assets/avatars/`, l'elenco in `content/avatars.ts`. Un profilo nuovo parte con un avatar a caso; la versione 2 di `profileStore` sostituisce i vecchi avatar-animale con un avatar a caso. La foto è ritagliata quadrata e viene **copiata nei documenti dell'app** (`services/profilePhoto.ts`): la copia del selettore sta in una cache che il sistema può svuotare. Quando la foto viene sostituita o rimossa, il file vecchio viene cancellato. Le modifiche valgono solo premendo **Salva**.
+
+**Medaglie.** 6 obiettivi, ognuno con **4 livelli**: 🥉 bronzo, 🥈 argento, 🥇 oro, 💎 diamante. Sono calcolati ogni volta dai dati che l'app ha già, quindi non possono "sfasarsi":
+
+| Medaglia | Misura | Bronzo | Argento | Oro | Diamante |
+|---|---|---|---|---|---|
+| 📚 Vocabolario | parole nel dizionario (tutte le lingue) | 20 | 100 | 500 | 1000 |
+| 🏆 Imparate | parole con 5 risposte giuste di fila (la metà del Vocabolario) | 10 | 50 | 250 | 500 |
+| 🔥 Costanza | **record** di giorni di fila (se la serie si interrompe il livello resta) | 3 | 7 | 30 | 100 |
+| 🎯 Precisione | risposte giuste in totale | 50 | 250 | 1000 | 5000 |
+| 🎉 Quiz perfetti | quiz completati di almeno 5 domande senza errori | 1 | 5 | 20 | 50 |
+| 🌍 Poliglotta | lingue studiate con almeno una parola | 2 | 3 | 4 | 5 |
+
+Ogni medaglia mostra: il cerchio del colore del livello raggiunto (grigio e sbiadito se nessuno), quattro pallini per i livelli, il nome del livello e una barra verso il **prossimo** livello, nel suo colore (es. `120/500` verso l'oro). Toccandola sale dal basso una **finestra della medaglia** (`src/app/medal/[id].tsx`, presentata come *form sheet* nativo): i tuoi progressi (es. `120 / 500`, anche oltre il diamante: `1240 / 1000`), e per ognuno dei quattro livelli l'obiettivo, la **data in cui l'hai raggiunto** oppure quanti ne mancano (`Ne mancano 380 · 120/500`), con una barra sul prossimo livello.
+
+**Date dei livelli.** Le medaglie sono calcolate, ma le date vanno salvate: `achievementStore` tiene la data di ogni livello (`"words:silver"` → data). Le registra `AchievementTracker` (`hooks/useAchievements.ts`), un componente invisibile nel layout principale che, ogni volta che cambiano parole o attività, data i livelli appena raggiunti, ovunque tu sia nell'app. Per i livelli raggiunti prima che le date esistessero si usa la stima migliore: per *Vocabolario* il giorno in cui hai aggiunto l'N-esima parola, per *Costanza* il giorno in cui hai completato la prima serie abbastanza lunga; per gli altri la data del primo avvio con questa versione. Il riquadro in alto conta le medaglie con almeno il bronzo (es. `4/6`). Il record di giorni e i quiz perfetti sono salvati in `activityStore`; la sua versione 2 ricostruisce il record dai giorni già salvati, quindi chi aveva già l'app non perde nulla.
+
+**Amici.** Il contatore c'è già (sempre 0) e la sezione dice che arriveranno presto: aggiungere amici richiede il server.
+
+## 10. Impostazioni
+
+File: `src/app/settings/`. Le impostazioni hanno una loro navigazione dentro la finestra modale (`settings/_layout.tsx`): la pagina principale (`index.tsx`) ha il tema e l'elenco delle categorie, e ogni categoria è una pagina che entra da destra con il tasto indietro.
+
+| Pagina | Contenuto |
+|---|---|
+| `index.tsx` | tema (Sistema / Chiaro / Scuro) + categorie con il valore attuale a destra |
+| `languages.tsx` | lingua studiata, lingua madre, livello delle parole del giorno (`components/StudySettings.tsx`, lo stesso della finestra Lingue della Home) e lingua dell'app |
+| `sounds.tsx` | suoni del quiz (pensata per accogliere altre opzioni audio) |
+| `notifications.tsx` | promemoria giornaliero e orario |
+| `backup.tsx` | esporta e importa |
+
+"Fine" chiude tutta la finestra (è la prima pagina del suo stack, quindi tornare indietro la chiude).
+
+## 11. Suoni e promemoria
+
+**Suoni** (`services/sounds.ts`, file in `assets/sounds/`): un suono breve per risposta giusta o "quasi", uno per risposta sbagliata, una piccola fanfara a fine quiz. Sono toni sintetici generati apposta, quindi senza problemi di licenza. Rispettano l'interruttore silenzioso del telefono, si mescolano con la musica che stai ascoltando e si spengono in Impostazioni. Quando li riattivi senti subito un esempio.
+
+*Ritardo*: caricare un suono e preparare l'audio richiede un attimo. Per questo `preloadSounds()` li carica quando si apre il quiz, e `playSound()` non aspetta nulla prima di partire (il riavvolgimento all'inizio non viene atteso).
+
+**Promemoria** (`services/reminders.ts`, `hooks/useReminderSync.ts`): una notifica locale ogni giorno all'ora scelta (8:00, 13:00, 18:00 o 21:00). Locale vuol dire che la programma il telefono stesso: nessun server, funziona offline e in Expo Go.
+- Il permesso viene chiesto **solo quando attivi l'interruttore**, mai all'avvio. Se lo neghi, l'interruttore torna spento e un messaggio spiega come riattivarlo dalle impostazioni del telefono.
+- `useReminderSync` (nel layout principale) riprogramma la notifica quando cambi ora o lingua dell'app e la cancella quando la spegni. Aspetta che le impostazioni salvate siano caricate, altrimenti all'avvio i valori predefiniti la cancellerebbero.
+- Il testo è generico ("È ora di ripassare! 🧠"): la notifica è programmata in anticipo, quindi non può sapere quante parole avrai da ripassare quel giorno.
+
+## 12. Design system
 
 File: `src/theme/` e `src/components/`.
 
@@ -284,6 +354,7 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 | `accent` | verde menta del marchio, **solo decorazione** (barre, segmenti) |
 | `primary`, `primaryStrong`, `primarySoft`, `onPrimary` | azioni: testo verde, bottoni pieni, sfondi tenui |
 | `danger(Soft)`, `warning(Soft)` | eliminazione/errori, avvisi |
+| `bronze`, `silver`, `gold`, `diamond` (+ `…Soft`) | livelli delle medaglie: anello, pallini, barre (solo decorazione) |
 
 **Perché due verdi in chiaro**: il menta originale (`#2fbf71`) con testo bianco ha contrasto 2.4:1 (illeggibile per molti). Ora i bottoni e i testi verdi usano `#167a46` (5.4:1) e il menta resta per le decorazioni. Anche il rosso è passato da `#ff3b30` (3.5:1) a `#d70015` (5.4:1). In scuro tutti i valori erano già sopra 4.5:1.
 
@@ -298,6 +369,10 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 | `Pill` | etichetta piccola (livello, "2 errori", "Aggiunta ✓") |
 | `SegmentedControl` | 2–4 scelte esclusive su una riga |
 | `OptionList` | elenco con spunta (stile Impostazioni iOS) |
+| `ListGroup` + `ListRow` | righe raggruppate con icona, valore a destra, freccia o interruttore (Impostazioni, Account) |
+| `Avatar` | immagine profilo rotonda: avatar disegnato o foto, con anello opzionale |
+| `MedalBadge` | una medaglia a 4 livelli: cerchio del colore del livello, pallini, barra verso il prossimo |
+| `StudySettings` | lingua studiata, lingua madre e livello: usato nella finestra Lingue e nelle Impostazioni |
 | `Section` | titolo maiuscoletto + contenuto + suggerimento |
 | `TextField` | campo di testo con i colori del tema |
 | `StatTile` | un numero grande con etichetta; 2–3 in fila |
@@ -314,14 +389,15 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 - I campi che devono essere pronti per scrivere (risposta del quiz, nuova parola) prendono il focus **solo a fine animazione** (`hooks/useFocusAfterTransition.ts`), non con `autoFocus`: su iOS la tastiera aperta durante l'animazione faceva scorrere la pagina sotto l'intestazione.
 - `Screen` mette lo ScrollView come prima vista della schermata (il contenitore extra serve solo alle tab per lo swipe): iOS calcola da lì lo spazio sotto l'intestazione.
 
-## 10. Test
+## 13. Test
 
-`npm test` esegue i test in `src/domain/__tests__/` (38 test): correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello), serie di giorni.
+`npm test` esegue i test in `src/domain/__tests__/` (55 test): correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello), serie di giorni e record, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, formato del codice amico.
 Sono test della logica pura: girano in un secondo, senza telefono.
 
-## 11. Limiti noti e prossimi passi
+## 14. Limiti noti e prossimi passi
 
 - **Sfide**: rimandate. L'idea più semplice senza server è un codice/link che contiene le parole e il punteggio da battere.
 - **Versione web**: non è un obiettivo. Funziona per prove veloci (`npx expo start --web`), ma la barra delle tab nativa sul web si sovrappone all'intestazione.
 - **Parole del giorno**: la lista integrata ha 258 parole. Con 5 al giorno bastano per circa 50 giorni col livello *Tutti* e per 2–3 settimane con un livello singolo (A1–A2: 89, B1–B2: 97, C1–C2: 72). Il passo naturale è il server descritto sopra (o allungare la lista: basta aggiungere righe).
-- **Notifiche** ("hai 12 parole da ripassare"): richiedono `expo-notifications` e una development build.
+- **Amici e account**: richiedono un server. Il profilo locale (`profileStore`) è già pensato per essere inviato alla registrazione.
+- **Notifiche push** (mandate da un server, per esempio "un amico ti ha sfidato"): richiedono una development build. Il promemoria giornaliero locale invece funziona già.

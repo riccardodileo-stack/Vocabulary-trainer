@@ -29,6 +29,16 @@ export const palette = {
     warning: '#945400',
     warningSoft: 'rgba(255, 149, 0, 0.13)',
 
+    /** Medal tiers: ring, dots and glow (decoration only, not for text). */
+    bronze: '#c27a3a',
+    bronzeSoft: 'rgba(205, 127, 50, 0.16)',
+    silver: '#9aa6b2',
+    silverSoft: 'rgba(154, 166, 178, 0.22)',
+    gold: '#e0a800',
+    goldSoft: 'rgba(245, 180, 0, 0.16)',
+    diamond: '#3bb8e8',
+    diamondSoft: 'rgba(59, 184, 232, 0.16)',
+
     shadow: '#000000',
   },
   dark: {
@@ -50,6 +60,15 @@ export const palette = {
     dangerSoft: 'rgba(255, 69, 58, 0.16)',
     warning: '#ffb340',
     warningSoft: 'rgba(255, 159, 10, 0.16)',
+
+    bronze: '#e09a5a',
+    bronzeSoft: 'rgba(224, 154, 90, 0.16)',
+    silver: '#c3ccd5',
+    silverSoft: 'rgba(195, 204, 213, 0.16)',
+    gold: '#f5c542',
+    goldSoft: 'rgba(245, 197, 66, 0.16)',
+    diamond: '#6fd3f7',
+    diamondSoft: 'rgba(111, 211, 247, 0.16)',
 
     shadow: '#000000',
   },

@@ -6,7 +6,7 @@ import { router, type Href } from 'expo-router';
 import { useMemo } from 'react';
 import { PanResponder, type GestureResponderHandlers } from 'react-native';
 
-export const TAB_ROUTES = ['/', '/words', '/train', '/challenges'] as const satisfies Href[];
+export const TAB_ROUTES = ['/', '/words', '/train', '/challenges', '/profile'] as const satisfies Href[];
 
 export type TabRoute = (typeof TAB_ROUTES)[number];
 
