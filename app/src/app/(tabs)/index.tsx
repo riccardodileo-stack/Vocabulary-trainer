@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -102,9 +103,24 @@ export default function HomeScreen() {
           </View>
           <LanguagePairChip pair={pair} compact onPress={() => router.push('/languages')} />
         </View>
-        <AppText variant="display" accessibilityRole="header">
-          {greeting}
-        </AppText>
+        <View style={styles.greetingRow}>
+          <View style={[styles.greetingBubble, { backgroundColor: colors.card }]}>
+            <View
+              pointerEvents="none"
+              style={[styles.greetingTail, { backgroundColor: colors.card }]}
+            />
+            <AppText variant="hero" accessibilityRole="header">
+              {greeting}
+            </AppText>
+          </View>
+
+          <Image
+            source={require('../../../assets/mascot/goricheco-wave.png')}
+            contentFit="contain"
+            style={[styles.greetingMascot, largeText && styles.greetingMascotCompact]}
+            accessible={false}
+          />
+        </View>
       </View>
 
       <View style={[styles.stats, largeText && styles.statsStacked]}>
@@ -206,6 +222,41 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   header: { gap: spacing.xs },
+    greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  greetingBubble: {
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+  },
+  greetingTail: {
+    position: 'absolute',
+    top: '50%',
+    right: -spacing.xs,
+    marginTop: -spacing.sm,
+    width: spacing.lg,
+    height: spacing.lg,
+    borderRadius: spacing.xs / 2,
+    transform: [{ rotate: '45deg' }],
+  },
+  greetingMascot: {
+    width: '44%',
+    maxWidth: spacing.xxl * 5.5,
+    aspectRatio: 3 / 2,
+    flexShrink: 0,
+    marginLeft: -spacing.xl,
+    marginRight: -spacing.lg,
+  },
+  greetingMascotCompact: {
+    width: '36%',
+    maxWidth: spacing.xxl * 4,
+    marginLeft: -spacing.lg,
+  },
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
