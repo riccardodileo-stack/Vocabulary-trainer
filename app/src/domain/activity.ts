@@ -3,7 +3,7 @@
 import { addDays, dayKey, type DayKey } from './dates';
 
 /** Days kept in memory: enough for a year of streak, small enough to save quickly. */
-export const ACTIVITY_DAYS_KEPT = 400;
+export const ACTIVITY_DAYS_KEPT = 2000;
 
 /** Adds a day to a sorted list of days (no duplicates, oldest dropped). */
 export function withDay(days: DayKey[], day: DayKey): DayKey[] {

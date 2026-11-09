@@ -9,6 +9,23 @@
 
 export const palette = {
   light: {
+
+    homeReviewSurface: '#113D30',
+    homeReviewText: '#F6FFF9',
+    homeReviewMuted: '#C3DFD1',
+    homeReviewTint: '#ACE9C6',
+    homeReviewStroke: 'rgba(172, 233, 198, 0.28)',
+    homeReviewFill: 'rgba(172, 233, 198, 0.15)',
+    homeReviewAction: '#C7F6D9',
+    homeReviewOnAction: '#10372B',
+    homeLearned: '#5546A6',
+    homeLearnedSoft: '#F1EEFB',
+    homeStreak1: '#946014',
+    homeStreak10: '#BC4D13',
+    homeStreak100: '#C22E26',
+    homeStreak1000: '#B9183B',
+
+
     background: '#eef8ef',
     card: '#ffffff',
     cardMuted: '#f6fbf7',
@@ -42,6 +59,23 @@ export const palette = {
     shadow: '#000000',
   },
   dark: {
+
+    homeReviewSurface: '#12372D',
+    homeReviewText: '#F2FFF7',
+    homeReviewMuted: '#B7D8C9',
+    homeReviewTint: '#99E5BA',
+    homeReviewStroke: 'rgba(153, 229, 186, 0.29)',
+    homeReviewFill: 'rgba(153, 229, 186, 0.14)',
+    homeReviewAction: '#B8F2CF',
+    homeReviewOnAction: '#0F3328',
+    homeLearned: '#C1B4FA',
+    homeLearnedSoft: '#312947',
+    homeStreak1: '#EFC477',
+    homeStreak10: '#FFA45F',
+    homeStreak100: '#FF765C',
+    homeStreak1000: '#FF5372',
+
+
     background: '#0e1511',
     card: '#18221c',
     cardMuted: '#1f2b24',

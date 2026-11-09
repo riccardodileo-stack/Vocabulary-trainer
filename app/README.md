@@ -16,7 +16,7 @@ Il README ha due parti:
 
 | Schermata | A cosa serve |
 |-----------|--------------|
-| **Home** | Il "cosa faccio oggi": il saluto (con il tuo nome) e in alto a destra il selettore delle lingue 🇬🇧 → 🇮🇹, che apre una finestra con solo lingue e livello, serie di giorni 🔥, numero di parole e parole imparate, **Ripasso di oggi**, **+ Aggiungi parola**, **Parole del giorno**, errori da correggere. |
+| **Home** | Data e saluto personalizzato, selettore delle lingue, contatori con simboli e fiamma della serie a 1, 10, 100 e 1.000 giorni. Seguono **Ripasso di oggi**, **+ Aggiungi parola** e **Parole del giorno**. |
 | **Dizionario** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti) e filtro **Errori** (solo le parole sbagliate, con i contatori errori/giuste), barra di "quanto la so" per ogni parola. Tocca una parola per vedere i progressi e modificarla. |
 | **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da imparare*, *tutte*, *errori*), quante domande (10, 20, tutte o **Altro**: un numero a scelta da 1 a 200). |
 | **Sfide** | In arrivo (rimandata di proposito). |
