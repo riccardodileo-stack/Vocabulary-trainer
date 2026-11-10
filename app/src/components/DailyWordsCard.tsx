@@ -1,11 +1,12 @@
 // Home card with today's words of the day: add them, or mark them as known.
 
 import { router } from 'expo-router';
+import { Image } from 'expo-image';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { useDailyWords, type DailyWordItem, type DailyWords } from '@/hooks/useDailyWords';
 import { useT } from '@/i18n';
-import { fontSize, spacing, useTheme } from '@/theme';
+import { fontSize, radius, spacing, useTheme } from '@/theme';
 
 import { AppText } from './AppText';
 import { Appear } from './Appear';
@@ -79,7 +80,7 @@ export function DailyWordsCard() {
   return (
     <Card>
       <AppText variant="title" accessibilityRole="header">
-        ☀️ {t.daily.title}
+        {t.daily.title}
       </AppText>
 
       {daily.status === 'loading' ? (
@@ -100,7 +101,21 @@ export function DailyWordsCard() {
 
       {daily.status === 'ready' && daily.items.length > 0 ? (
         <>
-          <AppText color="textMuted">{allHandled ? t.daily.allHandled : t.daily.subtitle}</AppText>
+          <View style={styles.studyIntro}>
+            <View style={[styles.studyBubble, { backgroundColor: colors.cardMuted }]}>
+              <View
+                pointerEvents="none"
+                style={[styles.studyTail, { backgroundColor: colors.cardMuted }]}
+              />
+              <AppText>{allHandled ? t.daily.allHandled : t.daily.subtitle}</AppText>
+            </View>
+            <Image
+              source={require('../../assets/mascot/goricheco-study.png')}
+              contentFit="contain"
+              style={styles.studyMascot}
+              accessible={false}
+            />
+          </View>
           <View>
             {daily.items.map((item) => (
               <DailyWordRow key={item.suggestion.id} item={item} actions={daily} />
@@ -119,6 +134,36 @@ export function DailyWordsCard() {
 }
 
 const styles = StyleSheet.create({
+
+  studyIntro: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  studyBubble: {
+    flex: 1,
+    minWidth: 0,
+    padding: spacing.md,
+    borderRadius: radius.md,
+  },
+  studyTail: {
+    position: 'absolute',
+    top: '50%',
+    right: -spacing.xs,
+    marginTop: -spacing.sm,
+    width: spacing.lg,
+    height: spacing.lg,
+    transform: [{ rotate: '45deg' }],
+  },
+  studyMascot: {
+    width: '40%',
+    maxWidth: spacing.xxl * 4.5,
+    aspectRatio: 3 / 2,
+    flexShrink: 0,
+    marginLeft: -spacing.xl,
+    marginRight: -spacing.lg,
+  },
+
   status: {
     flexDirection: 'row',
     alignItems: 'center',

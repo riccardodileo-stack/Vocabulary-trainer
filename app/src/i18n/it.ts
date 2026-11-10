@@ -39,7 +39,7 @@ export const it: Translations = {
   },
   daily: {
     title: 'Parole del giorno',
-    subtitle: 'Parole nuove scelte per te. Aggiungi quelle che vuoi imparare.',
+    subtitle: 'Ecco delle nuove parole per te. Aggiungi quelle che vuoi imparare',
     loading: 'Scelgo le parole di oggi…',
     error: 'Impossibile caricare le parole del giorno.',
     exhausted: 'Hai già visto tutte le parole di questo livello. Scegline un altro nelle impostazioni.',

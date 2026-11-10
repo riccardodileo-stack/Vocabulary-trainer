@@ -38,7 +38,7 @@ export const en = {
   },
   daily: {
     title: 'Words of the day',
-    subtitle: 'New words picked for you. Add the ones you want to learn.',
+    subtitle: 'Here are some new words for you. Add the ones you want to learn',
     loading: 'Choosing today’s words…',
     error: 'The words of the day could not be loaded.',
     exhausted: 'You have seen every word of this level. Choose another level in the settings.',
