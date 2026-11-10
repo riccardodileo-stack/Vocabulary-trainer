@@ -48,16 +48,15 @@ export default function TrainScreen() {
       <Stack.Screen options={{ title: t.train.title }} />
 
       <Screen tab="/train">
-        <Section title={t.train.direction}>
-          <SegmentedControl
-            options={[
-              { value: 'forward', label: `${source} → ${target}` },
-              { value: 'backward', label: `${target} → ${source}` },
-            ]}
-            value={direction}
-            onChange={setDirection}
-          />
-        </Section>
+      
+        <SegmentedControl
+          options={[
+            { value: 'forward', label: `${source} → ${target}` },
+            { value: 'backward', label: `${target} → ${source}` },
+          ]}
+          value={direction}
+          onChange={setDirection}
+        />
 
         <Section title={t.train.mode} hint={modeHints[mode]}>
           <SegmentedControl

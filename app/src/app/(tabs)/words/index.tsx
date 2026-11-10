@@ -3,6 +3,7 @@
 // the most mistaken first, each with its wrong / right counters.
 
 import { Stack, router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { memo, useDeferredValue, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -22,7 +23,7 @@ import { meaningsToText, type Word } from '@/domain/word';
 import { useT } from '@/i18n';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
-import { spacing } from '@/theme';
+import { iconSize, radius, spacing, useTheme } from '@/theme';
 
 type SortOrder = 'alphabetical' | 'recent' | 'mistakes';
 
@@ -59,16 +60,43 @@ function openWord(id: string) {
 /** Memoized: re-sorting moves rows around without re-rendering each of them. */
 type WordRowProps = { word: Word; errorsLabel?: string; correctLabel?: string; masteryLabel: string };
 
+const MASTERY_SPARKLE = { ios: 'sparkle', android: 'auto_awesome', web: 'auto_awesome' } as const;
+
 const WordRow = memo(function WordRow({ word, errorsLabel, correctLabel, masteryLabel }: WordRowProps) {
+  const { colors } = useTheme();
+  const box = reviewBox(word);
+  const mastered = box === MASTERED_BOX;
+
   return (
-    <Card onPress={() => openWord(word.id)} accessibilityRole="button">
+    <Card
+      onPress={() => openWord(word.id)}
+      accessibilityRole="button"
+      style={mastered ? [styles.masteredCard, { borderColor: colors.gold }] : undefined}>
       <View style={styles.row}>
         <AppText variant="bodyBold" style={styles.term}>
           {word.term}
         </AppText>
         {errorsLabel ? <Pill label={errorsLabel} tone="warning" /> : null}
         {correctLabel ? <Pill label={correctLabel} /> : null}
-        <MasteryMeter box={reviewBox(word)} accessibilityLabel={masteryLabel} />
+
+        <View style={styles.mastery}>
+          <MasteryMeter box={box} accessibilityLabel={masteryLabel} />
+          {mastered ? (
+            <View
+              pointerEvents="none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              style={[styles.masteryBadge, { backgroundColor: colors.goldSoft }]}>
+              <SymbolView name={MASTERY_SPARKLE} size={spacing.sm} tintColor={colors.gold} />
+              <SymbolView
+                name={{ ios: 'star.fill', android: 'star_rate', web: 'star_rate' }}
+                size={iconSize.md}
+                tintColor={colors.gold}
+              />
+              <SymbolView name={MASTERY_SPARKLE} size={iconSize.sm / 2} tintColor={colors.gold} />
+            </View>
+          ) : null}
+        </View>
       </View>
       <AppText color="textMuted" numberOfLines={2}>
         {meaningsToText(word)}
@@ -168,6 +196,23 @@ export default function WordsScreen() {
 }
 
 const styles = StyleSheet.create({
+
+  masteredCard: {
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  mastery: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  masteryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs / 2,
+    borderRadius: radius.pill,
+  },
+
   header: {
     gap: spacing.lg,
     marginBottom: spacing.lg,

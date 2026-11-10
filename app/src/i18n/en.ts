@@ -5,7 +5,7 @@ export const en = {
   tabs: {
     home: 'Home',
     words: 'Dictionary',
-    train: 'Train',
+    train: 'Training',
     challenges: 'Challenges',
     profile: 'Profile',
   },
@@ -114,8 +114,7 @@ export const en = {
     credit: 'Sentences from Tatoeba.org (CC BY).',
   },
   train: {
-    title: 'Train',
-    direction: 'Direction',
+    title: 'Training',
     mode: 'Words',
     modeDue: 'To learn',
     modeAll: 'All',

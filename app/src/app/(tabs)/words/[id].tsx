@@ -7,7 +7,6 @@ import { AppText } from '@/components/AppText';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { WordForm } from '@/components/WordForm';
-import { WordStatsCard } from '@/components/WordStatsCard';
 import { belongsToPair, hasSameTerm, type Word } from '@/domain/word';
 import { useT } from '@/i18n';
 import { useWord, useWordStore } from '@/store/wordStore';
@@ -47,7 +46,6 @@ export default function EditWordScreen() {
       <Stack.Screen options={{ title: t.wordForm.editTitle, headerLargeTitle: false }} />
 
       <Screen>
-        {word ? <WordStatsCard word={word} /> : null}
 
         {word ? (
           <WordForm

@@ -6,7 +6,7 @@ export const it: Translations = {
   tabs: {
     home: 'Home',
     words: 'Dizionario',
-    train: 'Allenati',
+    train: 'Allenamento',
     challenges: 'Sfide',
     profile: 'Utente',
   },
@@ -115,8 +115,7 @@ export const it: Translations = {
     credit: 'Frasi da Tatoeba.org (CC BY).',
   },
   train: {
-    title: 'Allenati',
-    direction: 'Direzione',
+    title: 'Allenamento',
     mode: 'Parole',
     modeDue: 'Da imparare',
     modeAll: 'Tutte',
