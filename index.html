@@ -11,7 +11,17 @@
 
   <title>Vocabulary Trainer</title>
 
-  <link rel="stylesheet" href="style.css" />
+  <!-- Order matters: base and layout first, feature styles after -->
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/vocabulary/word-list.css" />
+  <link rel="stylesheet" href="css/vocabulary/shared-translations.css" />
+  <link rel="stylesheet" href="css/vocabulary/add-word.css" />
+  <link rel="stylesheet" href="css/vocabulary/backup.css" />
+  <link rel="stylesheet" href="css/quiz/quiz.css" />
+  <link rel="stylesheet" href="css/quiz/selection.css" />
+  <link rel="stylesheet" href="css/quiz/mistakes.css" />
 
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-192.png" />
@@ -455,15 +465,7 @@
   <!-- TOAST MESSAGE -->
   <div id="toast" class="toast"></div>
 
-  <script src="script.js"></script>
-
-  <script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./service-worker.js");
-    });
-  }
-</script>
+  <script type="module" src="js/main.js"></script>
 
 </body>
 </html>

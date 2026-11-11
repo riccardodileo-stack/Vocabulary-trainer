@@ -1,0 +1,112 @@
+// App palette, taken from the PWA (mint green on a light green background)
+// with a matching dark version. Change colors here only.
+//
+// Contrast (WCAG AA): every text color below reaches 4.5:1 on the surfaces it is
+// used on. That is why light mode has two greens:
+// - `accent`  the mint brand color, only for decoration (progress bars, dots, soft fills)
+// - `primary` a deeper green for text and for buttons with white text
+// Check new colors with a contrast checker before adding them.
+
+export const palette = {
+  light: {
+
+    homeReviewSurface: '#113D30',
+    homeReviewText: '#F6FFF9',
+    homeReviewMuted: '#C3DFD1',
+    homeReviewTint: '#ACE9C6',
+    homeReviewStroke: 'rgba(172, 233, 198, 0.28)',
+    homeReviewFill: 'rgba(172, 233, 198, 0.15)',
+    homeReviewAction: '#C7F6D9',
+    homeReviewOnAction: '#10372B',
+    homeLearned: '#5546A6',
+    homeLearnedSoft: '#F1EEFB',
+    homeStreak1: '#946014',
+    homeStreak10: '#BC4D13',
+    homeStreak100: '#C22E26',
+    homeStreak1000: '#B9183B',
+
+
+    background: '#eef8ef',
+    card: '#ffffff',
+    cardMuted: '#f6fbf7',
+    text: '#1d1d1f',
+    textMuted: '#6e6e73',
+    border: 'rgba(0, 0, 0, 0.08)',
+    /** Empty part of progress bars and meters. */
+    track: 'rgba(0, 0, 0, 0.1)',
+
+    accent: '#2fbf71',
+    primary: '#167a46',
+    primaryStrong: '#11633a',
+    primarySoft: 'rgba(47, 191, 113, 0.13)',
+    onPrimary: '#ffffff',
+
+    danger: '#d70015',
+    dangerSoft: 'rgba(215, 0, 21, 0.09)',
+    warning: '#945400',
+    warningSoft: 'rgba(255, 149, 0, 0.13)',
+
+    /** Medal tiers: ring, dots and glow (decoration only, not for text). */
+    bronze: '#c27a3a',
+    bronzeSoft: 'rgba(205, 127, 50, 0.16)',
+    silver: '#9aa6b2',
+    silverSoft: 'rgba(154, 166, 178, 0.22)',
+    gold: '#e0a800',
+    goldSoft: 'rgba(245, 180, 0, 0.16)',
+    diamond: '#3bb8e8',
+    diamondSoft: 'rgba(59, 184, 232, 0.16)',
+
+    shadow: '#000000',
+  },
+  dark: {
+
+    homeReviewSurface: '#12372D',
+    homeReviewText: '#F2FFF7',
+    homeReviewMuted: '#B7D8C9',
+    homeReviewTint: '#99E5BA',
+    homeReviewStroke: 'rgba(153, 229, 186, 0.29)',
+    homeReviewFill: 'rgba(153, 229, 186, 0.14)',
+    homeReviewAction: '#B8F2CF',
+    homeReviewOnAction: '#0F3328',
+    homeLearned: '#C1B4FA',
+    homeLearnedSoft: '#312947',
+    homeStreak1: '#EFC477',
+    homeStreak10: '#FFA45F',
+    homeStreak100: '#FF765C',
+    homeStreak1000: '#FF5372',
+
+
+    background: '#0e1511',
+    card: '#18221c',
+    cardMuted: '#1f2b24',
+    text: '#f2f5f3',
+    textMuted: '#9aa59e',
+    border: 'rgba(255, 255, 255, 0.08)',
+    track: 'rgba(255, 255, 255, 0.14)',
+
+    accent: '#34d17f',
+    primary: '#34d17f',
+    primaryStrong: '#5ee29b',
+    primarySoft: 'rgba(52, 209, 127, 0.16)',
+    onPrimary: '#06210f',
+
+    danger: '#ff453a',
+    dangerSoft: 'rgba(255, 69, 58, 0.16)',
+    warning: '#ffb340',
+    warningSoft: 'rgba(255, 159, 10, 0.16)',
+
+    bronze: '#e09a5a',
+    bronzeSoft: 'rgba(224, 154, 90, 0.16)',
+    silver: '#c3ccd5',
+    silverSoft: 'rgba(195, 204, 213, 0.16)',
+    gold: '#f5c542',
+    goldSoft: 'rgba(245, 197, 66, 0.16)',
+    diamond: '#6fd3f7',
+    diamondSoft: 'rgba(111, 211, 247, 0.16)',
+
+    shadow: '#000000',
+  },
+} as const;
+
+export type ColorScheme = keyof typeof palette;
+export type ThemeColors = { [K in keyof typeof palette.light]: string };

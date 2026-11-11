@@ -1,0 +1,77 @@
+/* ===== VOCABULARY: word list and search ===== */
+
+.word-list {
+  display: grid;
+  gap: 12px;
+}
+
+.word-card {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.76);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.045);
+}
+
+.word-main {
+  min-width: 0;
+}
+
+.word-value {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.delete-button {
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.edit-button {
+  padding: 10px 14px;
+  font-size: 13px;
+  background: rgba(47,191,113,0.13);
+  color: var(--deep-green);
+}
+
+.word-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* SEARCH BOX */
+
+.search-box {
+  margin: 18px 0 32px;
+  background: rgba(255,255,255,0.72);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 14px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.045);
+}
+
+.search-box input {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+/* TABLET / MOBILE */
+
+@media (max-width: 820px) {
+  .word-card {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .word-actions {
+    justify-content: flex-start;
+  }
+}
