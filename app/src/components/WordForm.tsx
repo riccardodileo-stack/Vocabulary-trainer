@@ -24,6 +24,7 @@ type MeaningDraft = { text: string; note: string; examples: string };
 type WordFormProps = {
   pair: LanguagePair;
   initialWord?: Word;
+  autoFocus?: boolean;
   /** Returns an error message to show, or null if the word was saved. */
   onSave: (input: NewWordInput) => string | null;
   onDelete?: () => void;
@@ -70,7 +71,7 @@ function meaningIndexFor(drafts: MeaningDraft[], sentence: ExampleSentence): num
   return Math.max(index, 0);
 }
 
-export function WordForm({ pair, initialWord, onSave, onDelete }: WordFormProps) {
+export function WordForm({ pair, initialWord, autoFocus = true, onSave, onDelete }: WordFormProps) {
   const t = useT();
   const [term, setTerm] = useState(initialWord?.term ?? '');
   const [drafts, setDrafts] = useState(() => draftsFromWord(initialWord));
@@ -78,7 +79,7 @@ export function WordForm({ pair, initialWord, onSave, onDelete }: WordFormProps)
   const [error, setError] = useState<string | null>(null);
   const termRef = useRef<TextFieldRef>(null);
   // New word: start typing at once (but only after the screen has slid in)
-  useFocusAfterTransition(termRef, !initialWord);
+  useFocusAfterTransition(termRef, autoFocus && !initialWord);
 
   const updateDraft = (index: number, changes: Partial<MeaningDraft>) =>
     setDrafts((current) => current.map((draft, i) => (i === index ? { ...draft, ...changes } : draft)));

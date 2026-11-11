@@ -5,8 +5,8 @@ import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
-import { Button } from '@/components/Button';
 import { DailyWordsCard } from '@/components/DailyWordsCard';
+import { HomeAddWordCard } from '@/components/HomeAddWordCard';
 import { LanguagePairChip } from '@/components/LanguagePairChip';
 import { Screen } from '@/components/Screen';
 import { dayKey } from '@/domain/dates';
@@ -161,6 +161,7 @@ export default function HomeScreen() {
         })}
       </View>
 
+      <HomeAddWordCard key={`${pair.source}-${pair.target}`} pair={pair} />
       <View style={[styles.review, { backgroundColor: colors.homeReviewSurface }]}>
         <View pointerEvents="none" style={[styles.reviewHalo, { borderColor: colors.homeReviewStroke }]} />
         <View style={styles.reviewHeader}>
@@ -210,11 +211,6 @@ export default function HomeScreen() {
         ) : null}
       </View>
 
-      <Button
-        label={t.home.addWord}
-        tone={words.length === 0 ? 'primary' : 'secondary'}
-        onPress={() => router.push('/words/new')}
-      />
       <DailyWordsCard />
     </Screen>
   );
