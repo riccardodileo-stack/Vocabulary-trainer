@@ -6,7 +6,7 @@
 
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Keyboard, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Appear } from '@/components/Appear';
@@ -56,6 +56,33 @@ export default function QuizScreen() {
   useFocusAfterTransition(inputRef);
   // Sounds ready before the first answer, so they play without delay
   useEffect(() => preloadSounds(), []);
+
+  const { height: windowHeight } = useWindowDimensions();
+  const [keyboardFrame, setKeyboardFrame] = useState(() => (
+    Platform.OS === 'ios' ? Keyboard.metrics() : undefined
+  ));
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') {
+      return;
+    }
+
+    const frameSubscription = Keyboard.addListener('keyboardWillChangeFrame', ({ endCoordinates }) => {
+      setKeyboardFrame(endCoordinates);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardWillHide', () => {
+      setKeyboardFrame(undefined);
+    });
+
+    return () => {
+      frameSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  const keyboardInset = keyboardFrame
+    ? Math.max(0, Math.min(keyboardFrame.height, windowHeight - keyboardFrame.screenY))
+    : 0;
 
   // The questions are chosen once per round, so stats updates don't reshuffle them
   const [questions, setQuestions] = useState(() => buildQuiz(words, options));
@@ -200,7 +227,10 @@ export default function QuizScreen() {
         }}
       />
 
-      <Screen>
+      <Screen
+        automaticallyAdjustKeyboardInsets={false}
+        contentInset={{ bottom: keyboardInset }}
+        scrollIndicatorInsets={{ bottom: keyboardInset }}>
         <ProgressBar
           progress={answeredCount / questions.length}
           accessibilityLabel={t.quiz.progressAccessibility(index + 1, questions.length)}
