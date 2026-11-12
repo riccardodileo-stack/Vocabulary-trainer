@@ -6,7 +6,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 import type { DailyLevel } from '@/domain/dailyWords';
+import type { PartOfSpeech } from '@/domain/partOfSpeech';
 import { clampQuizCount, QUIZ_CUSTOM_DEFAULT } from '@/domain/quiz';
+import type { TopicId } from '@/domain/topics';
 import { isLanguageCode, studyLanguagesFor, type LanguageCode, type LanguagePair } from '@/domain/languages';
 import type { UiLanguage } from '@/i18n';
 
@@ -34,6 +36,13 @@ type SettingsState = {
   quizCountChoice: QuizCountChoice;
   /** The number used when quizCountChoice is 'custom'. */
   quizCustomCount: number;
+  /** Topics chosen for the quiz; empty = every topic. */
+  quizTopics: TopicId[];
+  /** Kinds of word chosen for the quiz; empty = every kind. */
+  quizPartsOfSpeech: PartOfSpeech[];
+
+  setQuizTopics: (topics: TopicId[]) => void;
+  setQuizPartsOfSpeech: (kinds: PartOfSpeech[]) => void;
 
   setQuizCountChoice: (choice: QuizCountChoice) => void;
   setQuizCustomCount: (count: number) => void;
@@ -71,6 +80,11 @@ export const useSettingsStore = create<SettingsState>()(
       reminderTime: 18 * 60,
       quizCountChoice: '10',
       quizCustomCount: QUIZ_CUSTOM_DEFAULT,
+      quizTopics: [],
+      quizPartsOfSpeech: [],
+
+      setQuizTopics: (quizTopics) => set({ quizTopics }),
+      setQuizPartsOfSpeech: (quizPartsOfSpeech) => set({ quizPartsOfSpeech }),
 
       setQuizCountChoice: (quizCountChoice) => set({ quizCountChoice }),
       setQuizCustomCount: (count) => set({ quizCustomCount: clampQuizCount(count) }),

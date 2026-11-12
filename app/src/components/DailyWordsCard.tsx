@@ -73,7 +73,7 @@ export function DailyWordsCard() {
 
   const trainOnNewWords = () =>
     router.push({
-      pathname: '/train/quiz',
+      pathname: '/quiz',
       params: { direction: 'forward', mode: 'all', count: '0', ids: addedIds.join(',') },
     });
 

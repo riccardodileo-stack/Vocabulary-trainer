@@ -195,7 +195,7 @@ export default function HomeScreen() {
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push({
-              pathname: '/train/quiz',
+              pathname: '/quiz',
               params: { direction: 'forward', mode: 'due', count: '20' },
             })}
             style={({ pressed }) => [

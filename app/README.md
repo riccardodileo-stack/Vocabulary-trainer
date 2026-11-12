@@ -18,7 +18,7 @@ Il README ha due parti:
 |-----------|--------------|
 | **Home** | Data e saluto personalizzato, selettore delle lingue, contatori con simboli e fiamma della serie a 1, 10, 100 e 1.000 giorni. Seguono **Ripasso di oggi**, **+ Aggiungi parola** e **Parole del giorno**. |
 | **Dizionario** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti) e filtro **Errori** (solo le parole sbagliate, con i contatori errori/giuste), barra di "quanto la so" per ogni parola. Tocca una parola per vedere i progressi e modificarla. |
-| **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da imparare*, *tutte*, *errori*), quante domande (10, 20, tutte o **Altro**: un numero a scelta da 1 a 200). |
+| **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da imparare*, *tutte*, *errori*), con il tasto **Filtra** sotto: **categorie** (Informatica, Salute, Cibo…, anche più di una) e **tipo di parola** (sostantivi, verbi, aggettivi, altro), quante domande (10, 20, tutte o **Altro**: un numero a scelta da 1 a 200). |
 | **Sfide** | In arrivo (rimandata di proposito). |
 | **Utente** | Il tuo nome come titolo della pagina; immagine profilo (12 avatar illustrati o una foto) con accanto il nick (`@stefano`), lingua studiata e data di inizio; contatore amici, record di giorni di fila, **6 medaglie a 4 livelli** (bronzo, argento, oro, diamante), sezione amici con la pagina **Aggiungi amici** e il tuo **codice amico**. In alto a destra ⚙️ apre le Impostazioni. |
 | **Impostazioni** (⚙️ in Utente) | Il tema chiaro/scuro direttamente nella pagina, poi quattro categorie che si aprono da destra: **Lingue** (lingua studiata, lingua madre, livello delle parole del giorno, lingua dell'app), **Suoni**, **Notifiche** (promemoria e orario), **Backup**. Accanto a ogni categoria si vede il valore attuale (es. `🇬🇧 → 🇮🇹 · B1–B2`, `On`, `18:00`). |
@@ -130,8 +130,8 @@ Perché così:
 
 | Chiave AsyncStorage | Store | Contenuto | Versione |
 |---|---|---|---|
-| `words` | `wordStore` | tutte le parole di tutte le coppie | 2 |
-| `settings` | `settingsStore` | tema, lingue, livello parole del giorno, suoni, promemoria (attivo e ora) | 1 |
+| `words` | `wordStore` | tutte le parole di tutte le coppie | 5 |
+| `settings` | `settingsStore` | tema, lingue, livello parole del giorno, suoni, promemoria (attivo e ora), ultime scelte del quiz (numero di domande, tematiche, tipi) | 1 |
 | `activity` | `activityStore` | giorni in cui ti sei allenato (max 400), record di giorni di fila, quiz perfetti | 2 |
 | `daily` | `dailyStore` | parole del giorno di oggi per coppia + parole segnate "la so già" | 1 |
 | `achievements` | `achievementStore` | data in cui è stato raggiunto ogni livello di ogni medaglia | 1 |
@@ -145,14 +145,21 @@ All'avvio la splash screen resta visibile finché tutti gli store non sono caric
 {
   id, sourceLang: 'en', targetLang: 'it',
   term: 'battery',                                   // parola nella lingua studiata
-  meanings: [{ text: 'batteria', note?: 'elettrica', examples: [] }, { text: 'pila', examples: [] }],
+  meanings: [{ text: 'batteria', note?: 'elettrica', examples: [], topics: ['tech'], topicsByUser?: true },
+             { text: 'pila', examples: [], topics: [] }],
   stats: { correct, wrong, streak, lastWrongAt?, lastAnsweredAt? },
-  level?: 'B1', tags: [], createdAt
+  level?: 'B1', tags: [], createdAt,
+  topics: ['tech'],                                  // categorie di tutte le traduzioni insieme
+  partOfSpeech: 'noun', partOfSpeechSource: 'dictionary', // noun | verb | adjective | other; guess | dictionary | user
 }
 ```
 Ogni coppia di lingue (es. 🇬🇧→🇮🇹) è un vocabolario separato. La coppia attiva = *lingua studiata → lingua madre* (Impostazioni).
 
 **Migrazione v1 → v2** (`wordStore.migrate`): la v2 aggiunge `stats.lastAnsweredAt`. Per le parole esistenti si usa `lastWrongAt` se c'è; le parole mai sbagliate diventano "nuove" e quindi entrano subito nel ripasso.
+
+**Migrazione v2 → v3**: aggiunge tematiche e tipo di parola. Al primo avvio ogni parola già salvata riceve le tematiche suggerite dalla rete neurale e il tipo stimato offline (`withClassification` in `domain/word.ts`); poi il tipo viene controllato su Wiktionary in sottofondo (vedi §4 bis). Anche i backup vecchi vengono classificati quando li importi.
+
+**Migrazione v3 → v4 → v5**: nuovo modello delle categorie e categorie **per significato**: ogni traduzione riceve le sue; se avevi scelto a mano le categorie della parola, vanno a tutte le sue traduzioni (poi le puoi separare). Quando si rigenera il modello (`design/topic-model`) si aggiunge un passo che ricalcola quelle automatiche.
 
 ## 2. Ripasso spaziato (Leitner)
 
@@ -216,10 +223,10 @@ Scelte fatte apposta:
 
 ## 4. Il quiz
 
-File: `src/domain/quiz.ts`, `src/app/(tabs)/train/quiz.tsx`.
+File: `src/domain/quiz.ts`, `src/app/quiz.tsx` (nello stack principale, sopra le tab: *Termina* e *Fine* tornano a dove il quiz è stato aperto, Home o Allenamento, e il quiz si chiude davvero).
 
 **Parametri della rotta** (così Home può aprire direttamente un quiz):
-`/train/quiz?direction=forward|backward&mode=due|all|mistakes&count=10&ids=a,b,c`
+`/quiz?direction=forward|backward&mode=due|all|mistakes&count=10&ids=a,b,c`
 
 | Modalità | Parole usate |
 |---|---|
@@ -237,6 +244,32 @@ File: `src/domain/quiz.ts`, `src/app/(tabs)/train/quiz.tsx`.
 **Risultati**: punteggio, elenco errori, **Rifai gli errori** (un nuovo giro solo su quelle parole), *Allenati ancora*.
 
 Ogni risposta aggiorna subito le statistiche della parola e segna oggi come giorno di allenamento.
+
+## 4 bis. Categorie (tematiche) e tipo di parola
+
+File: `domain/topics.ts`, `domain/topicClassifier.ts`, `domain/partOfSpeech.ts`, `services/wiktionary.ts`, `hooks/useWordKindCheck.ts`, `components/ChoiceChips.tsx`.
+
+**12 categorie**: 💻 Informatica · 🩺 Medicina e salute · 🍝 Cibo e cucina · ✈️ Viaggi e trasporti · 💼 Lavoro ed economia · 🏠 Casa e oggetti · 🌿 Natura e animali · 👪 Persone e famiglia · 🎓 Scuola e scienza · ⚽ Sport e tempo libero · 🎨 Arte e cultura · 😊 Emozioni e carattere.
+
+**Le categorie sono di ogni significato, non della parola**: *stroke* = *ictus* → Salute, = *bracciata* → Sport, = *colpo* → nessuna. Ogni traduzione può averne più d'una (*pollame* = Cibo + Natura) o nessuna (*sempre*). Le categorie della parola (`word.topics`) sono quelle di tutte le sue traduzioni insieme e servono ai filtri e ai contatori.
+
+**Chi le decide — la rete neurale** (`suggestMeaningTopics`, gira sul telefono, offline, funziona in Expo Go):
+1. al computer, un modello di linguaggio (Qwen2.5) ha etichettato un campione di parole e una rete addestrata su quelle etichette ha classificato le 75.000 parole più usate delle 5 lingue, con una soglia severa (meglio nessuna categoria che una sbagliata): il risultato è nell'app come lessico **per lingua** (`content/topicModel.ts`, generato);
+2. per le parole non nel lessico c'è una piccola rete "studente" (gruppi di lettere → 24 neuroni → 12 categorie) che riconosce pezzi come *cardio*, *program*, *cucin*, e conta solo quando è sicura;
+3. decide la **traduzione**; la parola studiata aiuta solo se ha un'unica traduzione che la rete non conosce (*rash* = *eruzione cutanea* → Salute). Al massimo 3 per significato.
+4. Se la traduzione arriva da Wiktionary con un'etichetta di settore (*(medicine)*, *(tennis)*), la categoria arriva da lì (`topicsOfLabel`).
+Misure di qualità, come è stata addestrata e come rigenerarla: `design/topic-model/README.md`. Quando ci sarà il server, la stessa funzione può chiedere a lui (modello più grande) senza toccare il resto.
+
+**Nel modulo della parola**: ogni carta di traduzione ha la riga *Categorie: 🩺 Salute · Modifica* (`components/MeaningTopics.tsx`); *Modifica* apre le 12 categorie da spuntare. Finché non le tocchi seguono la traduzione mentre scrivi; scelte a mano (`meaning.topicsByUser`) non cambiano più, *Usa i suggerimenti* torna a quelle automatiche.
+
+**Tipo di parola** (sostantivo, verbo, aggettivo, altro):
+- *stima offline* (`guessPartOfSpeech`): "to run" → verbo; "il libro", "das Haus" → sostantivo; traduzione all'infinito ("correre") → verbo; finali tipiche (*-ous/-oso* → aggettivo, *-tion/-zione* → sostantivo); senza indizi → sostantivo.
+- *Wiktionary* (`fetchPartOfSpeech`): chiede i tipi della parola e della sua prima traduzione e sceglie quello in comune (*boring* = sost./verbo/agg., *noioso* = agg./sost. → aggettivo).
+- `partOfSpeechSource` dice chi l'ha deciso: `guess` → `dictionary` → `user`. All'avvio `useWordKindCheck` controlla su Wiktionary, una alla volta e con calma (una ogni 0,4 s), le parole ancora `guess`; senza rete riprova al prossimo avvio. Una scelta fatta a mano non viene mai cambiata.
+
+**Tipo di parola nel modulo**: si compila da solo mentre scrivi (Wiktionary viene chiesto 0,8 s dopo l'ultimo tasto); se lo tocchi vale la tua scelta (`user`).
+
+**Nel quiz** (Allenamento): sotto *Da imparare / Tutte / Errori* c'è il tasto **Filtra** (`components/FilterButton.tsx`; diventa verde con il numero di filtri attivi). Apre dal basso la finestra *Filtra le parole* (`app/quiz-filters.tsx`, *form sheet*) con due menu: **Categorie** e **Tipo di parola**, se ne possono scegliere più d'uno (*Tutte*/*Tutti* = nessun filtro). Accanto a ogni scelta c'è quante parole dà con le altre scelte attuali; una parola entra se **almeno una delle sue traduzioni** ha una delle categorie scelte e se è di **uno** dei tipi scelti (`matchesFilters` in `domain/quiz.ts`). Il quiz chiede **solo le traduzioni di quelle categorie** (`meaningsInScope`): in un quiz di Salute *stroke* vuole *ictus*, non *colpo*, e sotto la parola compare *🩺 Medicina e salute* per dire quale significato si chiede. Accanto al tasto compare il riassunto (`🍝 Cibo · 🌿 Natura · Sostantivi`) con *Azzera*. Le scelte restano salvate. Nella rotta: `/quiz?…&topics=tech,food&kinds=verb`.
 
 ## 5. Come viene corretta una risposta
 
@@ -264,7 +297,7 @@ Un giorno conta se hai risposto ad almeno una domanda. La serie è il numero di 
 - **Lista** (`words/index.tsx`): `FlatList` virtualizzata (fluida con centinaia di parole), ricerca su parola/traduzioni/tag, ordinamento *A–Z* e *Recenti*. **Errori** è anche un filtro: mostra solo le parole sbagliate almeno una volta (`stats.wrong > 0`, anche se poi corrette), dalla più sbagliata, con i contatori *N errori* e *N giuste*; in alto il numero di parole sbagliate. Quando cambia ordine o filtro le righe scivolano al nuovo posto. Ogni riga mostra la barra a 5 segmenti della scatola Leitner.
 - **Dettaglio** (`words/[id].tsx`): card **Progressi** (giuste/sbagliate, prossimo ripasso: oggi / domani / tra N giorni) + modulo di modifica.
 - **Nuova parola**: niente duplicati nella stessa coppia (confronto senza maiuscole/spazi).
-- **Cerca significati** (sotto il campo *Parola*): chiede le traduzioni a [MyMemory](https://mymemory.translated.net) (memoria di traduzione gratuita, senza account; limite anonimo ~5000 caratteri al giorno per dispositivo) e le mostra come chip. Toccandone una va nel primo campo traduzione vuoto, o in una traduzione nuova; quelle già presenti hanno ✓. `domain/meanings.ts` (`pickMeanings`) tiene solo le voci per quella parola esatta, toglie duplicati, la parola non tradotta e le frasi lunghe, e ordina per affidabilità (max 6); `services/meanings.ts` fa la chiamata. Per cambiare fonte basta riscrivere `fetchMeanings`.
+- **Cerca significati** (sotto il campo *Parola*, `components/MeaningFinder.tsx`): prima chiede a **Wiktionary** le traduzioni **divise per senso** (`domain/wiktionarySenses.ts`, `fetchSenses` in `services/wiktionary.ts`): per una parola inglese legge le tabelle *Translations* (una per senso: *stroke* → (act of hitting) colpo · (swimming) bracciata · (loss of brain function) ictus…), per una parola di un'altra lingua tradotta in inglese legge le definizioni. Segue le forme (*barracks* → *barrack*) e le sottopagine delle traduzioni (*run*). I sensi sono **ordinati dal più comune**: Wiktionary non lo dice, quindi si stima da in quante lingue è tradotto ogni senso (i sensi d'uso quotidiano sono tradotti in decine di lingue, quelli rari in poche: *stroke* → accarezzare 76, ictus 48, colpo 31… capovoga 2); dentro un senso le parole singole vengono prima delle espressioni (*ictus* prima di *accidente cerebrovascolare*). Mostra i primi 5 sensi con tipo di parola e spiegazione (in inglese), *Mostra altri N significati* per gli altri. Se Wiktionary non ha nulla (o nessuna delle due lingue è l'inglese) chiede le traduzioni a [MyMemory](https://mymemory.translated.net) (memoria di traduzione gratuita, senza account; limite anonimo ~5000 caratteri al giorno per dispositivo) e le mostra come chip. Toccandone una va nel primo campo traduzione vuoto, o in una traduzione nuova; quelle già presenti hanno ✓. `domain/meanings.ts` (`pickMeanings`) tiene solo le voci per quella parola esatta, toglie duplicati, la parola non tradotta e le frasi lunghe, e ordina per affidabilità (max 6); `services/meanings.ts` fa la chiamata. Per cambiare fonte basta riscrivere `fetchMeanings`.
 - **Frasi di esempio**: da [Tatoeba](https://tatoeba.org) (CC BY), al massimo 3, con traduzione nella lingua madre; ogni frase aggiunta va sotto la traduzione che contiene.
 - **Parola in grassetto negli esempi** (`domain/highlight.ts`, componente `HighlightedText`): nella frase la parola studiata, nella traduzione i suoi significati. Trova anche altre forme (*noioso → noiose*, *run → running*, *try → tries*) senza prendere parole diverse (*run* non evidenzia *runway*); ignora maiuscole, accenti e l'articolo o il "to" iniziale; una parola di più termini (*give up*) è in grassetto solo dove compare intera.
 - Niente più link a WordReference e Reverso: i significati e gli esempi si vedono direttamente nell'app.
@@ -393,6 +426,7 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 | `Card` | blocco di contenuto; con `onPress` diventa tutta toccabile; `tone="primary"` per evidenziare |
 | `Pill` | etichetta piccola (livello, "2 errori", "Aggiunta ✓") |
 | `SegmentedControl` | 2–4 scelte esclusive su una riga, con indicatore che scivola |
+| `ChoiceChips` | scelte a chip che vanno a capo, una o più (con chip *Tutte* opzionale e contatore); il colore sfuma quando cambi |
 | `NumberStepper` | − [numero] + per un numero intero tra un minimo e un massimo (si può anche scrivere) |
 | `SelectableCircle` | scelta rotonda in una griglia (avatar) con anello animato |
 | `Appear` | fa entrare/uscire con un'animazione un contenuto che compare dopo una scelta |
@@ -429,4 +463,7 @@ Sono test della logica pura: girano in un secondo, senza telefono.
 - **Versione web**: non è un obiettivo. Funziona per prove veloci (`npx expo start --web`), ma la barra delle tab nativa sul web si sovrappone all'intestazione.
 - **Parole del giorno**: la lista integrata ha 258 parole. Con 5 al giorno bastano per circa 50 giorni col livello *Tutti* e per 2–3 settimane con un livello singolo (A1–A2: 89, B1–B2: 97, C1–C2: 72). Il passo naturale è il server descritto sopra (o allungare la lista: basta aggiungere righe).
 - **Amici e account**: richiedono un server. Il profilo locale (`profileStore`) è già pensato per essere inviato alla registrazione.
+- **Categorie automatiche**: con la soglia severa, sulle parole difficili di prova 9 categorie proposte su 10 sono giuste, ma ne trova circa metà (dettagli in `design/topic-model/README.md`): molte traduzioni restano senza categoria e si spuntano a mano. Con il server si può usare un modello più grande.
+- **Wiktionary**: le spiegazioni dei sensi sono in inglese; per le coppie senza inglese (es. 🇪🇸→🇮🇹) restano le traduzioni di MyMemory, non divise per senso.
+- **Tipo di parola**: senza connessione resta la stima offline, che sbaglia spesso con gli aggettivi senza finale tipica (*big*, *tired* → sostantivo). Si corregge da sola appena c'è rete (Wiktionary).
 - **Notifiche push** (mandate da un server, per esempio "un amico ti ha sfidato"): richiedono una development build. Il promemoria giornaliero locale invece funziona già.

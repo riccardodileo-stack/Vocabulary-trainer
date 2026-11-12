@@ -2,9 +2,11 @@
 
 import { dayKey, type DayKey } from './dates';
 import type { LanguageCode } from './languages';
+import type { PartOfSpeech } from './partOfSpeech';
 import { compareByUrgency, isDue } from './review';
 import { normalizeText, splitSlashOptions } from './text';
-import { meaningsToText, type Word } from './word';
+import type { TopicId } from './topics';
+import { type Meaning, type Word } from './word';
 
 /** 'forward' asks the studied word, 'backward' asks the translation. */
 export type QuizDirection = 'forward' | 'backward';
@@ -26,7 +28,18 @@ export type QuizOptions = {
   count: number;
   /** If set, only these words are used (e.g. the words added today from Home). */
   wordIds?: string[];
+  /** Only words with at least one of these topics; empty or missing = every topic. */
+  topics?: TopicId[];
+  /** Only these kinds of word (e.g. only verbs); empty or missing = every kind. */
+  partsOfSpeech?: PartOfSpeech[];
 };
+
+/** Whether a word passes the topic and kind filters of the quiz. */
+export function matchesFilters(word: Word, { topics, partsOfSpeech }: Pick<QuizOptions, 'topics' | 'partsOfSpeech'>): boolean {
+  const topicOk = !topics?.length || word.topics.some((topic) => topics.includes(topic));
+  const kindOk = !partsOfSpeech?.length || partsOfSpeech.includes(word.partOfSpeech);
+  return topicOk && kindOk;
+}
 
 export type QuizQuestion = {
   /** The word whose stats are updated by the answer. */
@@ -35,6 +48,11 @@ export type QuizQuestion = {
   /** Hint shown under the prompt, e.g. "electric". */
   note?: string;
   accepted: string[];
+  /**
+   * With a topic filter, the topic the asked meanings belong to: shown under the prompt so
+   * "stroke" in a health quiz is clearly "ictus", not "colpo".
+   */
+  topicHint?: TopicId;
   /** Language the answer is written in (to ignore its articles). */
   answerLanguage: LanguageCode;
   correctText: string;
@@ -76,8 +94,14 @@ function randomItem<T>(items: T[]): T {
 }
 
 /** Words a quiz with these options can ask, before the question limit. Used for counters too. */
-export function quizPool(vocabulary: Word[], { mode, wordIds }: Pick<QuizOptions, 'mode' | 'wordIds'>, today: DayKey = dayKey()): Word[] {
-  const words = wordIds ? vocabulary.filter((word) => wordIds.includes(word.id)) : vocabulary;
+export function quizPool(
+  vocabulary: Word[],
+  { mode, wordIds, topics, partsOfSpeech }: Pick<QuizOptions, 'mode' | 'wordIds' | 'topics' | 'partsOfSpeech'>,
+  today: DayKey = dayKey()
+): Word[] {
+  const words = vocabulary.filter(
+    (word) => (!wordIds || wordIds.includes(word.id)) && matchesFilters(word, { topics, partsOfSpeech })
+  );
 
   switch (mode) {
     case 'due':
@@ -99,19 +123,38 @@ function termsWithMeaning(vocabulary: Word[], meaningText: string): string[] {
   return [...new Set(terms)];
 }
 
-function forwardQuestion(word: Word): QuizQuestion {
+/**
+ * The meanings a quiz asks: with a topic filter only those with one of the topics
+ * (in a health quiz "stroke" asks "ictus", not "colpo"), otherwise all.
+ */
+export function meaningsInScope(word: Word, topics?: TopicId[]): Meaning[] {
+  if (!topics?.length) {
+    return word.meanings;
+  }
+  const inScope = word.meanings.filter((meaning) => meaning.topics?.some((topic) => topics.includes(topic)));
+  return inScope.length > 0 ? inScope : word.meanings;
+}
+
+/** The first chosen topic the meanings belong to (for the hint under the prompt). */
+function hintFor(meanings: Meaning[], topics?: TopicId[]): TopicId | undefined {
+  return topics?.find((topic) => meanings.some((meaning) => meaning.topics?.includes(topic)));
+}
+
+function forwardQuestion(word: Word, topics?: TopicId[]): QuizQuestion {
+  const meanings = meaningsInScope(word, topics);
   return {
     word,
     prompt: word.term,
-    accepted: word.meanings.map((meaning) => meaning.text),
+    accepted: meanings.map((meaning) => meaning.text),
+    topicHint: meanings.length < word.meanings.length ? hintFor(meanings, topics) : undefined,
     answerLanguage: word.targetLang,
-    correctText: meaningsToText(word),
+    correctText: meanings.map((meaning) => meaning.text).join(' / '),
   };
 }
 
 /** Asks one translation only; every studied word with that translation is accepted. */
-function backwardQuestion(word: Word, vocabulary: Word[]): QuizQuestion {
-  const meaning = randomItem(word.meanings);
+function backwardQuestion(word: Word, vocabulary: Word[], topics?: TopicId[]): QuizQuestion {
+  const meaning = randomItem(meaningsInScope(word, topics));
   const accepted = termsWithMeaning(vocabulary, meaning.text);
 
   return {
@@ -145,7 +188,10 @@ export function buildQuiz(vocabulary: Word[], options: QuizOptions, today: DayKe
       continue;
     }
 
-    const question = options.direction === 'forward' ? forwardQuestion(word) : backwardQuestion(word, vocabulary);
+    const question =
+      options.direction === 'forward'
+        ? forwardQuestion(word, options.topics)
+        : backwardQuestion(word, vocabulary, options.topics);
 
     // Two words with the same translation would produce the same question twice
     if (!askedPrompts.has(normalizeText(question.prompt))) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { buildQuiz, clampQuizCount, QUIZ_CUSTOM_DEFAULT, QUIZ_CUSTOM_MAX, quizPool } from '../quiz';
+import { buildQuiz, clampQuizCount, meaningsInScope, QUIZ_CUSTOM_DEFAULT, QUIZ_CUSTOM_MAX, quizPool } from '../quiz';
 import { makeWord } from './helpers';
 
 const TODAY = '2026-10-29';
@@ -21,6 +21,20 @@ describe('quizPool', () => {
 
   it('wordIds limits the pool', () => {
     expect(quizPool(vocabulary, { mode: 'all', wordIds: [learned.id] }, TODAY)).toEqual([learned]);
+  });
+
+  it('filters by topic (any of the chosen ones) and by kind of word', () => {
+    const run = { ...makeWord('to run', ['correre']), topics: ['sport' as const], partOfSpeech: 'verb' as const };
+    const doctor = { ...makeWord('doctor', ['medico']), topics: ['health' as const, 'work' as const], partOfSpeech: 'noun' as const };
+    const words = [run, doctor];
+    const terms = (options: Parameters<typeof quizPool>[1]) => quizPool(words, options, TODAY).map((w) => w.term).sort();
+
+    expect(terms({ mode: 'all', topics: ['work', 'sport'] })).toEqual(['doctor', 'to run']);
+    expect(terms({ mode: 'all', topics: ['health'] })).toEqual(['doctor']);
+    expect(terms({ mode: 'all', partsOfSpeech: ['verb'] })).toEqual(['to run']);
+    expect(terms({ mode: 'all', topics: ['health'], partsOfSpeech: ['verb'] })).toEqual([]);
+    // Empty lists mean "everything"
+    expect(terms({ mode: 'all', topics: [], partsOfSpeech: [] })).toEqual(['doctor', 'to run']);
   });
 });
 
@@ -71,3 +85,28 @@ describe('clampQuizCount', () => {
     expect(clampQuizCount(Number.NaN)).toBe(QUIZ_CUSTOM_DEFAULT);
   });
 });
+
+describe('topics per meaning in the quiz', () => {
+  const stroke = {
+    ...makeWord('stroke', ['ictus', 'colpo', 'bracciata']),
+    topics: ['health' as const, 'sport' as const],
+  };
+  stroke.meanings = [
+    { text: 'ictus', examples: [], topics: ['health'] },
+    { text: 'colpo', examples: [], topics: [] },
+    { text: 'bracciata', examples: [], topics: ['sport'] },
+  ];
+
+  it('asks only the meanings of the chosen topics', () => {
+    expect(meaningsInScope(stroke, ['health']).map((m) => m.text)).toEqual(['ictus']);
+    expect(meaningsInScope(stroke, []).length).toBe(3);
+
+    const [question] = buildQuiz([stroke], { direction: 'forward', mode: 'all', count: 0, topics: ['health'] });
+    expect(question.accepted).toEqual(['ictus']);
+    expect(question.topicHint).toBe('health');
+
+    const [back] = buildQuiz([stroke], { direction: 'backward', mode: 'all', count: 0, topics: ['sport'] });
+    expect(back.prompt).toBe('bracciata');
+  });
+});
+

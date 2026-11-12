@@ -1,8 +1,13 @@
 // A quiz session. Options arrive as route params, so Home can open the review,
 // the mistakes or the new words directly. Every answer updates the word stats.
 //
+// The route is in the root stack, above the tabs (not inside the Train tab): "End" and
+// "Done" go back to where the quiz was opened (Home or Train) and the quiz is really closed.
+// Inside the Train tab, a quiz opened from Home stayed on top of Train after going back.
+//
 // Params: direction=forward|backward, mode=due|all|mistakes, count=number (0 = all),
-//         ids=comma separated word ids (optional, limits the quiz to those words)
+//         ids=comma separated word ids (optional, limits the quiz to those words),
+//         topics=tech,food… and kinds=noun,verb… (optional filters, empty = all)
 
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -20,6 +25,8 @@ import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
 import { TextField, type TextFieldRef } from '@/components/TextField';
 import { splitExample } from '@/domain/highlight';
+import { parsePartOfSpeechList } from '@/domain/partOfSpeech';
+import { parseTopicList, TOPIC_ICONS } from '@/domain/topics';
 import { buildQuiz, QUIZ_MODES, type QuizMode, type QuizOptions, type QuizQuestion } from '@/domain/quiz';
 import { evaluateAnswer, type AnswerVerdict } from '@/domain/text';
 import { meaningsToText } from '@/domain/word';
@@ -31,7 +38,7 @@ import { useActivePair } from '@/store/settingsStore';
 import { useWordStore, useWordsOfPair } from '@/store/wordStore';
 import { spacing } from '@/theme';
 
-type QuizParams = { direction?: string; mode?: string; count?: string; ids?: string };
+type QuizParams = { direction?: string; mode?: string; count?: string; ids?: string; topics?: string; kinds?: string };
 
 type Mistake = { question: QuizQuestion; given: string };
 
@@ -42,6 +49,8 @@ function optionsFromParams(params: QuizParams): QuizOptions {
     mode: QUIZ_MODES.includes(params.mode as QuizMode) ? (params.mode as QuizMode) : 'all',
     count: Number(params.count) || 0,
     wordIds: ids && ids.length > 0 ? ids : undefined,
+    topics: parseTopicList(params.topics),
+    partsOfSpeech: parsePartOfSpeechList(params.kinds),
   };
 }
 
@@ -134,10 +143,13 @@ export default function QuizScreen() {
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
+  /** Closes the quiz: back to where it was opened (Train when there is nothing to go back to). */
+  const close = () => (router.canGoBack() ? router.back() : router.replace('/train'));
+
   /** Ends now: the results count only the questions already answered. */
   const endEarly = () => {
     if (answeredCount === 0) {
-      router.back();
+      close();
       return;
     }
     setQuestions(questions.slice(0, answeredCount));
@@ -154,7 +166,7 @@ export default function QuizScreen() {
           <Card>
             <AppText color="textMuted">{t.train.noWords}</AppText>
           </Card>
-          <Button label={t.quiz.done} tone="secondary" onPress={() => router.back()} />
+          <Button label={t.quiz.done} tone="secondary" onPress={close} />
         </Screen>
       </>
     );
@@ -209,7 +221,7 @@ export default function QuizScreen() {
             tone={mistakes.length > 0 ? 'secondary' : 'primary'}
             onPress={() => startRound(options)}
           />
-          <Button label={t.quiz.done} tone="secondary" onPress={() => router.back()} />
+          <Button label={t.quiz.done} tone="secondary" onPress={close} />
         </Screen>
       </>
     );
@@ -245,6 +257,12 @@ export default function QuizScreen() {
             {question.note ? (
               <AppText color="textMuted" style={styles.centered}>
                 ({question.note})
+              </AppText>
+            ) : null}
+            {/* With a topic filter: which meaning is asked ("stroke" in Health = "ictus") */}
+            {question.topicHint ? (
+              <AppText color="textMuted" style={styles.centered}>
+                {TOPIC_ICONS[question.topicHint]} {t.topics[question.topicHint]}
               </AppText>
             ) : null}
           </Card>

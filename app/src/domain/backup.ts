@@ -3,7 +3,8 @@
 
 import { isLanguageCode, type LanguagePair } from './languages';
 import { normalizeText } from './text';
-import { createWord, emptyStats, isCefrLevel, meaningsFromSlashText, type Meaning, type Word } from './word';
+import { isTopicId } from './topics';
+import { createWord, emptyStats, isCefrLevel, meaningsFromSlashText, withClassification, type Meaning, type Word } from './word';
 
 const BACKUP_APP_NAME = 'Vocabulary Trainer';
 const BACKUP_VERSION = 2;
@@ -37,6 +38,9 @@ function parseMeaning(value: unknown): Meaning | null {
     text: value.text.trim(),
     note: typeof value.note === 'string' && value.note.trim() ? value.note.trim() : undefined,
     examples: Array.isArray(value.examples) ? value.examples.filter((e): e is string => typeof e === 'string') : [],
+    // Missing in old backups: suggested again (withClassification)
+    topics: Array.isArray(value.topics) ? value.topics.filter(isTopicId) : undefined,
+    topicsByUser: value.topicsByUser === true ? true : undefined,
   };
 }
 
@@ -57,8 +61,11 @@ function parseAppWord(item: Record<string, unknown>): Word | null {
   const word = createWord({ source: item.sourceLang, target: item.targetLang }, { term: item.term, meanings });
   const stats = isRecord(item.stats) ? item.stats : {};
 
-  return {
+  // Topics and kind of word from the file when valid, otherwise suggested again
+  return withClassification({
     ...word,
+    partOfSpeech: item.partOfSpeech as Word['partOfSpeech'],
+    partOfSpeechSource: item.partOfSpeechSource as Word['partOfSpeechSource'],
     stats: {
       ...emptyStats(),
       correct: typeof stats.correct === 'number' ? stats.correct : 0,
@@ -70,7 +77,7 @@ function parseAppWord(item: Record<string, unknown>): Word | null {
     level: isCefrLevel(item.level) ? item.level : undefined,
     tags: Array.isArray(item.tags) ? item.tags.filter((tag): tag is string => typeof tag === 'string') : [],
     createdAt: typeof item.createdAt === 'string' ? item.createdAt : word.createdAt,
-  };
+  });
 }
 
 function parsePwaWord(item: Record<string, unknown>): Word | null {

@@ -10,6 +10,7 @@ import { Platform } from 'react-native';
 import { HeaderButton } from '@/components/HeaderButton';
 import { AchievementTracker } from '@/hooks/useAchievements';
 import { useReminderSync } from '@/hooks/useReminderSync';
+import { useWordKindCheck } from '@/hooks/useWordKindCheck';
 import { useT } from '@/i18n';
 import { configureNotifications } from '@/services/reminders';
 import { useStoresHydrated } from '@/store/useStoresHydrated';
@@ -45,6 +46,8 @@ export default function RootLayout() {
 
   useApplyThemePreference();
   useReminderSync(hydrated);
+  // Kinds of word guessed offline are checked on Wiktionary in the background
+  useWordKindCheck(hydrated);
 
   useEffect(() => {
     if (hydrated) {
@@ -65,6 +68,18 @@ export default function RootLayout() {
         <Stack.Screen name="settings" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen
           name="medal/[id]"
+          options={{
+            presentation: 'formSheet',
+            sheetGrabberVisible: true,
+            sheetAllowedDetents: [0.75, 1],
+            sheetCornerRadius: 28,
+            headerShown: false,
+          }}
+        />
+        {/* The quiz covers the tabs: opened from Home or Train, closing it goes back there */}
+        <Stack.Screen name="quiz" options={{ title: t.train.title }} />
+        <Stack.Screen
+          name="quiz-filters"
           options={{
             presentation: 'formSheet',
             sheetGrabberVisible: true,
