@@ -1,6 +1,6 @@
 # Echo - WordKeeper — app nativa (iOS + Android)
 
-**Echo - WordKeeper** (nome di lavoro: Vocabulary Trainer) è l'app per costruire il proprio vocabolario in una lingua straniera e ricordarlo nel tempo.
+**Echo - WordKeeper** (sotto l'icona: **Echo**, `name` in `app.json`; nome di lavoro: Vocabulary Trainer) è l'app per costruire il proprio vocabolario in una lingua straniera e ricordarlo nel tempo.
 React Native con **Expo** (SDK 58) e **TypeScript**: lo stesso codice genera l'app per iPhone e Android.
 Parole e progressi restano sul telefono e funzionano **offline**; account, amici e serie di giorni sono copiati su un server **Supabase** (branch `server`, `supabase/README.md`).
 
