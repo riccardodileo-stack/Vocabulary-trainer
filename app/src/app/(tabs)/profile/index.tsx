@@ -1,8 +1,9 @@
 // Profile tab: the name as page title; picture, nick, stats, medals, friends and account.
 // The gear at the top right opens the settings.
 
-import { Stack, router } from 'expo-router';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Stack, router, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
+import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
@@ -18,8 +19,11 @@ import { Section } from '@/components/Section';
 import { StatTile } from '@/components/StatTile';
 import { MEDAL_TIERS, tiersEarned, type Achievement } from '@/domain/achievements';
 import { LANGUAGES } from '@/domain/languages';
+import { refreshFriendCounts } from '@/hooks/useAccountSession';
 import { useAchievements } from '@/hooks/useAchievements';
+import { accountProblem } from '@/domain/account';
 import { useT, useUiLanguage } from '@/i18n';
+import { deleteAccount, signOut } from '@/services/account';
 import { useActivityStore } from '@/store/activityStore';
 import { useProfileStore } from '@/store/profileStore';
 import { useActivePair } from '@/store/settingsStore';
@@ -44,6 +48,33 @@ export default function ProfileScreen() {
   const profile = useProfileStore();
   const pair = useActivePair();
   const bestStreak = useActivityStore((state) => state.bestStreak);
+
+  // Requests may have arrived since last time
+  useFocusEffect(
+    useCallback(() => {
+      refreshFriendCounts();
+    }, [])
+  );
+
+  const confirmSignOut = () =>
+    Alert.alert(t.profile.signOutTitle, profile.isGuest ? t.profile.signOutGuest : t.profile.signOutRegistered, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.profile.signOut,
+        style: 'destructive',
+        onPress: () => signOut().catch((error) => Alert.alert(t.account.problems[accountProblem(error)])),
+      },
+    ]);
+
+  const confirmDelete = () =>
+    Alert.alert(t.profile.deleteTitle, t.profile.deleteMessage, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.profile.deleteAccount,
+        style: 'destructive',
+        onPress: () => deleteAccount().catch((error) => Alert.alert(t.account.problems[accountProblem(error)])),
+      },
+    ]);
 
   // The user's name is the page title; "Profile" until a name is chosen
   const title = profile.name || t.profile.title;
@@ -147,26 +178,45 @@ export default function ProfileScreen() {
           <Card>
             <View style={styles.friendsHeader}>
               <AppText variant="bodyBold" style={styles.flex}>
-                👥 {t.profile.friendsEmpty}
+                👥 {profile.friendsCount > 0 ? t.profile.friendsSome(profile.friendsCount) : t.profile.friendsEmpty}
               </AppText>
-              <Pill label={t.common.comingSoon} />
+              {profile.incomingRequests > 0 ? (
+                <Pill label={t.profile.friendsRequests(profile.incomingRequests)} tone="warning" />
+              ) : null}
             </View>
-            <AppText color="textMuted">{t.profile.friendsSoon}</AppText>
-            <Button label={t.profile.addFriends} tone="secondary" onPress={() => router.push('/profile/friends')} />
+            <Button
+              label={profile.friendsCount > 0 || profile.incomingRequests > 0 ? t.profile.seeFriends : t.profile.addFriends}
+              tone="secondary"
+              onPress={() => router.push('/profile/friends')}
+            />
           </Card>
         </Section>
 
         <Section title={t.profile.accountTitle} hint={t.profile.accountHint}>
           <ListGroup>
-            <ListRow icon="🙂" label={t.profile.name} value={profile.name || t.profile.notSet} onPress={openEdit} />
+            <ListRow
+              icon={profile.isGuest ? '🙂' : '✉️'}
+              label={t.profile.accountType}
+              value={profile.isGuest ? t.profile.guest : profile.email}
+            />
+            <ListRow icon="🏷️" label={t.profile.name} value={profile.name || t.profile.notSet} onPress={openEdit} />
             <ListRow
               icon="#️⃣"
               label={t.profile.nickname}
               value={profile.nickname ? `@${profile.nickname}` : t.profile.notSet}
               onPress={openEdit}
             />
-            <ListRow icon="✉️" label={t.profile.email} value={profile.email || t.profile.notSet} onPress={openEdit} />
           </ListGroup>
+          {profile.isGuest ? (
+            <Card style={styles.register}>
+              <AppText variant="small" color="textMuted">
+                {t.profile.registerHint}
+              </AppText>
+              <Button label={`✉️ ${t.profile.register}`} onPress={() => router.push('/profile/register')} />
+            </Card>
+          ) : null}
+          <Button label={t.profile.signOut} tone="secondary" onPress={confirmSignOut} />
+          <Button label={t.profile.deleteAccount} tone="danger" onPress={confirmDelete} />
         </Section>
       </Screen>
     </>
@@ -214,6 +264,9 @@ const styles = StyleSheet.create({
   medals: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  register: {
+    gap: spacing.sm,
   },
   friendsHeader: {
     flexDirection: 'row',

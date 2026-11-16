@@ -1,6 +1,7 @@
-// Edit the profile: picture (avatar or photo), name, nick and email.
-// The friend code is not here: it never changes.
-// Changes are kept in a draft and saved only with "Save".
+// Edit the profile: picture (avatar or photo), name and nick.
+// The friend code is not here: it never changes. The email is the account's (Profile -> Account).
+// Changes are kept in a draft and saved only with "Save": nick and drawn avatar on the server
+// (the nick must be free), name and photo only on this phone.
 
 import { Stack, router } from 'expo-router';
 import { useState } from 'react';
@@ -15,11 +16,13 @@ import { Section } from '@/components/Section';
 import { SelectableCircle } from '@/components/SelectableCircle';
 import { TextField } from '@/components/TextField';
 import { AVATAR_PRESETS } from '@/content/avatars';
-import { isValidEmail, NICKNAME_MAX_LENGTH, nicknameProblem, normalizeNickname } from '@/domain/profile';
+import { NicknameField, type NicknameStatus } from '@/components/NicknameField';
+import { accountProblem } from '@/domain/account';
 import { useT } from '@/i18n';
+import { updateServerProfile } from '@/services/account';
 import { deleteProfilePhoto, pickProfilePhoto } from '@/services/profilePhoto';
 import { useProfileStore, type ProfileAvatar } from '@/store/profileStore';
-import { fontWeight, radius, spacing, useTheme } from '@/theme';
+import { spacing } from '@/theme';
 
 const NAME_MAX_LENGTH = 30;
 
@@ -29,15 +32,14 @@ function sameAvatar(a: ProfileAvatar, b: ProfileAvatar): boolean {
 
 export default function EditProfileScreen() {
   const t = useT();
-  const { colors } = useTheme();
   const profile = useProfileStore();
 
   const [avatar, setAvatar] = useState<ProfileAvatar>(profile.avatar);
   const [name, setName] = useState(profile.name);
   const [nickname, setNickname] = useState(profile.nickname);
-  const [email, setEmail] = useState(profile.email);
-  const [nicknameError, setNicknameError] = useState<string | null>(null);
-  const [emailError, setEmailError] = useState<string | null>(null);
+  const [nicknameStatus, setNicknameStatus] = useState<NicknameStatus>('free');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const choosePhoto = async () => {
     try {
@@ -55,14 +57,25 @@ export default function EditProfileScreen() {
     }
   };
 
-  const save = () => {
-    const cleanEmail = email.trim();
-    // The nick is optional for now; when written it must be valid
-    const problem = nickname ? nicknameProblem(nickname) : null;
+  const save = async () => {
+    const serverAvatar = avatar.kind === 'preset' ? avatar.id : null;
+    const oldServerAvatar = profile.avatar.kind === 'preset' ? profile.avatar.id : null;
+    const nicknameChanged = nickname !== profile.nickname;
 
-    setNicknameError(problem ? t.editProfile.nicknameErrors[problem] : null);
-    setEmailError(cleanEmail && !isValidEmail(cleanEmail) ? t.editProfile.errorEmail : null);
-    if (problem || (cleanEmail && !isValidEmail(cleanEmail))) {
+    setSaving(true);
+    setError(null);
+    try {
+      // Nick and drawn avatar live on the server: saved there first (the nick must be free)
+      if (nicknameChanged || serverAvatar !== oldServerAvatar) {
+        const saved = await updateServerProfile({
+          nickname: nicknameChanged ? nickname : undefined,
+          avatar: serverAvatar,
+        });
+        useProfileStore.getState().applyServerProfile(saved, { isGuest: profile.isGuest, email: profile.email });
+      }
+    } catch (saveError) {
+      setError(t.account.problems[accountProblem(saveError)]);
+      setSaving(false);
       return;
     }
 
@@ -70,8 +83,7 @@ export default function EditProfileScreen() {
     if (profile.avatar.kind === 'photo' && !sameAvatar(profile.avatar, avatar)) {
       deleteProfilePhoto(profile.avatar.uri);
     }
-
-    profile.updateProfile({ avatar, name: name.trim(), nickname, email: cleanEmail });
+    useProfileStore.getState().updateProfile({ avatar, name: name.trim() });
     router.back();
   };
 
@@ -126,48 +138,11 @@ export default function EditProfileScreen() {
         </Section>
 
         <Section title={t.profile.nickname} hint={t.editProfile.nicknameHint}>
-          <View style={[styles.nickField, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <AppText color="textMuted" style={styles.at} accessible={false}>
-              @
-            </AppText>
-            <TextField
-              value={nickname}
-              // Shown already normalized: lower case, no "@", no spaces
-              onChangeText={(text) => {
-                setNickname(normalizeNickname(text).replace(/\s/g, ''));
-                setNicknameError(null);
-              }}
-              placeholder={t.editProfile.nicknamePlaceholder}
-              accessibilityLabel={t.profile.nickname}
-              maxLength={NICKNAME_MAX_LENGTH}
-              autoCapitalize="none"
-              autoCorrect={false}
-              textContentType="username"
-              style={styles.nickInput}
-            />
-          </View>
-          {nicknameError ? <AppText color="danger">{nicknameError}</AppText> : null}
+          <NicknameField value={nickname} onChange={setNickname} onStatus={setNicknameStatus} current={profile.nickname} />
         </Section>
 
-        <Section title={t.profile.email}>
-          <TextField
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              setEmailError(null);
-            }}
-            placeholder={t.editProfile.emailPlaceholder}
-            accessibilityLabel={t.profile.email}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="email"
-            textContentType="emailAddress"
-          />
-          {emailError ? <AppText color="danger">{emailError}</AppText> : null}
-        </Section>
-
-        <Button label={t.common.save} onPress={save} />
+        {error ? <AppText color="danger">{error}</AppText> : null}
+        <Button label={t.common.save} onPress={save} disabled={saving || nicknameStatus !== 'free'} />
       </Screen>
     </>
   );
@@ -184,19 +159,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  nickField: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: spacing.md,
-    borderRadius: radius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  at: {
-    fontWeight: fontWeight.bold,
-  },
-  nickInput: {
-    flex: 1,
-    borderWidth: 0,
-    paddingLeft: spacing.xs,
-  },
+
+
+
 });

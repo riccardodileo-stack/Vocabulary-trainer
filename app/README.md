@@ -20,7 +20,8 @@ Il README ha due parti:
 | **Dizionario** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti) e filtro **Errori** (solo le parole sbagliate, con i contatori errori/giuste), barra di "quanto la so" per ogni parola. Tocca una parola per vedere i progressi e modificarla. |
 | **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da imparare*, *tutte*, *errori*), con il tasto **Filtra** sotto: **categorie** (Informatica, Salute, Cibo…, anche più di una) e **tipo di parola** (sostantivi, verbi, aggettivi, altro), quante domande (10, 20, tutte o **Altro**: un numero a scelta da 1 a 200). |
 | **Sfide** | In arrivo (rimandata di proposito). |
-| **Utente** | Il tuo nome come titolo della pagina; immagine profilo (12 avatar illustrati o una foto) con accanto il nick (`@stefano`), lingua studiata e data di inizio; contatore amici, record di giorni di fila, **6 medaglie a 4 livelli** (bronzo, argento, oro, diamante), sezione amici con la pagina **Aggiungi amici** e il tuo **codice amico**. In alto a destra ⚙️ apre le Impostazioni. |
+| **Benvenuto** (primo avvio, senza account) | **Registrati o accedi con la mail** (codice di 6 cifre, niente password) oppure **Continua come ospite** (scegli solo nick e avatar). Il nick è **unico**: mentre lo scrivi l'app ti dice se è libero. |
+| **Utente** | Il tuo nome come titolo della pagina; immagine profilo (12 avatar illustrati o una foto) con accanto il nick (`@stefano`), lingua studiata e data di inizio; contatore amici, record di giorni di fila, **6 medaglie a 4 livelli** (bronzo, argento, oro, diamante), sezione **Amici** (aggiungi con il codice amico, richieste da accettare, lista amici) e il tuo **codice amico**; account (ospite o mail), **Registrati** per gli ospiti, **Esci**, **Elimina account**. In alto a destra ⚙️ apre le Impostazioni. |
 | **Impostazioni** (⚙️ in Utente) | Il tema chiaro/scuro direttamente nella pagina, poi quattro categorie che si aprono da destra: **Lingue** (lingua studiata, lingua madre, livello delle parole del giorno, lingua dell'app), **Suoni**, **Notifiche** (promemoria e orario), **Backup**. Accanto a ogni categoria si vede il valore attuale (es. `🇬🇧 → 🇮🇹 · B1–B2`, `On`, `18:00`). |
 | **Lingue** (selettore 🇬🇧 → 🇮🇹 in Home o nel Dizionario) | Solo le scelte di studio: lingua studiata, lingua madre, livello delle parole del giorno. |
 
@@ -30,7 +31,7 @@ Il README ha due parti:
 - **Ripasso spaziato (sistema Leitner)** invece di quiz casuali: l'app chiede le parole quando stai per dimenticarle, non tutte ogni volta.
 - **Parole del giorno = parole nuove**, 5 al giorno, scelte da una lista integrata, anche solo delle **categorie** che vuoi imparare. Il codice è già pronto per prenderle da un server: si cambia **una riga**.
 - **Correzione indulgente ma onesta**: articoli ("la batteria", "to run") e accenti mancanti non sono errori; una lettera sbagliata in una parola lunga vale "Quasi!" e mostra come si scrive.
-- **Local-first**: nessun account, nessun server, dati in AsyncStorage. Backup in un file JSON.
+- **Local-first**: le parole e i progressi restano sul telefono (AsyncStorage, backup in un file JSON). Sul server (Supabase) ci sono solo l'account (ospite o mail), il profilo pubblico (nick unico, codice amico, avatar), gli amici e le categorie delle parole.
 - **Accessibile**: tutti i testi hanno contrasto WCAG AA (4.5:1), ogni elemento toccabile è almeno 44 pt, i bottoni-icona hanno un'etichetta per lo screen reader.
 - **Uguale su ogni iPhone**: il testo scala con la larghezza dello schermo, quindi le righe vanno a capo negli stessi punti su un iPhone normale e su un Max.
 - **Le scelte si muovono, non saltano**: cambiando un'opzione l'indicatore scivola, la spunta compare con un piccolo rimbalzo, i contenuti nuovi entrano in dissolvenza. Animazioni brevi (≤ 260 ms) e disattivate se il telefono ha "Riduci movimento".
@@ -59,7 +60,7 @@ npm run lint        # stile del codice
 npm test            # test della logica (jest)
 ```
 
-> ⚠️ Dopo aver scaricato queste modifiche serve **`npm install`**: sono stati aggiunti `expo-audio` (suoni), `expo-notifications` (promemoria) ed `expo-image-picker` (foto profilo), oltre a `jest`, `jest-expo` e `@jest/globals` per i test. Sono tutti inclusi in Expo Go: non serve una development build.
+> ⚠️ Dopo aver scaricato queste modifiche serve **`npm install`**: sono stati aggiunti `@supabase/supabase-js` e `react-native-url-polyfill` (account e server, funzionano in Expo Go); `expo-audio` (suoni), `expo-notifications` (promemoria) ed `expo-image-picker` (foto profilo), oltre a `jest`, `jest-expo` e `@jest/globals` per i test. Sono tutti inclusi in Expo Go: non serve una development build.
 
 ## "Voglio…" → dove mettere le mani
 
@@ -136,7 +137,8 @@ Perché così:
 | `activity` | `activityStore` | giorni in cui ti sei allenato (max 400), record di giorni di fila, quiz perfetti | 2 |
 | `daily` | `dailyStore` | parole del giorno di oggi per coppia (con livello e categorie con cui sono state scelte) + parole segnate "la so già" | 1 |
 | `achievements` | `achievementStore` | data in cui è stato raggiunto ogni livello di ogni medaglia | 1 |
-| `profile` | `profileStore` | nome, nick, email, avatar (illustrato o foto), codice amico, contatore amici, data di inizio | 3 |
+| `profile` | `profileStore` | copia del profilo del server (id nascosto, nick, codice amico, avatar, ospite o mail) + nome e foto (solo sul telefono), contatori amici e richieste, data di inizio | 4 |
+| `sb-…-auth-token` | supabase-js | la sessione dell'account (si rinnova da sola) | — |
 
 All'avvio la splash screen resta visibile finché tutti gli store non sono caricati (`useStoresHydrated`).
 
@@ -329,18 +331,25 @@ File: `src/domain/backup.ts`, `src/services/backupFiles.ts`.
 
 File: `src/app/(tabs)/profile/index.tsx` (profilo), `src/app/(tabs)/profile/edit.tsx` (modifica), `src/store/profileStore.ts`, `src/domain/achievements.ts`.
 
-**Profilo locale.** Non ci sono ancora account né server: i dati del profilo sono salvati solo sul telefono (`profileStore`). La struttura è già quella che servirà alla registrazione: quando arriverà il server, questi campi saranno i dati inviati al momento dell'iscrizione.
+**Account** (`hooks/useAccountSession.ts`, `services/account.ts`, `services/supabase.ts`, `store/accountStore.ts`, `app/welcome/`). Per usare l'app serve un account; ce ne sono due tipi, entrambi utenti di Supabase con un **id nascosto** (UUID) che è la chiave di tutto:
+- **Ospite** (*Continua come ospite*): un utente anonimo di Supabase, creato scegliendo solo nick e avatar. Se cancelli l'app o cambi telefono l'account si perde: lo dicono la schermata iniziale e la pagina Utente.
+- **Registrato con la mail**: si scrive la mail, arriva un **codice di 6 cifre**, lo si scrive nell'app. Lo stesso modulo serve per registrarsi e per rientrare su un altro telefono. Un ospite può **registrarsi in qualsiasi momento** (Utente → *Registrati con la mail*, `profile/register.tsx`): resta **lo stesso account** (stesso id, nick, codice amico e amici).
+- **Google e Apple** arriveranno con la *development build* (Expo Go non basta; Apple richiede l'account sviluppatore, e l'App Store chiede Apple se c'è Google).
+
+**Il flusso.** `app/_layout.tsx` usa `Stack.Protected`: senza account esistono solo le schermate `welcome/` (scelta → ospite / mail → nick e avatar), con l'account solo l'app. `useAccountSession` legge la sessione salvata (supabase-js in AsyncStorage) all'avvio: se il profilo copiato sul telefono è dello stesso account l'app si apre **subito, anche offline**, e il profilo si aggiorna dal server in background; un account nuovo senza profilo va a scegliere il nick (`welcome/profile.tsx`). *Esci* chiude la sessione (da ospite l'account si perde, l'app avvisa); *Elimina account* cancella sul server account, profilo e amicizie (richiesto dall'App Store). In entrambi i casi **le parole restano sul telefono**.
+
+**Profilo.** Il server tiene la parte pubblica (nick, codice amico, avatar disegnato); il telefono ne tiene una copia (`profileStore`, per vederla offline) più quello che resta solo suo: nome e foto.
 
 | Campo | Cos'è | Regole (`domain/profile.ts`) |
 |---|---|---|
 | **Nome** | come ti chiami, è il titolo della pagina Utente e il saluto in Home | testo libero, max 30 caratteri |
-| **Nick** | il tuo nome pubblico e **unico** (`@stefano`), con cui gli amici ti cercheranno | 3–20 caratteri: lettere senza accenti, numeri, `_` e `.`, deve iniziare con una lettera. Si salva in minuscolo e senza `@` (`@Stefano` = `stefano`). L'unicità la verificherà il server: per ora si controlla solo la forma |
-| **Email** | per l'account futuro | controllo leggero di forma; la verifica vera la farà il server |
-| **Codice amico** | es. `K7M2-X9PQ`: con questo gli amici ti aggiungono anche se cambi nick | creato **una sola volta** al primo avvio e **mai modificabile**: `updateProfile` accetta solo nome, nick, email e immagine. 8 caratteri senza quelli che si confondono (niente 0/O, 1/I/L), facili da dettare. Tra codici casuali due uguali sono possibili ma rarissimi (31⁸ ≈ 850 miliardi di combinazioni): sarà il server, alla registrazione, a garantirne l'unicità |
+| **Nick** | il tuo nome pubblico e **unico** (`@stefano`) | 3–20 caratteri: lettere senza accenti, numeri, `_` e `.`, deve iniziare con una lettera. Si salva in minuscolo e senza `@` (`@Stefano` = `stefano`). L'**unicità la garantisce il database**; mentre scrivi, `NicknameField` controlla prima la forma e poi (mezzo secondo dopo l'ultimo tasto) se è libero (`nickname_available`) |
+| **Email** | la mail dell'account (solo per i registrati) | si vede in Utente → Account; si imposta registrandosi |
+| **Codice amico** | es. `K7M2-X9PQ`: con questo gli amici ti aggiungono anche se cambi nick | lo **assegna il server**, unico, **mai modificabile**. 8 caratteri senza quelli che si confondono (niente 0/O, 1/I/L). Il codice che il telefono aveva già creato prima degli account viene tenuto se è libero |
 
-La **versione 3** di `profileStore` trasforma il vecchio "nome utente" in *nome*, aggiunge il nick vuoto e crea il codice amico per chi aveva già l'app.
+La **versione 3** di `profileStore` trasforma il vecchio "nome utente" in *nome*, aggiunge il nick vuoto e crea il codice amico per chi aveva già l'app; la **versione 4** aggiunge id dell'account, ospite/mail e richieste di amicizia. Chi aveva già l'app trova nick, avatar e codice già compilati nella schermata *Continua come ospite*.
 
-**Aggiungi amici** (`src/app/(tabs)/profile/friends.tsx`, dal bottone nella sezione Amici): in alto il campo per cercare un amico per nick o codice (disattivato fino all'arrivo del server; `normalizeFriendCode` accetta già `abcd efgh` → `ABCD-EFGH`), sotto **il tuo codice amico** in grande, selezionabile, con il bottone **Condividi il mio codice** (foglio di condivisione del telefono: WhatsApp, Messaggi, copia…).
+**Amici** (`src/app/(tabs)/profile/friends.tsx`): si aggiunge un amico scrivendo il suo **codice amico** (`abcd efgh` va bene, diventa `ABCD-EFGH`): gli arriva una **richiesta da accettare**. Se lui ti aveva già mandato una richiesta, diventate amici subito. La pagina mostra le **richieste ricevute** (*Accetta* / *Rifiuta*), i **tuoi amici** (*Rimuovi*), le **richieste mandate** (*Annulla*) e in fondo **il tuo codice amico** con *Condividi il mio codice*. Si aggiorna ogni volta che la apri e trascinando verso il basso. In Utente la sezione Amici mostra quanti amici hai e le richieste da accettare. Nessuno può sfogliare gli utenti: un codice si può solo cercare esatto, e vedi i profili solo dei tuoi amici e di chi ti ha mandato (o a cui hai mandato) una richiesta.
 
 **Immagine.** Si sceglie fra 12 avatar illustrati (6 donne e 6 uomini con carnagioni, capelli, età e accessori diversi: occhiali, barba, velo, turbante) oppure una foto dalla galleria. Gli avatar sono disegnati in codice: il generatore e i sorgenti SVG sono in `design/avatars/` (fuori dall'app), i PNG usati dall'app in `assets/avatars/`, l'elenco in `content/avatars.ts`. Un profilo nuovo parte con un avatar a caso; la versione 2 di `profileStore` sostituisce i vecchi avatar-animale con un avatar a caso. La foto è ritagliata quadrata e viene **copiata nei documenti dell'app** (`services/profilePhoto.ts`): la copia del selettore sta in una cache che il sistema può svuotare. Quando la foto viene sostituita o rimossa, il file vecchio viene cancellato. Le modifiche valgono solo premendo **Salva**.
 
@@ -484,4 +493,6 @@ Sono test della logica pura: girano in un secondo, senza telefono.
 - **Categorie automatiche**: con la soglia severa, sulle parole difficili di prova 9 categorie proposte su 10 sono giuste, ma ne trova circa metà (dettagli in `design/topic-model/README.md`): molte traduzioni restano senza categoria e si spuntano a mano. Con il server si può usare un modello più grande.
 - **Wiktionary**: le spiegazioni dei sensi sono in inglese; per le coppie senza inglese (es. 🇪🇸→🇮🇹) restano le traduzioni di MyMemory, non divise per senso.
 - **Tipo di parola**: senza connessione resta la stima offline, che sbaglia spesso con gli aggettivi senza finale tipica (*big*, *tired* → sostantivo). Si corregge da sola appena c'è rete (Wiktionary).
+- **Login con la mail**: sul piano gratuito Supabase non permette di cambiare il testo delle mail con il suo servizio di posta (che manda mail solo ai membri del progetto, 2 all'ora). Il codice di 6 cifre nelle mail arriva quando si collega un **servizio di posta proprio (SMTP)** e si caricano i testi (`supabase/templates/code.html` sul branch `server`, vedi `supabase/README.md`). Gli ospiti funzionano già.
+- **Versione web**: i messaggi di conferma (`Alert`, es. *Esci*, *Rimuovi*) sul web non compaiono; sul telefono sì.
 - **Notifiche push** (mandate da un server, per esempio "un amico ti ha sfidato"): richiedono una development build. Il promemoria giornaliero locale invece funziona già.
