@@ -1,6 +1,6 @@
 # Server (Supabase)
 
-Il server dell'app: database Postgres, login (più avanti) e funzioni in TypeScript (*Edge Functions*).
+Il server dell'app: database Postgres, login (ospiti e mail), storage delle foto e funzioni in TypeScript (*Edge Functions*).
 Vive tutto in questa cartella e nel branch `server`: non tocca l'app.
 
 ## Cosa c'è
@@ -10,6 +10,7 @@ Vive tutto in questa cartella e nel branch `server`: non tocca l'app.
 | `config.toml` | configurazione del server locale (porte, login…) |
 | `migrations/` | lo schema del database, un file per ogni modifica, in ordine di data |
 | `seed.sql` | qualche riga di prova, caricata **solo** nel database locale |
+| `templates/code.html` | testo della mail con il codice di 6 cifre (da caricare nel pannello, vedi *Login*) |
 | `functions/_shared/contract.ts` | cosa ricevono e restituiscono le funzioni: lo stesso file andrà nell'app |
 | `functions/classify-meaning/` | la prima funzione: categorie e tipo di una traduzione |
 
@@ -19,13 +20,14 @@ Vive tutto in questa cartella e nel branch `server`: non tocca l'app.
   Contiene già le **~408.000 coppie dei sensi di Wiktionary** (`source = 'dictionary'`, nelle due direzioni), caricate con `scripts/load_wiktionary.py` da `pairs.json` (generato da `app/design/topic-model/wiktionary/build.py`): la maggior parte delle domande non arriva mai al modello.
 - **`model_usage`**: quante chiamate al modello di linguaggio sono state fatte oggi. `take_model_call(max)` conta una chiamata e dice se si è ancora sotto il limite: un errore o un abuso non possono far salire il conto.
 
-- **`profiles`**: il profilo pubblico di ogni utente (ospite o registrato): `id` = l'id nascosto dell'utente (`auth.users`), `nickname` **unico** (minuscolo, 3–20 caratteri `a-z 0-9 _ .`, inizia con una lettera), `friend_code` **unico** dato dal server (`K7M2-X9PQ`, mai modificato), `avatar` (id di un avatar disegnato; `null` = foto, che resta sul telefono).
+- **`profiles`**: il profilo pubblico di ogni utente (ospite o registrato): `id` = l'id nascosto dell'utente (`auth.users`), `nickname` **unico** (minuscolo, 3–20 caratteri `a-z 0-9 _ .`, inizia con una lettera), `friend_code` **unico** dato dal server (`K7M2-X9PQ`, mai modificato), `avatar` (id di un avatar disegnato, usato quando non c'è una foto). La chiave è l'`id`, non il nick: amicizie e serie puntano all'id, quindi il nick si può cambiare senza rompere nulla (e un nick lasciato libero da qualcuno non eredita i suoi amici).
 - **`profiles.photo_path`** e bucket di storage **`avatars`** (`migrations/20261116200000_profile_photos.sql`): la foto profilo, nella cartella dell'utente `<id>/<nome casuale>.jpg` (JPEG/PNG/WebP, max 1 MB; l'app manda 512×512 JPEG). Lettura pubblica (si trova solo conoscendo il percorso, che vedono solo amici e richieste); scrivere, sostituire e cancellare solo nella propria cartella. Le funzioni accettano solo percorsi nella cartella di chi chiama (`invalid_photo` altrimenti).
 - **`friendships`**: amicizie e richieste: `requester` → `addressee`, `status` `pending` o `accepted`. Una sola riga per coppia di utenti.
+- **`streaks`** (`migrations/20261116220000_streaks.sql`): la serie di giorni di ogni utente, una riga per utente: `current_streak` (serie attuale), `best_streak` (record, **non scende mai**), `saves` (salvaserie disponibili, 0–2), `saves_earned` e `saves_used` (salvaserie guadagnati e usati da sempre), `last_training_day`, `as_of` (il giorno del telefono in cui i numeri sono stati calcolati) e `updated_at`. La calcola il telefono dai suoi giorni di allenamento (l'app è *local-first*) e la manda con `save_streak`; il server controlla solo che i numeri siano coerenti (`best ≥ current`, `used ≤ earned`, `as_of` non nel futuro). Ognuno legge la propria riga e quelle degli amici (non delle richieste). ⚠️ È una fotografia: se l'app non viene aperta per giorni la serie resta quella dell'ultimo `as_of`.
 
 I codici amico non si possono sfogliare (solo cercare esatti). I nick sì, ma solo per inizio (`search_profiles`, almeno 3 caratteri, massimo 10 risultati), che dà nick, avatar e foto, mai id o codice. Ognuno vede il proprio profilo completo e quelli di amici e richieste; tutte le scritture passano dalle funzioni qui sotto (`security definer`), che controllano le regole.
 
-### Funzioni per account e amici (`migrations/20261116190000_profiles_friends.sql`)
+### Funzioni per account, amici e serie (`migrations/20261116190000_profiles_friends.sql` e successive)
 
 | Funzione | Chi | Cosa fa |
 |---|---|---|
@@ -38,7 +40,8 @@ I codici amico non si possono sfogliare (solo cercare esatti). I nick sì, ma so
 | `respond_friend_request(id, accetta)` | chi ha ricevuto | accetta o rifiuta |
 | `remove_friend(id)` | utente loggato | toglie un amico o annulla una richiesta |
 | `my_friends()` | utente loggato | amici e richieste con nick, avatar e foto: `friend`, `incoming`, `outgoing` |
-| `delete_my_account()` | utente loggato | cancella l'utente (e con lui profilo e amicizie) |
+| `delete_my_account()` | utente loggato | cancella l'utente (e con lui profilo, amicizie e serie; le foto le cancella prima l'app) |
+| `save_streak(attuale, record, salvaserie, guadagnati, usati, ultimo_giorno, as_of)` | utente loggato | salva la serie (`migrations/20261116220000_streaks.sql`) e restituisce la riga: il record è il più alto mai ricevuto, così un telefono nuovo se lo riprende; `invalid_streak` se i numeri non tornano |
 
 ### Login
 
@@ -94,7 +97,7 @@ deno test supabase/functions/classify-meaning/classify.test.ts
 
 ## Pubblicare sul progetto online
 
-Stato attuale (16/11/2026): schema applicato, `GEMINI_API_KEY` impostata, `classify-meaning` pubblicata, coppie di Wiktionary caricate. L'app (`porting_app`) la chiama già.
+Stato attuale (16/11/2026): tutte le migrations applicate (fino a `20261116220000_streaks.sql`: profili, amici, foto, ricerca per nick, serie), ospiti attivi, `GEMINI_API_KEY` impostata, `classify-meaning` pubblicata, coppie di Wiktionary caricate. L'app (`porting_app`) usa già tutto.
 
 ```powershell
 npx supabase db push                                  # applica le nuove migrations al database online
@@ -130,5 +133,6 @@ Risponde `source: dictionary` (dalla tabella). Se il modello non risponde, `mess
 1. ~~Riempire `meaning_topics` con i sensi di Wiktionary~~ (fatto).
 2. ~~L'app chiede `classify-meaning` in background per le traduzioni rimaste senza categoria~~ (fatto: `useServerTopicCheck` in `porting_app`).
 3. ~~Login (ospiti e mail), profili e amici~~ (fatto; manca solo il servizio di posta per i codici, vedi *Login*).
-4. Sfide.
-5. Google e Apple, con la development build.
+4. ~~Foto profilo, ricerca amici per nick, serie e salvaserie~~ (fatto).
+5. Sfide (possono usare `streaks` e `friendships`).
+6. Google e Apple, con la development build.
