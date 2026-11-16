@@ -1,9 +1,10 @@
-// Friends: add one with their friend code (they get a request to accept), answer the requests
-// received, see friends and requests sent. Below, the user's own code, ready to share.
+// Friends: add one by nickname (search as you type) or with their friend code (they get a
+// request to accept), answer the requests received, see friends and requests sent. Below, the
+// user's own code, ready to share.
 // Everything comes from the server (services/account.ts); the counters in Profile follow.
 
 import { Stack, useFocusEffect } from 'expo-router';
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Alert, RefreshControl, Share, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -15,22 +16,49 @@ import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
 import { TextField } from '@/components/TextField';
 import { AVATAR_PRESETS, isAvatarId } from '@/content/avatars';
-import { accountProblem, groupFriends, type FriendEntry, type FriendLists } from '@/domain/account';
+import {
+  accountProblem,
+  groupFriends,
+  nicknameQuery,
+  type FriendEntry,
+  type FriendLists,
+  type FriendRequestResult,
+  type ProfileSearchResult,
+} from '@/domain/account';
 import { isValidFriendCode, normalizeFriendCode } from '@/domain/profile';
 import { refreshFriendCounts } from '@/hooks/useAccountSession';
 import { useT } from '@/i18n';
-import { fetchFriends, removeFriend, respondFriendRequest, sendFriendRequest } from '@/services/account';
+import {
+  fetchFriends,
+  photoUrl,
+  removeFriend,
+  respondFriendRequest,
+  searchProfiles,
+  sendFriendRequest,
+  sendFriendRequestByNick,
+} from '@/services/account';
 import { useProfileStore } from '@/store/profileStore';
 import { fontSize, fontWeight, radius, spacing, useTheme } from '@/theme';
 
 const NO_LISTS: FriendLists = { friends: [], incoming: [], outgoing: [] };
 
-function FriendRow({ entry, children }: { entry: FriendEntry; children: ReactNode }) {
+/** Wait after the last key before searching nicknames. */
+const SEARCH_DELAY_MS = 400;
+
+/** The last answer of the nickname search: results, or what went wrong. */
+type Found = { query: string; round: number } & ({ results: ProfileSearchResult[] } | { message: string });
+
+type Person = Pick<FriendEntry, 'nickname' | 'avatar' | 'photo_path'>;
+
+function FriendRow({ entry, children }: { entry: Person; children: ReactNode }) {
   const { colors } = useTheme();
   const avatarId = entry.avatar && isAvatarId(entry.avatar) ? entry.avatar : AVATAR_PRESETS[0].id;
   return (
     <View style={[styles.row, { borderTopColor: colors.border }]}>
-      <Avatar avatar={{ kind: 'preset', id: avatarId }} size={44} />
+      <Avatar
+        avatar={entry.photo_path ? { kind: 'photo', uri: photoUrl(entry.photo_path) } : { kind: 'preset', id: avatarId }}
+        size={44}
+      />
       <AppText variant="bodyBold" style={styles.flex} numberOfLines={1}>
         @{entry.nickname}
       </AppText>
@@ -47,7 +75,10 @@ export default function FriendsScreen() {
   const [lists, setLists] = useState<FriendLists>(NO_LISTS);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [code, setCode] = useState('');
+  // What's typed in the add field: a nickname (or its beginning) or a friend code
+  const [text, setText] = useState('');
+  const [found, setFound] = useState<Found | null>(null);
+  const [searchRound, setSearchRound] = useState(0);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ text: string; good: boolean } | null>(null);
 
@@ -71,21 +102,84 @@ export default function FriendsScreen() {
     }, [load])
   );
 
-  const send = async () => {
-    const normalized = normalizeFriendCode(code);
+  const code = normalizeFriendCode(text);
+  const isCode = isValidFriendCode(code);
+  const query = nicknameQuery(text);
+
+  // Nickname search, a moment after the last key (and again after a request: relations change)
+  useEffect(() => {
+    if (!query) {
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      searchProfiles(query)
+        .then((results) => !cancelled && setFound({ query, round: searchRound, results }))
+        .catch((error) => {
+          if (!cancelled) {
+            setFound({ query, round: searchRound, message: t.account.problems[accountProblem(error)] });
+          }
+        });
+    }, SEARCH_DELAY_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query, searchRound, t]);
+  // The answer shown is the one for what's typed now; until it arrives, "searching".
+  // After a request the old results stay on screen while they are refreshed.
+  const current = query && found?.query === query ? found : null;
+  const searching = Boolean(query) && (!current || current.round !== searchRound);
+  const results = current && 'results' in current ? current.results : null;
+
+  // Sends a request (by code or by nickname) and tells how it went
+  const send = async (request: () => Promise<FriendRequestResult>, clearField: boolean) => {
     setSending(true);
     setResult(null);
     try {
-      const answer = await sendFriendRequest(normalized);
-      setResult({ text: t.friends.results[answer], good: answer === 'sent' || answer === 'accepted' });
-      if (answer === 'sent' || answer === 'accepted') {
-        setCode('');
+      const answer = await request();
+      const good = answer === 'sent' || answer === 'accepted';
+      setResult({ text: t.friends.results[answer], good });
+      if (good && clearField) {
+        setText('');
       }
       load();
+      refreshFriendCounts();
+      setSearchRound((round) => round + 1);
     } catch (error) {
       setResult({ text: t.account.problems[accountProblem(error)], good: false });
     } finally {
       setSending(false);
+    }
+  };
+
+  const sendCode = () => send(() => sendFriendRequest(code), true);
+
+  // What each search result offers, by how the person is related to the user
+  const searchAction = (person: ProfileSearchResult) => {
+    switch (person.relation) {
+      case 'none':
+        return (
+          <Button
+            label={t.friends.add}
+            size="sm"
+            disabled={sending}
+            onPress={() => send(() => sendFriendRequestByNick(person.nickname), false)}
+          />
+        );
+      case 'incoming':
+        return (
+          <Button
+            label={t.friends.accept}
+            size="sm"
+            disabled={sending}
+            onPress={() => send(() => sendFriendRequestByNick(person.nickname), false)}
+          />
+        );
+      case 'outgoing':
+        return <AppText variant="small" color="textMuted">{t.friends.relation.outgoing}</AppText>;
+      case 'friend':
+        return <AppText variant="small" color="primary">{t.friends.relation.friend}</AppText>;
     }
   };
 
@@ -117,20 +211,47 @@ export default function FriendsScreen() {
       <Screen refreshControl={<RefreshControl refreshing={false} onRefresh={load} />}>
         <Section title={t.friends.addTitle} hint={t.friends.addHint}>
           <TextField
-            value={code}
-            onChangeText={(text) => {
-              setCode(normalizeFriendCode(text));
+            value={text}
+            onChangeText={(next) => {
+              setText(next);
               setResult(null);
             }}
-            placeholder={t.friends.codePlaceholder}
-            accessibilityLabel={t.friends.codePlaceholder}
-            autoCapitalize="characters"
+            placeholder={t.friends.searchPlaceholder}
+            accessibilityLabel={t.friends.searchPlaceholder}
+            autoCapitalize="none"
             autoCorrect={false}
-            maxLength={9}
-            returnKeyType="send"
-            onSubmitEditing={() => isValidFriendCode(code) && send()}
+            maxLength={21}
+            returnKeyType={isCode ? 'send' : 'search'}
+            onSubmitEditing={() => isCode && sendCode()}
           />
-          <Button label={t.friends.send} onPress={send} disabled={sending || !isValidFriendCode(code)} />
+          {isCode ? <Button label={t.friends.sendToCode(code)} onPress={sendCode} disabled={sending} /> : null}
+          {text.trim() && !isCode && !query ? (
+            <AppText variant="small" color="textMuted">
+              {t.friends.searchHint}
+            </AppText>
+          ) : null}
+          {searching && !results ? (
+            <AppText variant="small" color="textMuted">
+              {t.friends.searching}
+            </AppText>
+          ) : null}
+          {current && 'message' in current && !searching ? <AppText color="danger">{current.message}</AppText> : null}
+          {results && results.length === 0 && !searching && !isCode ? (
+            <AppText variant="small" color="textMuted">
+              {t.friends.noResults(query ?? '')}
+            </AppText>
+          ) : null}
+          {results && results.length > 0 ? (
+            <Appear>
+              <Card style={styles.list}>
+                {results.map((person) => (
+                  <FriendRow key={person.nickname} entry={person}>
+                    {searchAction(person)}
+                  </FriendRow>
+                ))}
+              </Card>
+            </Appear>
+          ) : null}
           {result ? (
             <Appear>
               <AppText color={result.good ? 'primary' : 'danger'} accessibilityLiveRegion="polite">

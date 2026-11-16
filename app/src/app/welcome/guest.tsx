@@ -6,10 +6,9 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { AvatarPicker } from '@/components/AvatarPicker';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
 import { NicknameField, type NicknameStatus } from '@/components/NicknameField';
+import { ProfilePictureChooser } from '@/components/ProfilePictureChooser';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
 import { randomAvatarId } from '@/content/avatars';
@@ -26,6 +25,8 @@ export default function WelcomeGuestScreen() {
   const local = useProfileStore();
   const [nickname, setNickname] = useState(local.nickname);
   const [avatar, setAvatar] = useState(local.avatar.kind === 'preset' ? local.avatar.id : randomAvatarId());
+  // A photo already on the phone (profile from before accounts) is offered again
+  const [photo, setPhoto] = useState<string | null>(local.avatar.kind === 'photo' ? local.avatar.uri : null);
   const [nicknameStatus, setNicknameStatus] = useState<NicknameStatus>('empty');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export default function WelcomeGuestScreen() {
       if (!data.session) {
         await signInAsGuest();
       }
-      await finishProfile(nickname, avatar);
+      await finishProfile(nickname, avatar, photo);
     } catch (startError) {
       setError(t.account.problems[accountProblem(startError)]);
       setBusy(false);
@@ -53,9 +54,7 @@ export default function WelcomeGuestScreen() {
       </Section>
 
       <Section title={t.welcome.avatarTitle}>
-        <Card>
-          <AvatarPicker value={avatar} onChange={setAvatar} />
-        </Card>
+        <ProfilePictureChooser avatar={avatar} photo={photo} onAvatar={setAvatar} onPhoto={setPhoto} />
       </Section>
 
       <View style={styles.footer}>

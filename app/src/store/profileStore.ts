@@ -12,6 +12,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 import { isAvatarId, randomAvatarId } from '@/content/avatars';
+import { photoUrl } from '@/services/account';
 import type { ServerProfile } from '@/domain/account';
 import { generateFriendCode, isValidFriendCode } from '@/domain/profile';
 
@@ -40,6 +41,8 @@ type ProfileState = EditableProfile & {
   userId: string | null;
   /** true for a guest account (no email). */
   isGuest: boolean;
+  /** The photo on the server ("<user id>/<name>.jpg"), null without a photo. */
+  photoPath: string | null;
 
   /** Only the editable fields: the friend code can't be passed here. */
   updateProfile: (changes: Partial<EditableProfile>) => void;
@@ -63,6 +66,7 @@ export const useProfileStore = create<ProfileState>()(
       createdAt: new Date().toISOString(),
       userId: null,
       isGuest: false,
+      photoPath: null,
 
       updateProfile: ({ name, nickname, email, avatar }) =>
         set((state) => ({
@@ -79,8 +83,16 @@ export const useProfileStore = create<ProfileState>()(
           email,
           nickname: profile.nickname,
           friendCode: profile.friend_code,
-          // A photo stays on the phone (the server has null); a drawn avatar comes from the server
-          avatar: profile.avatar && isAvatarId(profile.avatar) ? { kind: 'preset', id: profile.avatar } : state.avatar,
+          photoPath: profile.photo_path,
+          avatar: profile.photo_path
+            ? // Same photo as the copy on this phone: keep the local file (works offline); else download it
+              // (on the web a picked photo is a temporary blob: the server's copy is used)
+              state.photoPath === profile.photo_path && state.avatar.kind === 'photo' && !state.avatar.uri.startsWith('blob:')
+              ? state.avatar
+              : { kind: 'photo', uri: photoUrl(profile.photo_path) }
+            : profile.avatar && isAvatarId(profile.avatar)
+              ? { kind: 'preset', id: profile.avatar }
+              : state.avatar,
           // "Member since": the earliest of the first launch and the account
           createdAt: profile.created_at < state.createdAt ? profile.created_at : state.createdAt,
         })),
@@ -96,6 +108,7 @@ export const useProfileStore = create<ProfileState>()(
           friendCode: generateFriendCode(),
           friendsCount: 0,
           incomingRequests: 0,
+          photoPath: null,
         }),
     }),
     {
@@ -103,7 +116,8 @@ export const useProfileStore = create<ProfileState>()(
       // v2: the animal avatars became people; an old animal is replaced by a random person
       // v3: "username" renamed "name"; nickname and friend code added
       // v4: accounts (userId, isGuest, incomingRequests)
-      version: 4,
+      // v5: photo on the server (photoPath)
+      version: 5,
       migrate: (persisted, version) => {
         const state = persisted as Partial<ProfileState> & { username?: string };
 
@@ -114,6 +128,9 @@ export const useProfileStore = create<ProfileState>()(
           state.name = state.username ?? '';
           delete state.username;
           state.nickname = '';
+        }
+        if (version < 5) {
+          state.photoPath = null;
         }
         if (version < 4) {
           state.userId = null;

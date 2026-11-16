@@ -12,7 +12,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useEffect } from 'react';
 
 import { groupFriends } from '@/domain/account';
-import { createProfile, fetchFriends, fetchMyProfile } from '@/services/account';
+import { createProfile, fetchFriends, fetchMyProfile, uploadProfilePhoto } from '@/services/account';
 import { supabase } from '@/services/supabase';
 import { useAccountStore } from '@/store/accountStore';
 import { useProfileStore } from '@/store/profileStore';
@@ -29,16 +29,23 @@ export async function refreshFriendCounts(): Promise<void> {
 
 /**
  * Creates the profile of the signed-in user (guest or new email account) and opens the app.
- * The friend code the phone already showed is kept if still free.
+ * The friend code the phone already showed is kept if still free. A photo of the phone, if
+ * chosen, is uploaded first (into the user's folder on the server).
  */
-export async function finishProfile(nickname: string, avatar: string): Promise<void> {
+export async function finishProfile(nickname: string, avatar: string, photoUri: string | null): Promise<void> {
   const local = useProfileStore.getState();
-  const profile = await createProfile(nickname, avatar, local.friendCode);
   const { data } = await supabase.auth.getUser();
-  local.updateProfile({ avatar: { kind: 'preset', id: avatar } });
+  if (!data.user) {
+    throw new Error('not_signed_in');
+  }
+  const photoPath = photoUri ? await uploadProfilePhoto(data.user.id, photoUri) : null;
+  const profile = await createProfile(nickname, avatar, local.friendCode, photoPath);
+  local.updateProfile({ avatar: photoUri ? { kind: 'photo', uri: photoUri } : { kind: 'preset', id: avatar } });
+  // photoPath first, so the local photo file is kept as the copy of the server's photo
+  useProfileStore.setState({ photoPath: profile.photo_path });
   useProfileStore.getState().applyServerProfile(profile, {
-    isGuest: data.user?.is_anonymous === true,
-    email: data.user?.email ?? '',
+    isGuest: data.user.is_anonymous === true,
+    email: data.user.email ?? '',
   });
   useAccountStore.getState().setStatus('ready');
   refreshFriendCounts();

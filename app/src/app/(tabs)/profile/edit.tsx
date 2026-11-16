@@ -1,7 +1,8 @@
 // Edit the profile: picture (avatar or photo), name and nick.
 // The friend code is not here: it never changes. The email is the account's (Profile -> Account).
-// Changes are kept in a draft and saved only with "Save": nick and drawn avatar on the server
-// (the nick must be free), name and photo only on this phone.
+// Changes are kept in a draft and saved only with "Save": nick and picture (drawn avatar or
+// photo, uploaded) on the server, where friends see them (the nick must be free); the name only
+// on this phone.
 
 import { Stack, router } from 'expo-router';
 import { useState } from 'react';
@@ -19,7 +20,7 @@ import { AVATAR_PRESETS } from '@/content/avatars';
 import { NicknameField, type NicknameStatus } from '@/components/NicknameField';
 import { accountProblem } from '@/domain/account';
 import { useT } from '@/i18n';
-import { updateServerProfile } from '@/services/account';
+import { deleteOldPhotos, updateServerProfile, uploadProfilePhoto } from '@/services/account';
 import { deleteProfilePhoto, pickProfilePhoto } from '@/services/profilePhoto';
 import { useProfileStore, type ProfileAvatar } from '@/store/profileStore';
 import { spacing } from '@/theme';
@@ -58,20 +59,32 @@ export default function EditProfileScreen() {
   };
 
   const save = async () => {
-    const serverAvatar = avatar.kind === 'preset' ? avatar.id : null;
-    const oldServerAvatar = profile.avatar.kind === 'preset' ? profile.avatar.id : null;
     const nicknameChanged = nickname !== profile.nickname;
+    const avatarChanged = !sameAvatar(avatar, profile.avatar);
 
     setSaving(true);
     setError(null);
     try {
-      // Nick and drawn avatar live on the server: saved there first (the nick must be free)
-      if (nicknameChanged || serverAvatar !== oldServerAvatar) {
-        const saved = await updateServerProfile({
-          nickname: nicknameChanged ? nickname : undefined,
-          avatar: serverAvatar,
-        });
+      // Nick and picture live on the server: saved there first (the nick must be free)
+      if ((nicknameChanged || avatarChanged) && profile.userId) {
+        const changes: Parameters<typeof updateServerProfile>[0] = {};
+        if (nicknameChanged) {
+          changes.nickname = nickname;
+        }
+        if (avatarChanged && avatar.kind === 'photo') {
+          // A new photo: uploaded to the user's folder, then set in the profile
+          changes.photoPath = await uploadProfilePhoto(profile.userId, avatar.uri);
+        } else if (avatarChanged && avatar.kind === 'preset') {
+          changes.avatar = avatar.id;
+          changes.photoPath = null;
+        }
+        const saved = await updateServerProfile(changes);
+        // The local copy of the picture first, so the photo shows from the phone (also offline)
+        useProfileStore.setState({ avatar, photoPath: saved.photo_path });
         useProfileStore.getState().applyServerProfile(saved, { isGuest: profile.isGuest, email: profile.email });
+        if (avatarChanged) {
+          deleteOldPhotos(profile.userId, saved.photo_path ?? undefined).catch(() => {});
+        }
       }
     } catch (saveError) {
       setError(t.account.problems[accountProblem(saveError)]);
