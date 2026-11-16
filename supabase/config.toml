@@ -253,11 +253,11 @@ otp_expiry = 900
 # Emails with a 6-digit code instead of a link (the app asks for the code). Online the same
 # templates must be set in Authentication -> Emails (they need a custom SMTP on the free plan).
 [auth.email.template.confirmation]
-subject = "{{ .Token }} è il tuo codice per Vocabulary Trainer"
+subject = "{{ .Token }} è il tuo codice per Echo - WordKeeper"
 content_path = "./supabase/templates/code.html"
 
 [auth.email.template.magic_link]
-subject = "{{ .Token }} è il tuo codice per Vocabulary Trainer"
+subject = "{{ .Token }} è il tuo codice per Echo - WordKeeper"
 content_path = "./supabase/templates/code.html"
 
 [auth.email.template.email_change]

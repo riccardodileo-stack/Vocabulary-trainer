@@ -47,11 +47,11 @@ I codici amico non si possono sfogliare (solo cercare esatti). I nick sì, ma so
 
 - **Ospiti**: *anonymous sign-ins* attivi (online e in `config.toml`). Un ospite che si registra con la mail resta lo stesso utente (stesso id).
 - **Mail con codice di 6 cifre** (niente link): l'app chiama `signInWithOtp` (accesso o nuovo account) o `updateUser({ email })` (ospite che si registra), poi `verifyOtp` con il codice. Codice di 6 cifre, valido 15 minuti (già impostato online).
-- ⚠️ **Il testo delle mail va cambiato per mostrare il codice** (`{{ .Token }}`), ma sul piano gratuito Supabase lo permette solo con un **servizio di posta proprio (SMTP)**; quello di Supabase manda mail solo ai membri del progetto, 2 all'ora. Per attivarlo:
+- ✅ **Servizio di posta attivo** (16/11/2026): SMTP di Gmail (`echowordkeeper@gmail.com`, mittente "Echo - WordKeeper"), al massimo 30 mail all'ora (*Authentication → Rate Limits*), e i testi delle mail caricati (*Confirm signup*, *Magic Link*, *Change Email Address* → `templates/code.html`, oggetto con il codice). Gmail è pensato per la posta personale: le mail possono finire nello spam e il limite è ~500 al giorno. Per la pubblicazione meglio un servizio con un dominio vostro (es. Resend, Brevo): cambiano solo i campi SMTP.
+- Come è stato configurato (per rifarlo o cambiarlo; sul piano gratuito i testi si possono cambiare solo con un SMTP proprio):
   1. un servizio SMTP gratuito, per i test il più semplice è **Gmail**: account Google → Sicurezza → verifica in due passaggi attiva → *Password per le app* → crea "Supabase";
-  2. pannello Supabase → **Authentication → Emails → SMTP Settings** → attiva *custom SMTP*: host `smtp.gmail.com`, porta `465`, utente = il tuo indirizzo Gmail, password = la password per le app, mittente = lo stesso indirizzo, nome "Vocabulary Trainer";
-  3. **Authentication → Emails → Templates**: in *Confirm signup*, *Magic Link* e *Change Email Address* metti come oggetto `{{ .Token }} è il tuo codice per Vocabulary Trainer` e come testo il contenuto di `templates/code.html`.
-  Per la pubblicazione meglio un servizio con un dominio vostro (es. Resend, Brevo).
+  2. pannello Supabase → **Authentication → Emails → SMTP Settings** → attiva *custom SMTP*: host `smtp.gmail.com`, porta `465`, utente = il tuo indirizzo Gmail, password = la password per le app, mittente = lo stesso indirizzo, nome "Echo - WordKeeper";
+  3. **Authentication → Emails → Templates**: in *Confirm signup*, *Magic Link* e *Change Email Address* metti come oggetto `{{ .Token }} è il tuo codice per Echo - WordKeeper` e come testo il contenuto di `templates/code.html`.
 - Google e Apple: quando ci sarà la development build.
 
 ### `classify-meaning`
@@ -132,7 +132,7 @@ Risponde `source: dictionary` (dalla tabella). Se il modello non risponde, `mess
 
 1. ~~Riempire `meaning_topics` con i sensi di Wiktionary~~ (fatto).
 2. ~~L'app chiede `classify-meaning` in background per le traduzioni rimaste senza categoria~~ (fatto: `useServerTopicCheck` in `porting_app`).
-3. ~~Login (ospiti e mail), profili e amici~~ (fatto; manca solo il servizio di posta per i codici, vedi *Login*).
+3. ~~Login (ospiti e mail), profili e amici~~ (fatto, anche il servizio di posta per i codici).
 4. ~~Foto profilo, ricerca amici per nick, serie e salvaserie~~ (fatto).
 5. Sfide (possono usare `streaks` e `friendships`).
 6. Google e Apple, con la development build.
