@@ -20,21 +20,24 @@ Vive tutto in questa cartella e nel branch `server`: non tocca l'app.
 - **`model_usage`**: quante chiamate al modello di linguaggio sono state fatte oggi. `take_model_call(max)` conta una chiamata e dice se si è ancora sotto il limite: un errore o un abuso non possono far salire il conto.
 
 - **`profiles`**: il profilo pubblico di ogni utente (ospite o registrato): `id` = l'id nascosto dell'utente (`auth.users`), `nickname` **unico** (minuscolo, 3–20 caratteri `a-z 0-9 _ .`, inizia con una lettera), `friend_code` **unico** dato dal server (`K7M2-X9PQ`, mai modificato), `avatar` (id di un avatar disegnato; `null` = foto, che resta sul telefono).
+- **`profiles.photo_path`** e bucket di storage **`avatars`** (`migrations/20261116200000_profile_photos.sql`): la foto profilo, nella cartella dell'utente `<id>/<nome casuale>.jpg` (JPEG/PNG/WebP, max 1 MB; l'app manda 512×512 JPEG). Lettura pubblica (si trova solo conoscendo il percorso, che vedono solo amici e richieste); scrivere, sostituire e cancellare solo nella propria cartella. Le funzioni accettano solo percorsi nella cartella di chi chiama (`invalid_photo` altrimenti).
 - **`friendships`**: amicizie e richieste: `requester` → `addressee`, `status` `pending` o `accepted`. Una sola riga per coppia di utenti.
 
-Nessuno può sfogliare utenti o codici: ognuno vede il proprio profilo e quelli di amici e richieste; tutte le scritture passano dalle funzioni qui sotto (`security definer`), che controllano le regole.
+I codici amico non si possono sfogliare (solo cercare esatti). I nick sì, ma solo per inizio (`search_profiles`, almeno 3 caratteri, massimo 10 risultati), che dà nick, avatar e foto, mai id o codice. Ognuno vede il proprio profilo completo e quelli di amici e richieste; tutte le scritture passano dalle funzioni qui sotto (`security definer`), che controllano le regole.
 
 ### Funzioni per account e amici (`migrations/20261116190000_profiles_friends.sql`)
 
 | Funzione | Chi | Cosa fa |
 |---|---|---|
 | `nickname_available(nick)` | anche senza login | `true` se il nick ha la forma giusta ed è libero |
-| `create_profile(nick, avatar, codice)` | utente loggato | crea il profilo; tiene il codice amico proposto dall'app se libero, altrimenti ne crea uno; errori `nickname_taken`, `invalid_nickname` |
-| `update_profile(nick, avatar)` | utente loggato | cambia nick e/o avatar |
+| `create_profile(nick, avatar, codice, foto)` | utente loggato | crea il profilo; tiene il codice amico proposto dall'app se libero, altrimenti ne crea uno; errori `nickname_taken`, `invalid_nickname`, `invalid_photo` |
+| `update_profile(nick, avatar, foto)` | utente loggato | cambia nick, avatar e/o foto (`''` = togli la foto) |
 | `send_friend_request(codice)` | utente loggato | risponde `sent`, `accepted` (lui ti aveva già chiesto), `already_friends`, `already_sent`, `not_found`, `self`, `too_many` (50 richieste in attesa) |
+| `search_profiles(testo)` | utente loggato | fino a 10 profili il cui nick inizia col testo (min 3 caratteri, `@` e maiuscole ignorati; prima il nick esatto), con `relation`: `none`, `friend`, `incoming`, `outgoing`. Indice `profiles_nickname_prefix` (`migrations/20261116210000_friend_search.sql`) |
+| `send_friend_request_by_nick(nick)` | utente loggato | come `send_friend_request`, col nick esatto al posto del codice |
 | `respond_friend_request(id, accetta)` | chi ha ricevuto | accetta o rifiuta |
 | `remove_friend(id)` | utente loggato | toglie un amico o annulla una richiesta |
-| `my_friends()` | utente loggato | amici e richieste con nick e avatar: `friend`, `incoming`, `outgoing` |
+| `my_friends()` | utente loggato | amici e richieste con nick, avatar e foto: `friend`, `incoming`, `outgoing` |
 | `delete_my_account()` | utente loggato | cancella l'utente (e con lui profilo e amicizie) |
 
 ### Login
