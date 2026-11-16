@@ -3,6 +3,7 @@
 
 import {
   type ClassifyRequest,
+  type LanguageCode,
   LANGUAGES,
   MAX_TOPICS,
   PARTS_OF_SPEECH,
@@ -11,12 +12,53 @@ import {
   type TopicId,
 } from '../_shared/contract.ts';
 
-/** Same as normalizeText in the app: the database key must match what the app sends. */
+/** Lower case, trimmed, single spaces (normalizeText in the app): the form shown to the model. */
 export function normalizeText(text: string): string {
   return text.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+/** Same as LEADING_WORDS in app/src/domain/text.ts. */
+const LEADING_WORDS: Record<LanguageCode, string[]> = {
+  en: ['the', 'a', 'an', 'to'],
+  it: ['il', 'lo', 'la', 'i', 'gli', 'le', 'un', 'uno', 'una', "l'", "un'"],
+  es: ['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas'],
+  fr: ['le', 'la', 'les', 'un', 'une', 'des', "l'", 'se', "s'"],
+  de: ['der', 'die', 'das', 'ein', 'eine', 'einen'],
+};
+
+/**
+ * The form used as database key, the same as dictionaryForm in the app and the Wiktionary
+ * lists: no leading article or "to", no accents, ’ written as '. "The Court" -> "court",
+ * "la città" -> "citta". So "to bake" and "bake" are the same row.
+ */
+export function keyForm(text: string, language: LanguageCode): string {
+  let folded = text.trim().toLowerCase();
+  for (const word of LEADING_WORDS[language]) {
+    const prefix = word.endsWith("'") ? word : `${word} `;
+    if (folded.startsWith(prefix) && folded.length > prefix.length) {
+      folded = folded.slice(prefix.length).trim();
+      break;
+    }
+  }
+  return folded
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/’/g, "'")
+    .split(/\s+/)
+    .join(' ');
+}
+
 const LIMITS = { term: 80, translation: 120, example: 300 };
+
+/** Database key of a request: (languages, word, translation) in keyForm. */
+export function storageKey(request: ClassifyRequest) {
+  return {
+    source_lang: request.sourceLang,
+    target_lang: request.targetLang,
+    term: keyForm(request.term, request.sourceLang),
+    translation: keyForm(request.translation, request.targetLang),
+  };
+}
 
 /** The request, normalized, or a message saying what is wrong with it. */
 export function parseRequest(body: unknown): ClassifyRequest | string {
@@ -83,7 +125,9 @@ export function buildPrompt(request: ClassifyRequest): string {
     'The translation tells which meaning of the word is meant: classify only that meaning.',
     request.example ? `Example sentence: "${request.example}"` : null,
     '',
-    `Give the topics of this meaning (0 to ${MAX_TOPICS}), only those a learner would clearly expect to find it under:`,
+    `Give the topics of this meaning (0 to ${MAX_TOPICS}), only those a learner would clearly expect to find it under.`,
+    'Usually one topic is enough; add another only when the meaning truly belongs to both (hen: nature and food).',
+    'Topics:',
     topics,
     'General words (always, thing, to put, maybe, whole) have no topic: answer an empty list.',
     'Give also its part of speech: noun, verb, adjective, or other (adverbs, pronouns, phrases...).',

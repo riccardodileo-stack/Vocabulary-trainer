@@ -15,7 +15,8 @@ Vive tutto in questa cartella e nel branch `server`: non tocca l'app.
 
 ### Tabelle
 
-- **`meaning_topics`**: una riga per *(lingua di partenza, lingua di arrivo, parola, traduzione)* → categorie (max 3) e tipo di parola, con chi le ha decise (`dictionary`, `model`, `user`). Condivisa da tutti: una coppia chiesta una volta non viene mai più chiesta al modello. Leggibile da tutti, scrivibile solo dalle funzioni.
+- **`meaning_topics`**: una riga per *(lingua di partenza, lingua di arrivo, parola, traduzione)* → categorie (max 3) e tipo di parola, con chi le ha decise (`dictionary`, `model`, `user`). Condivisa da tutti: una coppia chiesta una volta non viene mai più chiesta al modello. Leggibile da tutti, scrivibile solo dalle funzioni. Le parole sono salvate in **forma chiave** (`keyForm` in `classify.ts`, uguale a `dictionaryForm` nell'app): minuscole, senza articolo o "to" iniziale, senza accenti (*"to bake"* → `bake`, *"la città"* → `citta`).
+  Contiene già le **~408.000 coppie dei sensi di Wiktionary** (`source = 'dictionary'`, nelle due direzioni), caricate con `scripts/load_wiktionary.py` da `pairs.json` (generato da `app/design/topic-model/wiktionary/build.py`): la maggior parte delle domande non arriva mai al modello.
 - **`model_usage`**: quante chiamate al modello di linguaggio sono state fatte oggi. `take_model_call(max)` conta una chiamata e dice se si è ancora sotto il limite: un errore o un abuso non possono far salire il conto.
 
 ### `classify-meaning`
@@ -61,12 +62,27 @@ deno test supabase/functions/classify-meaning/classify.test.ts
 
 ## Pubblicare sul progetto online
 
+Stato attuale (16/11/2026): schema applicato, `GEMINI_API_KEY` impostata, `classify-meaning` pubblicata, coppie di Wiktionary caricate. L'app (`porting_app`) la chiama già.
+
 ```powershell
 npx supabase db push                                  # applica le nuove migrations al database online
 npx supabase secrets set GEMINI_API_KEY=la-tua-chiave # una volta sola (e quando cambia)
-npx supabase functions deploy classify-meaning
+npx supabase functions deploy classify-meaning        # senza Docker: aggiungi --use-api
 ```
 `seed.sql` online **non** viene caricato.
+
+**Ricaricare le coppie di Wiktionary** (dopo averle rigenerate; non tocca le righe `model` e `user`):
+```powershell
+$env:SUPABASE_ACCESS_TOKEN = "sbp_..."   # token del progetto, permesso Database read-write
+python supabase/scripts/load_wiktionary.py siwureexhbcmfznposll percorso\pairs.json
+```
+
+**Provare la funzione online** (`<ANON_KEY>`: Project Settings → API, o `src/services/serverConfig.ts` nell'app):
+```powershell
+$headers = @{ Authorization = "Bearer <ANON_KEY>" }
+Invoke-RestMethod -Method Post -Uri https://siwureexhbcmfznposll.supabase.co/functions/v1/classify-meaning -Headers $headers -ContentType 'application/json' -Body '{"sourceLang":"en","targetLang":"it","term":"court","translation":"campo"}'
+```
+Risponde `source: dictionary` (dalla tabella). Se il modello non risponde, `message` dice perché (chiave sbagliata, modello sconosciuto…).
 
 ## Regole
 
@@ -79,6 +95,6 @@ npx supabase functions deploy classify-meaning
 
 ## Prossimi passi
 
-1. Riempire `meaning_topics` con l'elenco senso → categoria preparato dai dati di Wiktionary (nell'app), così la maggior parte delle coppie non chiede mai il modello.
-2. Nell'app: chiamare `classify-meaning` in background per le traduzioni senza categoria (come già fa per il tipo di parola con Wiktionary), con la *anon key* in `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+1. ~~Riempire `meaning_topics` con i sensi di Wiktionary~~ (fatto).
+2. ~~L'app chiede `classify-meaning` in background per le traduzioni rimaste senza categoria~~ (fatto: `useServerTopicCheck` in `porting_app`).
 3. Login e profili (`profiles`: nick, codice amico, avatar), poi amici e sfide.

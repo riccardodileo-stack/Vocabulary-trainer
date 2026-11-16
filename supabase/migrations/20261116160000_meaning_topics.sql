@@ -6,7 +6,8 @@
 create table public.meaning_topics (
   source_lang     text not null check (source_lang in ('en', 'it', 'es', 'fr', 'de')),
   target_lang     text not null check (target_lang in ('en', 'it', 'es', 'fr', 'de')),
-  -- Lowercase, trimmed, single spaces (normalizeText in the app)
+  -- Key form (keyForm in classify.ts, dictionaryForm in the app): lower case, no leading
+  -- article or "to", no accents. "to bake" -> "bake", "la città" -> "citta"
   term            text not null check (char_length(term) between 1 and 80),
   translation     text not null check (char_length(translation) between 1 and 120),
   -- Same ids as TOPIC_IDS in app/src/domain/topics.ts; empty = no topic (e.g. "sempre")

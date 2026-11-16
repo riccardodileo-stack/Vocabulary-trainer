@@ -11,7 +11,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import type { ClassifyResponse } from '../_shared/contract.ts';
-import { parseRequest } from './classify.ts';
+import { parseRequest, storageKey } from './classify.ts';
 import { classifyWithGemini, DEFAULT_MODEL } from './gemini.ts';
 
 const CORS = {
@@ -39,12 +39,7 @@ Deno.serve(async (req) => {
   if (typeof request === 'string') {
     return reply({ ok: false, error: 'bad_request', message: request }, 400);
   }
-  const key = {
-    source_lang: request.sourceLang,
-    target_lang: request.targetLang,
-    term: request.term,
-    translation: request.translation,
-  };
+  const key = storageKey(request);
 
   // 1. Already known
   const { data: saved, error: readError } = await supabase.from('meaning_topics').select('*').match(key).maybeSingle();
@@ -83,6 +78,8 @@ Deno.serve(async (req) => {
     return reply({ ok: true, topics: answer.topics, partOfSpeech: answer.partOfSpeech, source: 'model', cached: false });
   } catch (error) {
     console.error('model', error);
-    return reply({ ok: false, error: 'unavailable', message: 'The model did not answer.' }, 503);
+    // The reason helps to fix the setup (wrong key, unknown model…); it never contains the key
+    const reason = error instanceof Error ? error.message.slice(0, 200) : 'unknown error';
+    return reply({ ok: false, error: 'unavailable', message: `The model did not answer: ${reason}` }, 503);
   }
 });
