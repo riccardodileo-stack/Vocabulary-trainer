@@ -1,6 +1,6 @@
-# Vocabulary Trainer — app nativa (iOS + Android)
+# Echo - WordKeeper — app nativa (iOS + Android)
 
-App per costruire il proprio vocabolario in una lingua straniera e ricordarlo nel tempo.
+**Echo - WordKeeper** (nome di lavoro: Vocabulary Trainer) è l'app per costruire il proprio vocabolario in una lingua straniera e ricordarlo nel tempo.
 React Native con **Expo** (SDK 58) e **TypeScript**: lo stesso codice genera l'app per iPhone e Android.
 Parole e progressi restano sul telefono e funzionano **offline**; account, amici e serie di giorni sono copiati su un server **Supabase** (branch `server`, `supabase/README.md`).
 
@@ -22,7 +22,7 @@ Il README ha due parti:
 | **Sfide** | In arrivo (rimandata di proposito). |
 | **Benvenuto** (primo avvio, senza account) | **Registrati o accedi con la mail** (codice di 6 cifre, niente password) oppure **Continua come ospite** (scegli solo nick e immagine: uno dei 12 avatar o una **foto dalla galleria**). Il nick è **unico**: mentre lo scrivi l'app ti dice se è libero. |
 | **Utente** | Il tuo nome come titolo della pagina; immagine profilo (12 avatar illustrati o una foto) con accanto il nick (`@stefano`), lingua studiata e data di inizio; contatori amici, record di giorni di fila e medaglie (ognuno apre dal basso la sua finestra: **Amici**, **La tua serie**, **Le tue medaglie**), **6 medaglie a 4 livelli** (bronzo, argento, oro, diamante), sezione **Amici** che apre la finestra degli amici: in alto *Aggiungi un amico* (cercando il nick o con il codice amico) e il tuo **codice amico**, sotto richieste e lista amici; account (ospite o mail), **Registrati** per gli ospiti, **Esci**, **Elimina account**. In alto a destra ⚙️ apre le Impostazioni. |
-| **Impostazioni** (⚙️ in Utente) | Il tema chiaro/scuro direttamente nella pagina, poi quattro categorie che si aprono da destra: **Lingue** (lingua studiata, lingua madre, livello delle parole del giorno, lingua dell'app), **Suoni**, **Notifiche** (promemoria e orario), **Backup**. Accanto a ogni categoria si vede il valore attuale (es. `🇬🇧 → 🇮🇹 · B1–B2`, `On`, `18:00`). |
+| **Impostazioni** (⚙️ in Utente) | Il tema chiaro/scuro direttamente nella pagina, poi le categorie che si aprono da destra: **Lingue** (lingua studiata, lingua madre, livello delle parole del giorno, lingua dell'app), **Suoni**, **Notifiche** (promemoria e orario), **Importa da elenco** (incolla un elenco `parola - traduzione` o scegli un file di testo/CSV), **Backup**. Accanto a ogni categoria si vede il valore attuale (es. `🇬🇧 → 🇮🇹 · B1–B2`, `On`, `18:00`). |
 | **Lingue** (selettore 🇬🇧 → 🇮🇹 in Home o nel Dizionario) | Solo le scelte di studio: lingua studiata, lingua madre, livello delle parole del giorno. |
 
 ## Le scelte di design, in una riga ciascuna
@@ -79,6 +79,8 @@ npm test            # test della logica (jest)
 | cambiare ogni quanti giorni si guadagna un salvaserie     | `DAYS_PER_SAVE` e `MAX_SAVES` in `src/domain/activity.ts` (se cambi `MAX_SAVES`, anche il controllo `saves between 0 and 2` sul server) |
 | cambiare una regola del server (nick, amici, foto, serie) | una nuova migrazione in `supabase/migrations/` sul branch `server` |
 | cambiare le opzioni "numero di domande"                   | `QUIZ_COUNTS` in `src/domain/quiz.ts`                            |
+| riconoscere un altro formato di elenco da importare       | `SEPARATORS` in `src/domain/wordList.ts` (+ un caso in `wordList.test.ts`) |
+| cambiare per quanto restano salvate le risposte dei siti  | `MAX_AGE_MS` e `MAX_ENTRIES` in `src/services/netCache.ts`       |
 | aggiungere una lingua dell'interfaccia                    | nuovo `src/i18n/xx.ts` + `TRANSLATIONS` in `src/i18n/index.ts`   |
 | aggiungere una lingua da studiare                         | `src/domain/languages.ts` + una colonna in `wordBank.ts` + nomi in `en.ts`/`it.ts` |
 | aggiungere un campo alla parola                           | `src/domain/word.ts` + `version`/`migrate` in `src/store/wordStore.ts` |
@@ -144,6 +146,7 @@ Perché così:
 | `achievements` | `achievementStore` | data in cui è stato raggiunto ogni livello di ogni medaglia | 1 |
 | `profile` | `profileStore` | copia del profilo del server (id nascosto, nick, codice amico, avatar o foto con il suo percorso sul server, ospite o mail) + nome (solo sul telefono), contatori amici e richieste, data di inizio | 5 |
 | `sb-…-auth-token` | supabase-js | la sessione dell'account (si rinnova da sola) | — |
+| `net:…`, `net-index` | `services/netCache.ts` | risposte di Wiktionary, MyMemory e Tatoeba (30 giorni, max 400) | — |
 
 All'avvio la splash screen resta visibile finché tutti gli store non sono caricati (`useStoresHydrated`).
 
@@ -331,6 +334,7 @@ Un giorno conta se hai risposto ad almeno una domanda. La serie è il numero di 
 - **Frasi di esempio**: da [Tatoeba](https://tatoeba.org) (CC BY), al massimo 3, con traduzione nella lingua madre; ogni frase aggiunta va sotto la traduzione che contiene.
 - **Parola in grassetto negli esempi** (`domain/highlight.ts`, componente `HighlightedText`): nella frase la parola studiata, nella traduzione i suoi significati. Trova anche altre forme (*noioso → noiose*, *run → running*, *try → tries*) senza prendere parole diverse (*run* non evidenzia *runway*); ignora maiuscole, accenti e l'articolo o il "to" iniziale; una parola di più termini (*give up*) è in grassetto solo dove compare intera.
 - Niente più link a WordReference e Reverso: i significati e gli esempi si vedono direttamente nell'app.
+- **Memoria delle risposte dei siti** (`services/netCache.ts`): le risposte di Wiktionary (sensi e tipo di parola), MyMemory e Tatoeba restano salvate sul telefono per **30 giorni** (al massimo le ultime **400**, le più vecchie vengono tolte). Cercare di nuovo la stessa parola è immediato, funziona **senza rete** e non consuma il limite giornaliero di MyMemory. Se la rete non va si usa anche una risposta scaduta, meglio di niente. Ogni risposta è una voce di AsyncStorage `net:<servizio>:<lingue>:<parola>`, con l'elenco in `net-index`; non entra nel backup. Per cambiare durata o numero: `MAX_AGE_MS` e `MAX_ENTRIES`.
 
 ## 8. Backup
 
@@ -391,9 +395,12 @@ File: `src/app/settings/`. Le impostazioni hanno una loro navigazione dentro la 
 | `languages.tsx` | lingua studiata, lingua madre, livello delle parole del giorno (`components/StudySettings.tsx`, lo stesso della finestra Lingue della Home) e lingua dell'app |
 | `sounds.tsx` | suoni del quiz (pensata per accogliere altre opzioni audio) |
 | `notifications.tsx` | promemoria giornaliero e orario |
+| `import-list.tsx` | **Importa da elenco**: vedi sotto |
 | `backup.tsx` | esporta e importa |
 
 "Fine" chiude tutta la finestra (è la prima pagina del suo stack, quindi tornare indietro la chiude).
+
+**Importa da elenco** (`settings/import-list.tsx`, `domain/wordList.ts`): si incolla un elenco o si sceglie un file di testo/CSV, **una parola per riga** seguita dalle traduzioni, per la coppia di lingue attiva. Separatori riconosciuti, nell'ordine: tabulazione, trattino (`stroke - colpo, ictus`, anche – e —), `=`, `;`, `:` e la virgola; le traduzioni si dividono con virgola, `;` o `|`. Righe vuote, commenti (`# …`), elenchi puntati e numeri (`- `, `• `, `1. `) vengono ignorati; la stessa parola scritta due volte diventa una sola con tutte le traduzioni; al massimo 2.000 righe. Mentre scrivi si vede l'anteprima (prime 5 parole) e quante righe non hanno traduzione. *Aggiungi N parole* usa la stessa fusione del backup (`mergeWords`): una parola già presente non si duplica, riceve solo le traduzioni mancanti. Tipo di parola e categorie vengono assegnati come per ogni parola nuova (stima offline, poi Wiktionary e il server in background).
 
 ## 11. Suoni e promemoria
 
@@ -491,7 +498,7 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 
 ## 13. Test
 
-`npm test` esegue i test in `src/domain/__tests__/` (116 test): correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello e per categoria, filtro per categorie), serie di giorni, salvaserie (guadagnati, usati) e record, dati della serie per il server, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, testo della ricerca per nick, formato del codice amico, categorie dalla rete e dai sensi di Wiktionary.
+`npm test` esegue 123 test, in `src/domain/__tests__/` e `src/services/__tests__/`: correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello e per categoria, filtro per categorie), serie di giorni, salvaserie (guadagnati, usati) e record, dati della serie per il server, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, testo della ricerca per nick, formato del codice amico, categorie dalla rete e dai sensi di Wiktionary, lettura degli elenchi di parole da importare, memoria delle risposte dei siti (con un AsyncStorage finto).
 Sono test della logica pura: girano in un secondo, senza telefono.
 
 ## 14. Limiti noti e prossimi passi
@@ -505,6 +512,6 @@ Sono test della logica pura: girano in un secondo, senza telefono.
 - **Categorie automatiche**: con la soglia severa, sulle parole difficili di prova 9 categorie proposte su 10 sono giuste, ma ne trova circa metà (dettagli in `design/topic-model/README.md`): molte traduzioni restano senza categoria e si spuntano a mano. Con il server si può usare un modello più grande.
 - **Wiktionary**: le spiegazioni dei sensi sono in inglese; per le coppie senza inglese (es. 🇪🇸→🇮🇹) restano le traduzioni di MyMemory, non divise per senso.
 - **Tipo di parola**: senza connessione resta la stima offline, che sbaglia spesso con gli aggettivi senza finale tipica (*big*, *tired* → sostantivo). Si corregge da sola appena c'è rete (Wiktionary).
-- **Login con la mail**: sul piano gratuito Supabase non permette di cambiare il testo delle mail con il suo servizio di posta (che manda mail solo ai membri del progetto, 2 all'ora). Il codice di 6 cifre nelle mail arriva quando si collega un **servizio di posta proprio (SMTP)** e si caricano i testi (`supabase/templates/code.html` sul branch `server`, vedi `supabase/README.md`). Gli ospiti funzionano già.
+- **Login con la mail**: le mail con il codice partono da un Gmail (`echowordkeeper@gmail.com`) collegato a Supabase: possono finire nello **spam** e il limite è di 30 mail all'ora (~500 al giorno per Gmail). Prima della pubblicazione conviene un servizio di posta con un vostro dominio (vedi `supabase/README.md`).
 - **Versione web**: i messaggi di conferma (`Alert`, es. *Esci*, *Rimuovi*) sul web non compaiono; sul telefono sì.
 - **Notifiche push** (mandate da un server, per esempio "un amico ti ha sfidato"): richiedono una development build. Il promemoria giornaliero locale invece funziona già.

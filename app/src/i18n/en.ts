@@ -394,7 +394,7 @@ export const en = {
     yourCodeHint: 'Give it to your friends: they can add you with it. It never changes, even if you change your nick.',
     share: 'Share my code',
     shareShort: 'Share',
-    shareMessage: (code: string) => `Add me on Vocabulary Trainer! My friend code is ${code}`,
+    shareMessage: (code: string) => `Add me on Echo - WordKeeper! My friend code is ${code}`,
     codeAccessibility: (code: string) => `Friend code ${code.split('').join(' ')}`,
   },
   account: {
@@ -440,6 +440,20 @@ export const en = {
     profileTitle: 'Last step',
     profileSubtitle: 'Choose the nick your friends will see.',
     signOut: 'Sign out',
+  },
+  importList: {
+    title: 'Import from a list',
+    listTitle: 'List of words',
+    hint: 'One word per line, then its translation: "stroke - colpo, ictus". =, ; and CSV files work too.',
+    placeholder: 'stroke - colpo, ictus\nbarracks - caserma\nto heal - guarire',
+    pickFile: 'Choose a text or CSV file',
+    preview: 'Preview',
+    more: (count: number): string => (count === 1 ? '…and 1 more word' : `…and ${count} more words`),
+    nothing: 'No words recognised.',
+    invalid: (count: number, first: string): string =>
+      count === 1 ? `1 line without a translation: "${first}"` : `${count} lines without a translation, e.g. "${first}"`,
+    add: (count: number): string => (count === 0 ? 'Add words' : count === 1 ? 'Add 1 word' : `Add ${count} words`),
+    settingsHint: 'Paste a list or choose a file: kind and categories are assigned automatically.',
   },
   streakSheet: {
     title: 'Your streak',

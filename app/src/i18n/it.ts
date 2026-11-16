@@ -395,7 +395,7 @@ export const it: Translations = {
     yourCodeHint: 'Dallo ai tuoi amici: potranno aggiungerti con questo. Non cambia mai, nemmeno se cambi nick.',
     share: 'Condividi il mio codice',
     shareShort: 'Condividi',
-    shareMessage: (code: string) => `Aggiungimi su Vocabulary Trainer! Il mio codice amico è ${code}`,
+    shareMessage: (code: string) => `Aggiungimi su Echo - WordKeeper! Il mio codice amico è ${code}`,
     codeAccessibility: (code: string) => `Codice amico ${code.split('').join(' ')}`,
   },
   account: {
@@ -441,6 +441,20 @@ export const it: Translations = {
     profileTitle: 'Ultimo passo',
     profileSubtitle: 'Scegli il nick che vedranno i tuoi amici.',
     signOut: 'Esci',
+  },
+  importList: {
+    title: 'Importa da elenco',
+    listTitle: 'Elenco di parole',
+    hint: 'Una parola per riga, poi la traduzione: "stroke - colpo, ictus". Vanno bene anche =, ; e i file CSV.',
+    placeholder: 'stroke - colpo, ictus\nbarracks - caserma\nto heal - guarire',
+    pickFile: 'Scegli un file di testo o CSV',
+    preview: 'Anteprima',
+    more: (count: number) => (count === 1 ? '…e 1 altra parola' : `…e altre ${count} parole`),
+    nothing: 'Nessuna parola riconosciuta.',
+    invalid: (count: number, first: string) =>
+      count === 1 ? `1 riga senza traduzione: "${first}"` : `${count} righe senza traduzione, ad esempio "${first}"`,
+    add: (count: number) => (count === 0 ? 'Aggiungi parole' : count === 1 ? 'Aggiungi 1 parola' : `Aggiungi ${count} parole`),
+    settingsHint: 'Incolla un elenco o scegli un file: tipo e categorie vengono assegnati in automatico.',
   },
   streakSheet: {
     title: 'La tua serie',

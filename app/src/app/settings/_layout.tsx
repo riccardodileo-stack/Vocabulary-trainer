@@ -23,6 +23,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="notifications" options={{ title: t.settings.notifications }} />
       <Stack.Screen name="languages" options={{ title: t.settings.languagesCategory }} />
       <Stack.Screen name="backup" options={{ title: t.settings.backup }} />
+      <Stack.Screen name="import-list" options={{ title: t.importList.title }} />
     </Stack>
   );
 }

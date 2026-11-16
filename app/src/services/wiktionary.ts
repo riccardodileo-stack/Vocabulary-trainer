@@ -17,10 +17,12 @@ import {
   type SenseGroup,
 } from '@/domain/wiktionarySenses';
 
+import { cached } from './netCache';
+
 const API_URL = 'https://en.wiktionary.org/api/rest_v1/page/definition/';
 
 /** Wikimedia asks apps to say who they are (browsers can't set User-Agent, this header works). */
-const HEADERS = { 'Api-User-Agent': 'VocabularyTrainer/1.0 (Expo app)' };
+const HEADERS = { 'Api-User-Agent': 'EchoWordKeeper/1.0 (Expo app)' };
 
 const KINDS: Record<string, PartOfSpeech> = {
   Noun: 'noun',
@@ -32,6 +34,10 @@ const KINDS: Record<string, PartOfSpeech> = {
 /** Kinds Wiktionary lists for a word in one language, in its order (empty if the word isn't there). */
 async function kindsOf(text: string, language: LanguageCode): Promise<PartOfSpeech[]> {
   const title = stripLeadingWord(text.trim(), language).replace(/ /g, '_');
+  return cached(`wk-kinds:${language}:${title}`, () => loadKinds(title, language));
+}
+
+async function loadKinds(title: string, language: LanguageCode): Promise<PartOfSpeech[]> {
   const response = await fetch(API_URL + encodeURIComponent(title), { headers: HEADERS });
   if (response.status === 404) {
     return [];
@@ -82,12 +88,15 @@ async function rawPage(title: string): Promise<string> {
  * Empty when Wiktionary has nothing for this pair or word (the caller falls back to MyMemory).
  * Throws on network errors.
  */
-export async function fetchSenses({ source, target }: LanguagePair, term: string): Promise<SenseGroup[]> {
-  if (!sensesAvailable(source, target)) {
+export async function fetchSenses(pair: LanguagePair, term: string): Promise<SenseGroup[]> {
+  if (!sensesAvailable(pair.source, pair.target)) {
     return [];
   }
-  const word = stripLeadingWord(splitSlashOptions(term)[0] ?? term, source);
+  const word = stripLeadingWord(splitSlashOptions(term)[0] ?? term, pair.source).trim();
+  return cached(`wk-senses:${pair.source}:${pair.target}:${word}`, () => loadSenses(pair, word));
+}
 
+async function loadSenses({ source, target }: LanguagePair, word: string): Promise<SenseGroup[]> {
   if (source !== 'en') {
     // Italian "casa" -> English: its definitions are the translations
     return sensesFromDefinitions(languageSection(await rawPage(word), source));

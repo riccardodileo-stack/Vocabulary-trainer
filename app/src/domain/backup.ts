@@ -4,9 +4,9 @@
 import { isLanguageCode, type LanguagePair } from './languages';
 import { normalizeText } from './text';
 import { isTopicId } from './topics';
-import { createWord, emptyStats, isCefrLevel, meaningsFromSlashText, withClassification, type Meaning, type Word } from './word';
+import { createWord, emptyStats, isCefrLevel, meaningsFromSlashText, topicsOfMeanings, withClassification, type Meaning, type Word } from './word';
 
-const BACKUP_APP_NAME = 'Vocabulary Trainer';
+const BACKUP_APP_NAME = 'Echo - WordKeeper';
 const BACKUP_VERSION = 2;
 
 /** Words of the PWA were always English -> Italian. */
@@ -22,7 +22,7 @@ export function createBackup(words: Word[]) {
 }
 
 export function backupFileName(): string {
-  return `vocabulary-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  return `wordkeeper-backup-${new Date().toISOString().slice(0, 10)}.json`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -166,7 +166,9 @@ export function mergeWords(existing: Word[], imported: Word[]): MergeResult {
     if (newMeanings.length === 0) {
       skipped += 1;
     } else {
-      words[index] = { ...current, meanings: [...current.meanings, ...newMeanings] };
+      const meanings = [...current.meanings, ...newMeanings];
+      // The word's categories follow its meanings
+      words[index] = { ...current, meanings, topics: topicsOfMeanings(meanings) };
       updated += 1;
     }
   }
