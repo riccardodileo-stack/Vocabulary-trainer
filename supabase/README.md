@@ -19,6 +19,35 @@ Vive tutto in questa cartella e nel branch `server`: non tocca l'app.
   Contiene già le **~408.000 coppie dei sensi di Wiktionary** (`source = 'dictionary'`, nelle due direzioni), caricate con `scripts/load_wiktionary.py` da `pairs.json` (generato da `app/design/topic-model/wiktionary/build.py`): la maggior parte delle domande non arriva mai al modello.
 - **`model_usage`**: quante chiamate al modello di linguaggio sono state fatte oggi. `take_model_call(max)` conta una chiamata e dice se si è ancora sotto il limite: un errore o un abuso non possono far salire il conto.
 
+- **`profiles`**: il profilo pubblico di ogni utente (ospite o registrato): `id` = l'id nascosto dell'utente (`auth.users`), `nickname` **unico** (minuscolo, 3–20 caratteri `a-z 0-9 _ .`, inizia con una lettera), `friend_code` **unico** dato dal server (`K7M2-X9PQ`, mai modificato), `avatar` (id di un avatar disegnato; `null` = foto, che resta sul telefono).
+- **`friendships`**: amicizie e richieste: `requester` → `addressee`, `status` `pending` o `accepted`. Una sola riga per coppia di utenti.
+
+Nessuno può sfogliare utenti o codici: ognuno vede il proprio profilo e quelli di amici e richieste; tutte le scritture passano dalle funzioni qui sotto (`security definer`), che controllano le regole.
+
+### Funzioni per account e amici (`migrations/20261116190000_profiles_friends.sql`)
+
+| Funzione | Chi | Cosa fa |
+|---|---|---|
+| `nickname_available(nick)` | anche senza login | `true` se il nick ha la forma giusta ed è libero |
+| `create_profile(nick, avatar, codice)` | utente loggato | crea il profilo; tiene il codice amico proposto dall'app se libero, altrimenti ne crea uno; errori `nickname_taken`, `invalid_nickname` |
+| `update_profile(nick, avatar)` | utente loggato | cambia nick e/o avatar |
+| `send_friend_request(codice)` | utente loggato | risponde `sent`, `accepted` (lui ti aveva già chiesto), `already_friends`, `already_sent`, `not_found`, `self`, `too_many` (50 richieste in attesa) |
+| `respond_friend_request(id, accetta)` | chi ha ricevuto | accetta o rifiuta |
+| `remove_friend(id)` | utente loggato | toglie un amico o annulla una richiesta |
+| `my_friends()` | utente loggato | amici e richieste con nick e avatar: `friend`, `incoming`, `outgoing` |
+| `delete_my_account()` | utente loggato | cancella l'utente (e con lui profilo e amicizie) |
+
+### Login
+
+- **Ospiti**: *anonymous sign-ins* attivi (online e in `config.toml`). Un ospite che si registra con la mail resta lo stesso utente (stesso id).
+- **Mail con codice di 6 cifre** (niente link): l'app chiama `signInWithOtp` (accesso o nuovo account) o `updateUser({ email })` (ospite che si registra), poi `verifyOtp` con il codice. Codice di 6 cifre, valido 15 minuti (già impostato online).
+- ⚠️ **Il testo delle mail va cambiato per mostrare il codice** (`{{ .Token }}`), ma sul piano gratuito Supabase lo permette solo con un **servizio di posta proprio (SMTP)**; quello di Supabase manda mail solo ai membri del progetto, 2 all'ora. Per attivarlo:
+  1. un servizio SMTP gratuito, per i test il più semplice è **Gmail**: account Google → Sicurezza → verifica in due passaggi attiva → *Password per le app* → crea "Supabase";
+  2. pannello Supabase → **Authentication → Emails → SMTP Settings** → attiva *custom SMTP*: host `smtp.gmail.com`, porta `465`, utente = il tuo indirizzo Gmail, password = la password per le app, mittente = lo stesso indirizzo, nome "Vocabulary Trainer";
+  3. **Authentication → Emails → Templates**: in *Confirm signup*, *Magic Link* e *Change Email Address* metti come oggetto `{{ .Token }} è il tuo codice per Vocabulary Trainer` e come testo il contenuto di `templates/code.html`.
+  Per la pubblicazione meglio un servizio con un dominio vostro (es. Resend, Brevo).
+- Google e Apple: quando ci sarà la development build.
+
 ### `classify-meaning`
 
 ```
@@ -97,4 +126,6 @@ Risponde `source: dictionary` (dalla tabella). Se il modello non risponde, `mess
 
 1. ~~Riempire `meaning_topics` con i sensi di Wiktionary~~ (fatto).
 2. ~~L'app chiede `classify-meaning` in background per le traduzioni rimaste senza categoria~~ (fatto: `useServerTopicCheck` in `porting_app`).
-3. Login e profili (`profiles`: nick, codice amico, avatar), poi amici e sfide.
+3. ~~Login (ospiti e mail), profili e amici~~ (fatto; manca solo il servizio di posta per i codici, vedi *Login*).
+4. Sfide.
+5. Google e Apple, con la development build.
