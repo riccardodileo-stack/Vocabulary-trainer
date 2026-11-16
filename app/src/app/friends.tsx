@@ -1,18 +1,17 @@
-// Friends: add one by nickname (search as you type) or with their friend code (they get a
-// request to accept), answer the requests received, see friends and requests sent. Below, the
-// user's own code, ready to share.
+// Sheet opened from the friends in Profile. At the top: add a friend by nickname (search as
+// you type) or with their friend code (they get a request to accept), and the user's own code,
+// ready to share. Below: requests received, friends, requests sent.
 // Everything comes from the server (services/account.ts); the counters in Profile follow.
 
-import { Stack, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Alert, RefreshControl, Share, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Appear } from '@/components/Appear';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
 import { TextField } from '@/components/TextField';
 import { AVATAR_PRESETS, isAvatarId } from '@/content/avatars';
@@ -67,7 +66,7 @@ function FriendRow({ entry, children }: { entry: Person; children: ReactNode }) 
   );
 }
 
-export default function FriendsScreen() {
+export default function FriendsSheet() {
   const t = useT();
   const { colors } = useTheme();
   const friendCode = useProfileStore((state) => state.friendCode);
@@ -205,131 +204,154 @@ export default function FriendsScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ title: t.friends.title, headerLargeTitle: false }} />
+    <ScrollView
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={styles.container}
+      contentInsetAdjustmentBehavior="automatic"
+      keyboardShouldPersistTaps="handled">
+      <AppText variant="title" accessibilityRole="header" style={styles.centered}>
+        👥 {t.friends.title}
+      </AppText>
 
-      <Screen refreshControl={<RefreshControl refreshing={false} onRefresh={load} />}>
-        <Section title={t.friends.addTitle} hint={t.friends.addHint}>
-          <TextField
-            value={text}
-            onChangeText={(next) => {
-              setText(next);
-              setResult(null);
-            }}
-            placeholder={t.friends.searchPlaceholder}
-            accessibilityLabel={t.friends.searchPlaceholder}
-            autoCapitalize="none"
-            autoCorrect={false}
-            maxLength={21}
-            returnKeyType={isCode ? 'send' : 'search'}
-            onSubmitEditing={() => isCode && sendCode()}
-          />
-          {isCode ? <Button label={t.friends.sendToCode(code)} onPress={sendCode} disabled={sending} /> : null}
-          {text.trim() && !isCode && !query ? (
-            <AppText variant="small" color="textMuted">
-              {t.friends.searchHint}
-            </AppText>
-          ) : null}
-          {searching && !results ? (
-            <AppText variant="small" color="textMuted">
-              {t.friends.searching}
-            </AppText>
-          ) : null}
-          {current && 'message' in current && !searching ? <AppText color="danger">{current.message}</AppText> : null}
-          {results && results.length === 0 && !searching && !isCode ? (
-            <AppText variant="small" color="textMuted">
-              {t.friends.noResults(query ?? '')}
-            </AppText>
-          ) : null}
-          {results && results.length > 0 ? (
-            <Appear>
-              <Card style={styles.list}>
-                {results.map((person) => (
-                  <FriendRow key={person.nickname} entry={person}>
-                    {searchAction(person)}
-                  </FriendRow>
-                ))}
-              </Card>
-            </Appear>
-          ) : null}
-          {result ? (
-            <Appear>
-              <AppText color={result.good ? 'primary' : 'danger'} accessibilityLiveRegion="polite">
-                {result.text}
-              </AppText>
-            </Appear>
-          ) : null}
-        </Section>
-
-        {loadError ? <AppText color="danger">{loadError}</AppText> : null}
-
-        {lists.incoming.length > 0 ? (
-          <Appear from="down">
-            <Section title={t.friends.incoming}>
-              <Card style={styles.list}>
-                {lists.incoming.map((entry) => (
-                  <FriendRow key={entry.id} entry={entry}>
-                    <Button label={t.friends.accept} size="sm" onPress={act(() => respondFriendRequest(entry.id, true))} />
-                    <Button
-                      label={t.friends.decline}
-                      tone="secondary"
-                      size="sm"
-                      onPress={act(() => respondFriendRequest(entry.id, false))}
-                    />
-                  </FriendRow>
-                ))}
-              </Card>
-            </Section>
+      <Section title={t.friends.addTitle}>
+        <TextField
+          value={text}
+          onChangeText={(next) => {
+            setText(next);
+            setResult(null);
+          }}
+          placeholder={t.friends.searchPlaceholder}
+          accessibilityLabel={t.friends.searchPlaceholder}
+          autoCapitalize="none"
+          autoCorrect={false}
+          maxLength={21}
+          returnKeyType={isCode ? 'send' : 'search'}
+          onSubmitEditing={() => isCode && sendCode()}
+        />
+        {!text.trim() ? (
+          <AppText variant="small" color="textMuted">
+            {t.friends.addHint}
+          </AppText>
+        ) : null}
+        {isCode ? <Button label={t.friends.sendToCode(code)} onPress={sendCode} disabled={sending} /> : null}
+        {text.trim() && !isCode && !query ? (
+          <AppText variant="small" color="textMuted">
+            {t.friends.searchHint}
+          </AppText>
+        ) : null}
+        {searching && !results ? (
+          <AppText variant="small" color="textMuted">
+            {t.friends.searching}
+          </AppText>
+        ) : null}
+        {current && 'message' in current && !searching ? <AppText color="danger">{current.message}</AppText> : null}
+        {results && results.length === 0 && !searching && !isCode ? (
+          <AppText variant="small" color="textMuted">
+            {t.friends.noResults(query ?? '')}
+          </AppText>
+        ) : null}
+        {results && results.length > 0 ? (
+          <Appear>
+            <Card style={styles.list}>
+              {results.map((person) => (
+                <FriendRow key={person.nickname} entry={person}>
+                  {searchAction(person)}
+                </FriendRow>
+              ))}
+            </Card>
           </Appear>
         ) : null}
+        {result ? (
+          <Appear>
+            <AppText color={result.good ? 'primary' : 'danger'} accessibilityLiveRegion="polite">
+              {result.text}
+            </AppText>
+          </Appear>
+        ) : null}
+      </Section>
 
-        <Section title={t.friends.list}>
-          <Card style={styles.list}>
-            {!loading && lists.friends.length === 0 ? (
-              <AppText color="textMuted" style={styles.empty}>
-                {t.friends.none}
+      <Section title={t.friends.yourCode} hint={t.friends.yourCodeHint}>
+        <Card style={styles.codeCard}>
+          <View
+            style={[styles.codeBox, { backgroundColor: colors.primarySoft, borderColor: colors.accent }]}
+            accessible
+            accessibilityLabel={t.friends.codeAccessibility(friendCode)}>
+            <AppText style={styles.code} color="primaryStrong" selectable numberOfLines={1} adjustsFontSizeToFit>
+              {friendCode}
+            </AppText>
+            {nickname ? (
+              <AppText variant="small" color="textMuted" numberOfLines={1}>
+                @{nickname}
               </AppText>
             ) : null}
-            {lists.friends.map((entry) => (
-              <FriendRow key={entry.id} entry={entry}>
-                <Button label={t.friends.remove} tone="secondary" size="sm" onPress={() => confirmRemove(entry)} />
-              </FriendRow>
-            ))}
-          </Card>
-        </Section>
+          </View>
+          <Button label={`📤 ${t.friends.shareShort}`} size="sm" onPress={shareCode} />
+        </Card>
+      </Section>
 
-        {lists.outgoing.length > 0 ? (
-          <Section title={t.friends.outgoing}>
+      {loadError ? <AppText color="danger">{loadError}</AppText> : null}
+
+      {lists.incoming.length > 0 ? (
+        <Appear from="down">
+          <Section title={t.friends.incoming}>
             <Card style={styles.list}>
-              {lists.outgoing.map((entry) => (
+              {lists.incoming.map((entry) => (
                 <FriendRow key={entry.id} entry={entry}>
-                  <Button label={t.friends.cancelRequest} tone="secondary" size="sm" onPress={act(() => removeFriend(entry.id))} />
+                  <Button label={t.friends.accept} size="sm" onPress={act(() => respondFriendRequest(entry.id, true))} />
+                  <Button
+                    label={t.friends.decline}
+                    tone="secondary"
+                    size="sm"
+                    onPress={act(() => respondFriendRequest(entry.id, false))}
+                  />
                 </FriendRow>
               ))}
             </Card>
           </Section>
-        ) : null}
+        </Appear>
+      ) : null}
 
-        <Section title={t.friends.yourCode} hint={t.friends.yourCodeHint}>
-          <Card style={styles.codeCard}>
-            <View
-              style={[styles.codeBox, { backgroundColor: colors.primarySoft, borderColor: colors.accent }]}
-              accessible
-              accessibilityLabel={t.friends.codeAccessibility(friendCode)}>
-              <AppText style={styles.code} color="primaryStrong" selectable>
-                {friendCode}
-              </AppText>
-            </View>
-            {nickname ? <AppText color="textMuted">@{nickname}</AppText> : null}
-            <Button label={`📤 ${t.friends.share}`} onPress={shareCode} />
+      <Section title={t.friends.list}>
+        <Card style={styles.list}>
+          {!loading && lists.friends.length === 0 ? (
+            <AppText color="textMuted" style={styles.empty}>
+              {t.friends.none}
+            </AppText>
+          ) : null}
+          {lists.friends.map((entry) => (
+            <FriendRow key={entry.id} entry={entry}>
+              <Button label={t.friends.remove} tone="secondary" size="sm" onPress={() => confirmRemove(entry)} />
+            </FriendRow>
+          ))}
+        </Card>
+      </Section>
+
+      {lists.outgoing.length > 0 ? (
+        <Section title={t.friends.outgoing}>
+          <Card style={styles.list}>
+            {lists.outgoing.map((entry) => (
+              <FriendRow key={entry.id} entry={entry}>
+                <Button label={t.friends.cancelRequest} tone="secondary" size="sm" onPress={act(() => removeFriend(entry.id))} />
+              </FriendRow>
+            ))}
           </Card>
         </Section>
-      </Screen>
-    </>
+      ) : null}
+
+      <Button label={t.medalSheet.close} tone="secondary" onPress={() => router.back()} />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
+    gap: spacing.lg,
+  },
+  centered: {
+    textAlign: 'center',
+  },
   flex: {
     flex: 1,
   },
@@ -350,20 +372,22 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   codeCard: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingVertical: spacing.xl,
   },
   codeBox: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: radius.md,
     borderWidth: 2,
     borderStyle: 'dashed',
   },
   code: {
-    fontSize: fontSize.hero,
-    lineHeight: fontSize.hero + 8,
+    fontSize: fontSize.title,
+    lineHeight: fontSize.title + 6,
     fontWeight: fontWeight.heavy,
     letterSpacing: 3,
     fontVariant: ['tabular-nums'],

@@ -2,7 +2,7 @@
 
 App per costruire il proprio vocabolario in una lingua straniera e ricordarlo nel tempo.
 React Native con **Expo** (SDK 58) e **TypeScript**: lo stesso codice genera l'app per iPhone e Android.
-Tutto funziona **offline** e i dati restano sul telefono.
+Parole e progressi restano sul telefono e funzionano **offline**; account, amici e serie di giorni sono copiati su un server **Supabase** (branch `server`, `supabase/README.md`).
 
 Il README ha due parti:
 1. **[In breve](#parte-1--in-breve)** — cosa fa l'app, le scelte di design e come fare le cose più comuni.
@@ -16,12 +16,12 @@ Il README ha due parti:
 
 | Schermata | A cosa serve |
 |-----------|--------------|
-| **Home** | Data e saluto personalizzato, selettore delle lingue, contatori con simboli e fiamma della serie a 1, 10, 100 e 1.000 giorni. Seguono **Ripasso di oggi**, **+ Aggiungi parola** e **Parole del giorno**, con il tasto **Categorie** per scegliere cosa imparare (Cibo, Viaggi, Salute…). |
+| **Home** | Data e saluto personalizzato, selettore delle lingue, contatori con simboli e fiamma della serie a 1, 10, 100 e 1.000 giorni, con uno 🛡️ per ogni **salvaserie**; toccando la serie sale dal basso **La tua serie** (ultimi 7 giorni, salvaserie, record). Seguono **Ripasso di oggi**, **+ Aggiungi parola** e **Parole del giorno**, con il tasto **Categorie** per scegliere cosa imparare (Cibo, Viaggi, Salute…). |
 | **Dizionario** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti) e filtro **Errori** (solo le parole sbagliate, con i contatori errori/giuste), barra di "quanto la so" per ogni parola. Tocca una parola per vedere i progressi e modificarla. |
 | **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da imparare*, *tutte*, *errori*), con il tasto **Filtra** sotto: **categorie** (Informatica, Salute, Cibo…, anche più di una) e **tipo di parola** (sostantivi, verbi, aggettivi, altro), quante domande (10, 20, tutte o **Altro**: un numero a scelta da 1 a 200). |
 | **Sfide** | In arrivo (rimandata di proposito). |
 | **Benvenuto** (primo avvio, senza account) | **Registrati o accedi con la mail** (codice di 6 cifre, niente password) oppure **Continua come ospite** (scegli solo nick e immagine: uno dei 12 avatar o una **foto dalla galleria**). Il nick è **unico**: mentre lo scrivi l'app ti dice se è libero. |
-| **Utente** | Il tuo nome come titolo della pagina; immagine profilo (12 avatar illustrati o una foto) con accanto il nick (`@stefano`), lingua studiata e data di inizio; contatore amici, record di giorni di fila, **6 medaglie a 4 livelli** (bronzo, argento, oro, diamante), sezione **Amici** (aggiungi cercando il nick o con il codice amico, richieste da accettare, lista amici) e il tuo **codice amico**; account (ospite o mail), **Registrati** per gli ospiti, **Esci**, **Elimina account**. In alto a destra ⚙️ apre le Impostazioni. |
+| **Utente** | Il tuo nome come titolo della pagina; immagine profilo (12 avatar illustrati o una foto) con accanto il nick (`@stefano`), lingua studiata e data di inizio; contatori amici, record di giorni di fila e medaglie (ognuno apre dal basso la sua finestra: **Amici**, **La tua serie**, **Le tue medaglie**), **6 medaglie a 4 livelli** (bronzo, argento, oro, diamante), sezione **Amici** che apre la finestra degli amici: in alto *Aggiungi un amico* (cercando il nick o con il codice amico) e il tuo **codice amico**, sotto richieste e lista amici; account (ospite o mail), **Registrati** per gli ospiti, **Esci**, **Elimina account**. In alto a destra ⚙️ apre le Impostazioni. |
 | **Impostazioni** (⚙️ in Utente) | Il tema chiaro/scuro direttamente nella pagina, poi quattro categorie che si aprono da destra: **Lingue** (lingua studiata, lingua madre, livello delle parole del giorno, lingua dell'app), **Suoni**, **Notifiche** (promemoria e orario), **Backup**. Accanto a ogni categoria si vede il valore attuale (es. `🇬🇧 → 🇮🇹 · B1–B2`, `On`, `18:00`). |
 | **Lingue** (selettore 🇬🇧 → 🇮🇹 in Home o nel Dizionario) | Solo le scelte di studio: lingua studiata, lingua madre, livello delle parole del giorno. |
 
@@ -31,7 +31,7 @@ Il README ha due parti:
 - **Ripasso spaziato (sistema Leitner)** invece di quiz casuali: l'app chiede le parole quando stai per dimenticarle, non tutte ogni volta.
 - **Parole del giorno = parole nuove**, 5 al giorno, scelte da una lista integrata, anche solo delle **categorie** che vuoi imparare. Il codice è già pronto per prenderle da un server: si cambia **una riga**.
 - **Correzione indulgente ma onesta**: articoli ("la batteria", "to run") e accenti mancanti non sono errori; una lettera sbagliata in una parola lunga vale "Quasi!" e mostra come si scrive.
-- **Local-first**: le parole e i progressi restano sul telefono (AsyncStorage, backup in un file JSON). Sul server (Supabase) ci sono solo l'account (ospite o mail), il profilo pubblico (nick unico, codice amico, avatar), gli amici e le categorie delle parole.
+- **Local-first**: le parole e i progressi restano sul telefono (AsyncStorage, backup in un file JSON). Sul server (Supabase) ci sono solo l'account (ospite o mail), il profilo pubblico (nick unico, codice amico, avatar o foto), gli amici, la serie di giorni (attuale, record, salvaserie) e le categorie delle parole.
 - **Accessibile**: tutti i testi hanno contrasto WCAG AA (4.5:1), ogni elemento toccabile è almeno 44 pt, i bottoni-icona hanno un'etichetta per lo screen reader.
 - **Uguale su ogni iPhone**: il testo scala con la larghezza dello schermo, quindi le righe vanno a capo negli stessi punti su un iPhone normale e su un Max.
 - **Le scelte si muovono, non saltano**: cambiando un'opzione l'indicatore scivola, la spunta compare con un piccolo rimbalzo, i contenuti nuovi entrano in dissolvenza. Animazioni brevi (≤ 260 ms) e disattivate se il telefono ha "Riduci movimento".
@@ -76,6 +76,8 @@ npm test            # test della logica (jest)
 | cambiare gli intervalli del ripasso                       | `REVIEW_INTERVAL_DAYS` in `src/domain/review.ts`                 |
 | cambiare quando una risposta è giusta / "quasi"           | `evaluateAnswer` in `src/domain/text.ts`                         |
 | cambiare quando una parola esce dagli "errori"            | `MISTAKE_CLEAR_STREAK` in `src/domain/quiz.ts`                   |
+| cambiare ogni quanti giorni si guadagna un salvaserie     | `DAYS_PER_SAVE` e `MAX_SAVES` in `src/domain/activity.ts` (se cambi `MAX_SAVES`, anche il controllo `saves between 0 and 2` sul server) |
+| cambiare una regola del server (nick, amici, foto, serie) | una nuova migrazione in `supabase/migrations/` sul branch `server` |
 | cambiare le opzioni "numero di domande"                   | `QUIZ_COUNTS` in `src/domain/quiz.ts`                            |
 | aggiungere una lingua dell'interfaccia                    | nuovo `src/i18n/xx.ts` + `TRANSLATIONS` in `src/i18n/index.ts`   |
 | aggiungere una lingua da studiare                         | `src/domain/languages.ts` + una colonna in `wordBank.ts` + nomi in `en.ts`/`it.ts` |
@@ -98,6 +100,7 @@ npm test            # test della logica (jest)
 4. **Ogni colore passa da `useTheme()`**, ogni numero di layout da `theme/tokens.ts`.
 5. In `src/app/` vanno **solo schermate**. La logica pura sta in `src/domain/` (niente React) ed è coperta dai test.
 6. Ogni nuovo store salvato va aggiunto a `PERSISTED_STORES` in `src/store/useStoresHydrated.ts`.
+7. **Le regole del server stanno nel database** (funzioni in `supabase/migrations/`, branch `server`): l'app le chiama con `supabase.rpc(...)` da `src/services/`. Nell'app c'è solo la chiave pubblica (`anon`), **mai** la `service_role`.
 
 ---
 
@@ -113,19 +116,21 @@ npm test            # test della logica (jest)
                                ▼                               ▼
    src/hooks/ ──► src/store/ (zustand + persist)      src/components/ (design system) ◄── src/theme/
    useDailyWords   wordStore · settingsStore                                                 colori, token
-                   activityStore · dailyStore
+   useAccount…     activityStore · dailyStore
+   useStreakSync   profileStore · accountStore
                                │ chiama funzioni pure
                                ▼
                    src/domain/  (zero React, zero salvataggio, testato)
-                   word · quiz · review · text · dates · dailyWords · activity · backup
+                   word · quiz · review · text · dates · dailyWords · activity · backup · account
                                ▲
-   src/services/ ──────────────┘   (mondo esterno: file, Tatoeba, MyMemory, sorgente parole del giorno)
+   src/services/ ──────────────┘   (mondo esterno: file, Tatoeba, MyMemory, Wiktionary,
+                                    server Supabase: supabase · account · streaks · topicServer)
    src/content/wordBank.ts          (dati: lista integrata delle parole del giorno)
 ```
 
 Perché così:
 - **`domain/` è puro**: date e numeri entrano come parametri (es. `today`), quindi le regole si testano senza telefono e senza orologio. È la parte che cambia più spesso, ed è quella coperta dai test.
-- **`services/` isola il mondo esterno**: se domani le parole del giorno arrivano da un server, o i backup vanno su cloud, cambia solo quel file.
+- **`services/` isola il mondo esterno**: se domani le parole del giorno arrivano da un server, o i backup vanno su cloud, cambia solo quel file. Anche il server Supabase si usa solo da qui.
 - **Gli store sono sottili**: tengono i dati e chiamano il dominio (es. `recordAnswer` usa `statsAfterAnswer`).
 
 ### Dati salvati sul telefono
@@ -134,7 +139,7 @@ Perché così:
 |---|---|---|---|
 | `words` | `wordStore` | tutte le parole di tutte le coppie | 6 |
 | `settings` | `settingsStore` | tema, lingue, livello parole del giorno, suoni, promemoria (attivo e ora), ultime scelte del quiz (numero di domande, tematiche, tipi) | 1 |
-| `activity` | `activityStore` | giorni in cui ti sei allenato (max 400), record di giorni di fila, quiz perfetti | 2 |
+| `activity` | `activityStore` | giorni in cui ti sei allenato (max 2.000; da qui si calcolano serie e salvaserie), record di giorni di fila, quiz perfetti | 2 |
 | `daily` | `dailyStore` | parole del giorno di oggi per coppia (con livello e categorie con cui sono state scelte) + parole segnate "la so già" | 1 |
 | `achievements` | `achievementStore` | data in cui è stato raggiunto ogni livello di ogni medaglia | 1 |
 | `profile` | `profileStore` | copia del profilo del server (id nascosto, nick, codice amico, avatar o foto con il suo percorso sul server, ospite o mail) + nome (solo sul telefono), contatori amici e richieste, data di inizio | 5 |
@@ -308,8 +313,14 @@ File: `src/domain/text.ts` → `evaluateAnswer(risposta, accettate, lingua)` res
 
 ## 6. Serie di giorni 🔥
 
-File: `src/domain/activity.ts`, `src/store/activityStore.ts`.
-Un giorno conta se hai risposto ad almeno una domanda. La serie è il numero di giorni consecutivi fino a oggi; **non si azzera finché oggi non è finito** (se ti sei allenato ieri e oggi non ancora, la serie resta).
+File: `src/domain/activity.ts`, `src/store/activityStore.ts`, `src/app/streak.tsx`, `src/hooks/useStreakSync.ts`, `src/services/streaks.ts`.
+Un giorno conta se hai risposto ad almeno una domanda. La serie è il numero di giorni di allenamento di fila fino a oggi; **non si azzera finché oggi non è finito** (se ti sei allenato ieri e oggi non ancora, la serie resta).
+
+**Salvaserie 🛡️** (`streakStatus`): ogni **7 giorni di fila** se ne guadagna uno, se ne tengono al massimo **2** (con 2 in tasca non se ne guadagnano altri). Se salti un giorno ne viene usato uno da solo e la serie continua: il giorno saltato non aggiunge 1, ma non la interrompe. Se i giorni saltati sono più dei salvaserie, la serie riparte da 0 e i salvaserie restano. Non si salva niente in più: serie, salvaserie, giorni salvati e i totali (**guadagnati** e **usati** da sempre) si ricalcolano ogni volta dai giorni di allenamento, quindi valgono anche per le serie passate (il record conta anche i giorni salvati).
+
+**Dove si vede.** In Home, accanto alla fiamma, uno 🛡️ per ogni salvaserie; toccando la serie (o il record in Utente) sale dal basso **La tua serie** (`app/streak.tsx`, *form sheet*): gli ultimi 7 giorni (✓ allenamento, 🛡️ giorno salvato, cerchio tratteggiato = oggi ancora da fare), i salvaserie con la barra verso il prossimo, quanti ne hai guadagnati e usati finora, il record.
+
+**Sul server** (tabella `streaks`, una riga per utente): serie attuale, record, salvaserie disponibili, guadagnati, usati, ultimo giorno di allenamento e il giorno del calcolo (`as_of`). Il telefono li calcola (`streakSnapshot`) e li manda con `save_streak` (`useStreakSync`, montato in `app/_layout.tsx` solo con un account): all'apertura dell'app, quando torna in primo piano (il giorno può essere cambiato) e 2 secondi dopo un nuovo giorno di allenamento; numeri uguali all'ultimo invio non vengono rimandati. Offline non succede nulla: ci riprova alla prossima occasione. Il record sul server non scende mai: su un telefono nuovo (o dopo aver reinstallato l'app) torna in `activityStore`. Gli amici possono leggere la tua riga (servirà per le sfide).
 
 ## 7. Dizionario: lista, dettaglio, esempi
 
@@ -329,16 +340,16 @@ File: `src/domain/backup.ts`, `src/services/backupFiles.ts`.
 
 ## 9. Utente: profilo, medaglie, amici
 
-File: `src/app/(tabs)/profile/index.tsx` (profilo), `src/app/(tabs)/profile/edit.tsx` (modifica), `src/store/profileStore.ts`, `src/domain/achievements.ts`.
+File: `src/app/(tabs)/profile/index.tsx` (profilo), `src/app/(tabs)/profile/edit.tsx` (modifica), `src/app/friends.tsx` (amici), `src/store/profileStore.ts`, `src/domain/achievements.ts`.
 
 **Account** (`hooks/useAccountSession.ts`, `services/account.ts`, `services/supabase.ts`, `store/accountStore.ts`, `app/welcome/`). Per usare l'app serve un account; ce ne sono due tipi, entrambi utenti di Supabase con un **id nascosto** (UUID) che è la chiave di tutto:
 - **Ospite** (*Continua come ospite*): un utente anonimo di Supabase, creato scegliendo solo nick e avatar. Se cancelli l'app o cambi telefono l'account si perde: lo dicono la schermata iniziale e la pagina Utente.
 - **Registrato con la mail**: si scrive la mail, arriva un **codice di 6 cifre**, lo si scrive nell'app. Lo stesso modulo serve per registrarsi e per rientrare su un altro telefono. Un ospite può **registrarsi in qualsiasi momento** (Utente → *Registrati con la mail*, `profile/register.tsx`): resta **lo stesso account** (stesso id, nick, codice amico e amici).
 - **Google e Apple** arriveranno con la *development build* (Expo Go non basta; Apple richiede l'account sviluppatore, e l'App Store chiede Apple se c'è Google).
 
-**Il flusso.** `app/_layout.tsx` usa `Stack.Protected`: senza account esistono solo le schermate `welcome/` (scelta → ospite / mail → nick e avatar), con l'account solo l'app. `useAccountSession` legge la sessione salvata (supabase-js in AsyncStorage) all'avvio: se il profilo copiato sul telefono è dello stesso account l'app si apre **subito, anche offline**, e il profilo si aggiorna dal server in background; un account nuovo senza profilo va a scegliere il nick (`welcome/profile.tsx`). *Esci* chiude la sessione (da ospite l'account si perde, l'app avvisa); *Elimina account* cancella sul server account, profilo e amicizie (richiesto dall'App Store). In entrambi i casi **le parole restano sul telefono**.
+**Il flusso.** `app/_layout.tsx` usa `Stack.Protected`: senza account esistono solo le schermate `welcome/` (scelta → ospite / mail → nick e avatar), con l'account solo l'app. `useAccountSession` legge la sessione salvata (supabase-js in AsyncStorage) all'avvio: se il profilo copiato sul telefono è dello stesso account l'app si apre **subito, anche offline**, e il profilo si aggiorna dal server in background; un account nuovo senza profilo va a scegliere il nick (`welcome/profile.tsx`). *Esci* chiude la sessione (da ospite l'account si perde, l'app avvisa); *Elimina account* cancella sul server account, profilo, foto, amicizie e serie (richiesto dall'App Store). In entrambi i casi **le parole restano sul telefono**.
 
-**Profilo.** Il server tiene la parte pubblica (nick, codice amico, immagine); il telefono ne tiene una copia (`profileStore`, per vederla offline) più il nome, che resta solo sul telefono.
+**Profilo.** Il server tiene la parte pubblica (nick, codice amico, immagine); il telefono ne tiene una copia (`profileStore`, per vederla offline) più il nome, che resta solo sul telefono. La chiave di tutto è l'**id nascosto**, non il nick: amicizie e serie puntano all'id, quindi cambiando nick gli amici vedono subito quello nuovo e il codice amico non cambia.
 
 **Foto profilo.** Si sceglie dalla galleria (ritaglio quadrato) già alla creazione del profilo (`components/ProfilePictureChooser.tsx`) o dopo in *Modifica profilo*. Viene **rimpicciolita a 512×512 JPEG** (~60 KB, `expo-image-manipulator`) e caricata nello **storage di Supabase**, bucket `avatars`, nella cartella dell'utente: `<id nascosto>/<nome casuale>.jpg` (`uploadProfilePhoto` in `services/account.ts`). Il profilo salva il percorso (`photo_path`); gli amici la vedono nella lista amici. Il nome è casuale a ogni foto, così nessuna cache mostra quella vecchia; la foto precedente viene cancellata dal server. Sul telefono resta anche la copia locale (si vede offline); su un telefono nuovo si scarica dal server. Tornando a un avatar disegnato la foto viene tolta dal profilo e cancellata; con *Elimina account* vengono cancellate anche le foto.
 
@@ -351,7 +362,7 @@ File: `src/app/(tabs)/profile/index.tsx` (profilo), `src/app/(tabs)/profile/edit
 
 La **versione 3** di `profileStore` trasforma il vecchio "nome utente" in *nome*, aggiunge il nick vuoto e crea il codice amico per chi aveva già l'app; la **versione 4** aggiunge id dell'account, ospite/mail e richieste di amicizia; la **versione 5** il percorso della foto sul server. Chi aveva già l'app trova nick, avatar e codice già compilati nella schermata *Continua come ospite*.
 
-**Amici** (`src/app/(tabs)/profile/friends.tsx`): un solo campo, *Nick o codice amico*. Scrivendo almeno 3 caratteri di un **nick** (`@` e maiuscole non contano) l'app cerca sul server, mezzo secondo dopo l'ultimo tasto, e mostra fino a 10 persone il cui nick inizia così, con foto o avatar e un pulsante: *Aggiungi*, *Accetta* (se ti aveva già chiesto lui), oppure la scritta *Richiesta mandata* / *Amici ✓*. Se il testo è un **codice amico** completo (`abcd efgh` va bene, diventa `ABCD-EFGH`) compare *Manda richiesta a ABCD-EFGH*. In entrambi i casi gli arriva una **richiesta da accettare**. Se lui ti aveva già mandato una richiesta, diventate amici subito. La pagina mostra le **richieste ricevute** (*Accetta* / *Rifiuta*), i **tuoi amici** (*Rimuovi*), le **richieste mandate** (*Annulla*) e in fondo **il tuo codice amico** con *Condividi il mio codice*. Si aggiorna ogni volta che la apri e trascinando verso il basso. In Utente la sezione Amici mostra quanti amici hai e le richieste da accettare. La ricerca per nick mostra solo nick e immagine (mai id o codice amico); un codice si può solo cercare esatto.
+**Amici** (`src/app/friends.tsx`): si apre dal basso (*form sheet*, come la serie e le medaglie) toccando il contatore *amici* o la sezione **Amici** in Utente. In alto **Aggiungi un amico** e **il tuo codice amico** (con *Condividi*), sotto le **richieste ricevute** (*Accetta* / *Rifiuta*), **i tuoi amici** (*Rimuovi*) e le **richieste mandate** (*Annulla*). Per aggiungere c'è un solo campo, *Nick o codice amico*. Scrivendo almeno 3 caratteri di un **nick** (`@` e maiuscole non contano) l'app cerca sul server, mezzo secondo dopo l'ultimo tasto, e mostra fino a 10 persone il cui nick inizia così, con foto o avatar e un pulsante: *Aggiungi*, *Accetta* (se ti aveva già chiesto lui), oppure la scritta *Richiesta mandata* / *Amici ✓*. Se il testo è un **codice amico** completo (`abcd efgh` va bene, diventa `ABCD-EFGH`) compare *Manda richiesta a ABCD-EFGH*. In entrambi i casi gli arriva una **richiesta da accettare**. Se lui ti aveva già mandato una richiesta, diventate amici subito. La finestra si aggiorna ogni volta che la apri. In Utente la sezione Amici mostra quanti amici hai e le richieste da accettare. La ricerca per nick mostra solo nick e immagine (mai id o codice amico); un codice si può solo cercare esatto.
 
 **Immagine.** Si sceglie fra 12 avatar illustrati (6 donne e 6 uomini con carnagioni, capelli, età e accessori diversi: occhiali, barba, velo, turbante) oppure una foto dalla galleria. Gli avatar sono disegnati in codice: il generatore e i sorgenti SVG sono in `design/avatars/` (fuori dall'app), i PNG usati dall'app in `assets/avatars/`, l'elenco in `content/avatars.ts`. Un profilo nuovo parte con un avatar a caso; la versione 2 di `profileStore` sostituisce i vecchi avatar-animale con un avatar a caso. La foto è ritagliata quadrata e viene **copiata nei documenti dell'app** (`services/profilePhoto.ts`): la copia del selettore sta in una cache che il sistema può svuotare. Quando la foto viene sostituita o rimossa, il file vecchio viene cancellato. Le modifiche valgono solo premendo **Salva**.
 
@@ -369,8 +380,6 @@ La **versione 3** di `profileStore` trasforma il vecchio "nome utente" in *nome*
 Ogni medaglia mostra: il cerchio del colore del livello raggiunto (grigio e sbiadito se nessuno), quattro pallini per i livelli, il nome del livello e una barra verso il **prossimo** livello, nel suo colore: è riempita per `valore / obiettivo` (es. `120/500` verso l'oro = 24%), la stessa proporzione dei numeri scritti sotto. Toccandola sale dal basso una **finestra della medaglia** (`src/app/medal/[id].tsx`, presentata come *form sheet* nativo): i tuoi progressi (es. `120 / 500`, anche oltre il diamante: `1240 / 1000`), e per ognuno dei quattro livelli l'obiettivo, la **data in cui l'hai raggiunto** oppure quanti ne mancano (`Ne mancano 380 · 120/500`), con una barra sul prossimo livello.
 
 **Date dei livelli.** Le medaglie sono calcolate, ma le date vanno salvate: `achievementStore` tiene la data di ogni livello (`"words:silver"` → data). Le registra `AchievementTracker` (`hooks/useAchievements.ts`), un componente invisibile nel layout principale che, ogni volta che cambiano parole o attività, data i livelli appena raggiunti, ovunque tu sia nell'app. Per i livelli raggiunti prima che le date esistessero si usa la stima migliore: per *Vocabolario* il giorno in cui hai aggiunto l'N-esima parola, per *Costanza* il giorno in cui hai completato la prima serie abbastanza lunga; per gli altri la data del primo avvio con questa versione. Il riquadro *medaglie* in alto conta i **livelli** conquistati: ogni livello vale uno, quindi una medaglia d'oro conta 3 (bronzo + argento + oro), su un totale di 6 × 4 = 24 (es. `8/24`). Toccandolo sale dal basso la finestra **Le tue medaglie** (`src/app/medals.tsx`): il totale e, dal diamante al bronzo, quante medaglie hanno quel livello (`2 su 6`) con le loro icone (`tierCounts` in `domain/achievements.ts`). Nella griglia ogni medaglia ha sempre la riga del livello (vuota se non ancora raggiunto), così sono tutte alte uguali e allineate. Il record di giorni e i quiz perfetti sono salvati in `activityStore`; la sua versione 2 ricostruisce il record dai giorni già salvati, quindi chi aveva già l'app non perde nulla.
-
-**Amici.** Il contatore c'è già (sempre 0) e la sezione dice che arriveranno presto: aggiungere amici richiede il server.
 
 ## 10. Impostazioni
 
@@ -482,16 +491,17 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 
 ## 13. Test
 
-`npm test` esegue i test in `src/domain/__tests__/` (109 test): correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello e per categoria, filtro per categorie), serie di giorni e record, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, testo della ricerca per nick, formato del codice amico, categorie dalla rete e dai sensi di Wiktionary.
+`npm test` esegue i test in `src/domain/__tests__/` (116 test): correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello e per categoria, filtro per categorie), serie di giorni, salvaserie (guadagnati, usati) e record, dati della serie per il server, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, testo della ricerca per nick, formato del codice amico, categorie dalla rete e dai sensi di Wiktionary.
 Sono test della logica pura: girano in un secondo, senza telefono.
 
 ## 14. Limiti noti e prossimi passi
 
-- **Sfide**: rimandate. L'idea più semplice senza server è un codice/link che contiene le parole e il punteggio da battere.
+- **Sfide**: rimandate. Ora ci sono server, amici e serie: le sfide si possono costruire lì (es. una riga per sfida con le parole e i punteggi dei due amici).
 - **Versione web**: non è un obiettivo. Funziona per prove veloci (`npx expo start --web`), ma la barra delle tab nativa sul web si sovrappone all'intestazione.
 - **Parole del giorno**: la lista integrata ha 802 parole (circa 45 per categoria). Con una sola categoria e un livello singolo bastano per pochi giorni (es. Cibo C1–C2: 10 parole = 2 giorni). Il passo naturale è il server descritto sopra (o allungare la lista: basta aggiungere righe).
 - **Categorie da Wiktionary**: le parole rare (fuori dalle 50.000 più usate, es. *bracciata*) non sono nell'app per tenerla leggera: le chiede al server, che ha l'elenco completo.
-- **Amici e account**: richiedono un server. Il profilo locale (`profileStore`) è già pensato per essere inviato alla registrazione.
+- **Serie sul server**: è una fotografia dell'ultima volta che l'app è stata aperta (`as_of`). Se uno non apre l'app per giorni, sul server la serie resta quella vecchia anche se nel frattempo si è interrotta: chi la mostra (sfide, classifiche) deve guardare `as_of` e `last_training_day`.
+- **Ricerca per nick**: chiunque abbia l'app può trovare un nick per inizio (vede nick e immagine). Se serve più privacy si può limitare al nick esatto.
 - **Categorie automatiche**: con la soglia severa, sulle parole difficili di prova 9 categorie proposte su 10 sono giuste, ma ne trova circa metà (dettagli in `design/topic-model/README.md`): molte traduzioni restano senza categoria e si spuntano a mano. Con il server si può usare un modello più grande.
 - **Wiktionary**: le spiegazioni dei sensi sono in inglese; per le coppie senza inglese (es. 🇪🇸→🇮🇹) restano le traduzioni di MyMemory, non divise per senso.
 - **Tipo di parola**: senza connessione resta la stima offline, che sbaglia spesso con gli aggettivi senza finale tipica (*big*, *tired* → sostantivo). Si corregge da sola appena c'è rete (Wiktionary).

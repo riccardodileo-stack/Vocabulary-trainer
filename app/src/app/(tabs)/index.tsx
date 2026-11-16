@@ -12,7 +12,7 @@ import { Screen } from '@/components/Screen';
 import { dayKey } from '@/domain/dates';
 import { isDue, isMastered } from '@/domain/review';
 import { useT, useUiLanguage } from '@/i18n';
-import { useStreak } from '@/store/activityStore';
+import { useStreakStatus } from '@/store/activityStore';
 import { useProfileStore } from '@/store/profileStore';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
@@ -42,7 +42,7 @@ export default function HomeScreen() {
   const largeText = fontScale >= 1.4;
   const pair = useActivePair();
   const words = useWordsOfPair(pair);
-  const streak = useStreak();
+  const { streak, saves } = useStreakStatus();
   const name = useProfileStore((state) => state.name);
   const greeting = name ? t.home.greetingName(name) : t.home.greeting;
 
@@ -128,14 +128,22 @@ export default function HomeScreen() {
           const value = numberFormat.format(stat.value);
 
           return (
-            <View
+            <Pressable
               key={stat.id}
               accessible
-              accessibilityLabel={`${value} ${stat.label}`}
-              style={[
+              // Only the streak opens something: its sheet explains the saves
+              disabled={stat.id !== 'streak'}
+              accessibilityRole={stat.id === 'streak' ? 'button' : undefined}
+              accessibilityHint={stat.id === 'streak' ? t.home.streakOpen : undefined}
+              onPress={() => router.push('/streak')}
+              accessibilityLabel={
+                stat.id === 'streak' && saves > 0 ? `${value} ${stat.label}, ${t.home.streakSaves(saves)}` : `${value} ${stat.label}`
+              }
+              style={({ pressed }) => [
                 styles.stat,
                 !largeText && styles.statInRow,
                 { backgroundColor: colors.card, borderColor: colors.border },
+                pressed && styles.pressed,
               ]}>
               {stat.id === 'streak' ? (
                 <SymbolView
@@ -147,8 +155,15 @@ export default function HomeScreen() {
                   style={[styles.flame, { opacity: streakLevel?.opacity ?? 0.08 }]}
                 />
               ) : null}
-              <View style={[styles.statIcon, { backgroundColor: stat.chip }]}>
-                <SymbolView name={stat.symbol} size={iconSize.sm} tintColor={stat.tint} accessible={false} />
+              <View style={styles.statTop}>
+                <View style={[styles.statIcon, { backgroundColor: stat.chip }]}>
+                  <SymbolView name={stat.symbol} size={iconSize.sm} tintColor={stat.tint} accessible={false} />
+                </View>
+                {stat.id === 'streak' && saves > 0 ? (
+                  <AppText variant="caption" color="textMuted" accessible={false}>
+                    {'🛡️'.repeat(saves)}
+                  </AppText>
+                ) : null}
               </View>
               <AppText variant="display" style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
                 {value}
@@ -156,7 +171,7 @@ export default function HomeScreen() {
               <AppText variant="small" color="textMuted">
                 {stat.label}
               </AppText>
-            </View>
+            </Pressable>
           );
         })}
       </View>
@@ -273,6 +288,7 @@ const styles = StyleSheet.create({
   },
   statInRow: { flex: 1, minWidth: 0 },
   flame: { position: 'absolute', top: -spacing.xl, right: -spacing.xl },
+  statTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   statIcon: {
     width: spacing.xxl,
     height: spacing.xxl,

@@ -1,6 +1,7 @@
 // Root of the app: loads saved data, applies the theme and declares
 // the top-level screens (the welcome screens without an account; with one the tab bar, the settings, the language sheet, the
-// medal sheet and the medals-per-level sheet). It also mounts the tracker that dates the medal levels.
+// medal sheet, the medals-per-level sheet, the streak sheet and the friends sheet). It also mounts the tracker that dates
+// the medal levels and keeps the streak on the server up to date.
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,6 +13,7 @@ import { AchievementTracker } from '@/hooks/useAchievements';
 import { useAccountSession } from '@/hooks/useAccountSession';
 import { useReminderSync } from '@/hooks/useReminderSync';
 import { useServerTopicCheck } from '@/hooks/useServerTopicCheck';
+import { useStreakSync } from '@/hooks/useStreakSync';
 import { useWordKindCheck } from '@/hooks/useWordKindCheck';
 import { useT } from '@/i18n';
 import { configureNotifications } from '@/services/reminders';
@@ -57,6 +59,8 @@ export default function RootLayout() {
   useWordKindCheck(hydrated);
   // Meanings left without topics on the phone are asked to the server in the background
   useServerTopicCheck(hydrated);
+  // The streak (current, record, saves) is copied to the server
+  useStreakSync(hydrated && signedIn);
 
   const ready = hydrated && account !== 'loading';
 
@@ -105,6 +109,26 @@ export default function RootLayout() {
           />
           <Stack.Screen
             name="quiz-filters"
+            options={{
+              presentation: 'formSheet',
+              sheetGrabberVisible: true,
+              sheetAllowedDetents: [0.75, 1],
+              sheetCornerRadius: 28,
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="streak"
+            options={{
+              presentation: 'formSheet',
+              sheetGrabberVisible: true,
+              sheetAllowedDetents: [0.75, 1],
+              sheetCornerRadius: 28,
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="friends"
             options={{
               presentation: 'formSheet',
               sheetGrabberVisible: true,

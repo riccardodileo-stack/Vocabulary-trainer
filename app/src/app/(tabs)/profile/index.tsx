@@ -40,6 +40,11 @@ function openEdit() {
   router.push('/profile/edit');
 }
 
+/** Friends open as a sheet from the bottom (app/friends.tsx), like the streak and the medals. */
+function openFriends() {
+  router.push('/friends');
+}
+
 export default function ProfileScreen() {
   const t = useT();
   const uiLanguage = useUiLanguage();
@@ -146,8 +151,20 @@ export default function ProfileScreen() {
         </Card>
 
         <View style={styles.stats}>
-          <StatTile icon="👥" value={profile.friendsCount} label={t.profile.friendsStat(profile.friendsCount)} />
-          <StatTile icon="🔥" value={bestStreak} label={t.profile.bestStreakStat} />
+          <StatTile
+            icon="👥"
+            value={profile.friendsCount}
+            label={t.profile.friendsStat(profile.friendsCount)}
+            onPress={openFriends}
+            accessibilityHint={t.profile.friendsHint}
+          />
+          <StatTile
+            icon="🔥"
+            value={bestStreak}
+            label={t.profile.bestStreakStat}
+            onPress={() => router.push('/streak')}
+            accessibilityHint={t.home.streakOpen}
+          />
           <StatTile
             icon="🏅"
             value={`${levelsWon}/${levelsTotal}`}
@@ -175,7 +192,7 @@ export default function ProfileScreen() {
         </Section>
 
         <Section title={t.profile.friendsTitle}>
-          <Card>
+          <Card onPress={openFriends} accessibilityRole="button" accessibilityHint={t.profile.friendsHint} style={styles.friendsCard}>
             <View style={styles.friendsHeader}>
               <AppText variant="bodyBold" style={styles.flex}>
                 👥 {profile.friendsCount > 0 ? t.profile.friendsSome(profile.friendsCount) : t.profile.friendsEmpty}
@@ -184,11 +201,9 @@ export default function ProfileScreen() {
                 <Pill label={t.profile.friendsRequests(profile.incomingRequests)} tone="warning" />
               ) : null}
             </View>
-            <Button
-              label={profile.friendsCount > 0 || profile.incomingRequests > 0 ? t.profile.seeFriends : t.profile.addFriends}
-              tone="secondary"
-              onPress={() => router.push('/profile/friends')}
-            />
+            <AppText variant="small" color="textMuted">
+              {profile.friendsCount > 0 || profile.incomingRequests > 0 ? t.profile.seeFriends : t.profile.addFriends}
+            </AppText>
           </Card>
         </Section>
 
@@ -267,6 +282,9 @@ const styles = StyleSheet.create({
   },
   register: {
     gap: spacing.sm,
+  },
+  friendsCard: {
+    gap: spacing.xs,
   },
   friendsHeader: {
     flexDirection: 'row',
