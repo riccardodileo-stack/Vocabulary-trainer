@@ -12,6 +12,7 @@ import {
   classifyMeanings,
   createWord,
   statsAfterAnswer,
+  summaryOfMeanings,
   topicsOfMeanings,
   withClassification,
   type NewWordInput,
@@ -74,6 +75,25 @@ function migrate(persisted: unknown, version: number): { words: Word[] } {
     });
   }
 
+  if (version < 6) {
+    // v6: the kind of word moves onto each meaning too ("stroke" = "ictus" noun, =
+    // "accarezzare" verb). A kind chosen by hand goes to every meaning; one found on
+    // Wiktionary stays on the first meaning; the others are guessed and checked again.
+    state.words = state.words.map((word) => {
+      const pair = { source: word.sourceLang, target: word.targetLang };
+      const meanings = classifyMeanings(
+        pair,
+        word.term,
+        word.meanings.map((meaning, index) =>
+          word.partOfSpeechSource === 'user' || (word.partOfSpeechSource === 'dictionary' && index === 0)
+            ? { ...meaning, partOfSpeech: word.partOfSpeech, partOfSpeechSource: word.partOfSpeechSource }
+            : meaning
+        )
+      );
+      return { ...word, meanings, ...summaryOfMeanings(pair, word.term, meanings) };
+    });
+  }
+
   return state;
 }
 
@@ -98,13 +118,10 @@ export const useWordStore = create<WordState>()(
             if (!changes.meanings) {
               return updated;
             }
-            // New or changed meanings get their topics; the word's topics follow its meanings
-            const meanings = classifyMeanings(
-              { source: updated.sourceLang, target: updated.targetLang },
-              updated.term,
-              changes.meanings
-            );
-            return { ...updated, meanings, topics: topicsOfMeanings(meanings) };
+            // New or changed meanings get their topics and kind; the word's own follow its meanings
+            const pair = { source: updated.sourceLang, target: updated.targetLang };
+            const meanings = classifyMeanings(pair, updated.term, changes.meanings);
+            return { ...updated, meanings, ...summaryOfMeanings(pair, updated.term, meanings) };
           }),
         })),
 
@@ -129,7 +146,7 @@ export const useWordStore = create<WordState>()(
     {
       name: 'words',
       // Increase and extend `migrate` when the saved Word shape changes
-      version: 5,
+      version: 6,
       migrate,
       storage: persistStorage,
     }

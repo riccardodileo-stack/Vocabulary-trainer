@@ -1,16 +1,20 @@
 // Sounds settings. One switch for now; new sound options go here.
 
+import { useEffect } from 'react';
+
 import { ListGroup, ListRow } from '@/components/ListGroup';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
 import { useT } from '@/i18n';
-import { playSound } from '@/services/sounds';
+import { playSound, soundsForScreen } from '@/services/sounds';
 import { useSettingsStore } from '@/store/settingsStore';
 
 export default function SoundsSettingsScreen() {
   const t = useT();
   const soundsEnabled = useSettingsStore((state) => state.soundsEnabled);
   const setSoundsEnabled = useSettingsStore((state) => state.setSoundsEnabled);
+  // Ready before the switch is touched, so the sample isn't late
+  useEffect(soundsForScreen, []);
 
   const toggle = (enabled: boolean) => {
     setSoundsEnabled(enabled);

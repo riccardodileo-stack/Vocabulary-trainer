@@ -26,6 +26,9 @@ export type Meaning = {
   topics?: TopicId[];
   /** true once the user chose the topics of this meaning: suggestions never overwrite them. */
   topicsByUser?: boolean;
+  /** Kind of word of THIS meaning ("stroke" = "ictus" is a noun, = "accarezzare" a verb). */
+  partOfSpeech?: PartOfSpeech;
+  partOfSpeechSource?: PartOfSpeechSource;
 };
 
 export type WordStats = {
@@ -75,7 +78,7 @@ export type Word = {
   topics: TopicId[];
   /** @deprecated v3 only (topics per word); read by the v5 migration. */
   topicsByUser?: boolean;
-  /** Noun, verb, adjective or other. */
+  /** Kind of the first meaning (each meaning has its own, see Meaning). */
   partOfSpeech: PartOfSpeech;
   partOfSpeechSource: PartOfSpeechSource;
   createdAt: string;
@@ -86,7 +89,7 @@ export type NewWordInput = {
   meanings: Meaning[];
   level?: CefrLevel;
   tags?: string[];
-  /** Missing: guessed automatically (and checked on Wiktionary later). */
+  /** Kind for the meanings that don't have their own. Missing: guessed (and checked on Wiktionary later). */
   partOfSpeech?: PartOfSpeech;
   partOfSpeechSource?: PartOfSpeechSource;
 };
@@ -122,42 +125,66 @@ export function topicsOfMeanings(meanings: Meaning[]): TopicId[] {
   return TOPIC_IDS.filter((topic) => found.has(topic));
 }
 
+function isSource(value: unknown): value is PartOfSpeechSource {
+  return value === 'guess' || value === 'dictionary' || value === 'user';
+}
+
+/** Kind of word given for the whole word: used for the meanings that have none of their own. */
+type KindFallback = { partOfSpeech?: unknown; partOfSpeechSource?: unknown };
+
 /**
- * Each meaning keeps the topics it has (chosen by hand or already suggested); the ones
- * without topics get them from the topic network.
+ * Each meaning keeps the topics and the kind it has (chosen by hand or already found); the
+ * missing ones are filled in: topics by the topic network, the kind by the offline rules
+ * ("stroke" = "ictus" -> noun, = "accarezzare" -> verb).
  */
-export function classifyMeanings(pair: LanguagePair, term: string, meanings: Meaning[]): Meaning[] {
-  return meanings.map((meaning) => ({
-    ...meaning,
-    topics: Array.isArray(meaning.topics)
-      ? meaning.topics.filter(isTopicId)
-      : suggestMeaningTopics(term, meaning.text, pair, meanings.length === 1),
-    topicsByUser: meaning.topicsByUser === true ? true : undefined,
-  }));
+export function classifyMeanings(pair: LanguagePair, term: string, meanings: Meaning[], fallback: KindFallback = {}): Meaning[] {
+  return meanings.map((meaning) => {
+    const ownKind = isPartOfSpeech(meaning.partOfSpeech);
+    const givenKind = !ownKind && isPartOfSpeech(fallback.partOfSpeech);
+    return {
+      ...meaning,
+      topics: Array.isArray(meaning.topics)
+        ? meaning.topics.filter(isTopicId)
+        : suggestMeaningTopics(term, meaning.text, pair, meanings.length === 1),
+      topicsByUser: meaning.topicsByUser === true ? true : undefined,
+      partOfSpeech: ownKind
+        ? meaning.partOfSpeech
+        : givenKind
+          ? (fallback.partOfSpeech as PartOfSpeech)
+          : guessPartOfSpeech(term, [meaning.text], pair),
+      partOfSpeechSource: ownKind
+        ? isSource(meaning.partOfSpeechSource)
+          ? meaning.partOfSpeechSource
+          : 'user'
+        : givenKind
+          ? isSource(fallback.partOfSpeechSource)
+            ? fallback.partOfSpeechSource
+            : 'user'
+          : 'guess',
+    };
+  });
+}
+
+/** The word's own topics and kind, taken from its (already classified) meanings. */
+export function summaryOfMeanings(
+  pair: LanguagePair,
+  term: string,
+  meanings: Meaning[]
+): Pick<Word, 'topics' | 'partOfSpeech' | 'partOfSpeechSource'> {
+  return {
+    topics: topicsOfMeanings(meanings),
+    partOfSpeech: meanings[0]?.partOfSpeech ?? guessPartOfSpeech(term, [], pair),
+    partOfSpeechSource: meanings[0]?.partOfSpeechSource ?? 'guess',
+  };
 }
 
 /**
- * Topics (per meaning) and kind of word: the given ones when valid, otherwise suggested
+ * Topics and kind of word, per meaning: the given ones when valid, otherwise suggested
  * by the topic network and guessed by the offline rules.
  */
-function classification(
-  pair: LanguagePair,
-  term: string,
-  inputMeanings: Meaning[],
-  given: Partial<Record<'partOfSpeech' | 'partOfSpeechSource', unknown>>
-): Classification {
-  const meanings = classifyMeanings(pair, term, inputMeanings);
-  const texts = meanings.map((meaning) => meaning.text);
-  const hasKind = isPartOfSpeech(given.partOfSpeech);
-  const source = given.partOfSpeechSource;
-
-  return {
-    meanings,
-    topics: topicsOfMeanings(meanings),
-    partOfSpeech: hasKind ? (given.partOfSpeech as PartOfSpeech) : guessPartOfSpeech(term, texts, pair),
-    partOfSpeechSource:
-      hasKind && (source === 'dictionary' || source === 'user' || source === 'guess') ? source : hasKind ? 'user' : 'guess',
-  };
+function classification(pair: LanguagePair, term: string, inputMeanings: Meaning[], given: KindFallback): Classification {
+  const meanings = classifyMeanings(pair, term, inputMeanings, given);
+  return { meanings, ...summaryOfMeanings(pair, term, meanings) };
 }
 
 /**

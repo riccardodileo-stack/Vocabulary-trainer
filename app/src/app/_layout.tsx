@@ -1,6 +1,6 @@
 // Root of the app: loads saved data, applies the theme and declares
 // the top-level screens (the tab bar, the settings, the language sheet, the
-// medal sheet and the medals-per-level sheet). It also mounts the tracker that dates the medal levels.
+// medal sheet, the medals-per-level sheet and the streak sheet). It also mounts the tracker that dates the medal levels.
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -78,8 +78,19 @@ export default function RootLayout() {
         />
         {/* The quiz covers the tabs: opened from Home or Train, closing it goes back there */}
         <Stack.Screen name="quiz" options={{ title: t.train.title }} />
+        <Stack.Screen name="choice" options={{ title: t.train.title }} />
         <Stack.Screen
           name="quiz-filters"
+          options={{
+            presentation: 'formSheet',
+            sheetGrabberVisible: true,
+            sheetAllowedDetents: [0.75, 1],
+            sheetCornerRadius: 28,
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="streak"
           options={{
             presentation: 'formSheet',
             sheetGrabberVisible: true,

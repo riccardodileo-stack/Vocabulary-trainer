@@ -54,6 +54,7 @@ export default function SettingsScreen() {
           value={settings.reminderEnabled ? formatTime(settings.reminderTime) : t.settings.off}
           onPress={() => router.push('/settings/notifications')}
         />
+        <ListRow icon="📋" label={t.importList.title} onPress={() => router.push('/settings/import-list')} />
         <ListRow icon="💾" label={t.settings.backup} onPress={() => router.push('/settings/backup')} />
       </ListGroup>
     </Screen>

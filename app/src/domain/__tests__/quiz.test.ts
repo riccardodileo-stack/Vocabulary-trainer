@@ -24,8 +24,10 @@ describe('quizPool', () => {
   });
 
   it('filters by topic (any of the chosen ones) and by kind of word', () => {
-    const run = { ...makeWord('to run', ['correre']), topics: ['sport' as const], partOfSpeech: 'verb' as const };
-    const doctor = { ...makeWord('doctor', ['medico']), topics: ['health' as const, 'work' as const], partOfSpeech: 'noun' as const };
+    const run = makeWord('to run', ['correre']);
+    run.meanings = [{ text: 'correre', examples: [], topics: ['sport'], partOfSpeech: 'verb' }];
+    const doctor = makeWord('doctor', ['medico']);
+    doctor.meanings = [{ text: 'medico', examples: [], topics: ['health', 'work'], partOfSpeech: 'noun' }];
     const words = [run, doctor];
     const terms = (options: Parameters<typeof quizPool>[1]) => quizPool(words, options, TODAY).map((w) => w.term).sort();
 
@@ -92,18 +94,22 @@ describe('topics per meaning in the quiz', () => {
     topics: ['health' as const, 'sport' as const],
   };
   stroke.meanings = [
-    { text: 'ictus', examples: [], topics: ['health'] },
-    { text: 'colpo', examples: [], topics: [] },
-    { text: 'bracciata', examples: [], topics: ['sport'] },
+    { text: 'ictus', examples: [], topics: ['health'], partOfSpeech: 'noun' },
+    { text: 'colpo', examples: [], topics: [], partOfSpeech: 'noun' },
+    { text: 'bracciata', examples: [], topics: ['sport'], partOfSpeech: 'noun' },
   ];
 
   it('asks only the meanings of the chosen topics', () => {
-    expect(meaningsInScope(stroke, ['health']).map((m) => m.text)).toEqual(['ictus']);
-    expect(meaningsInScope(stroke, []).length).toBe(3);
+    expect(meaningsInScope(stroke, { topics: ['health'] }).map((m) => m.text)).toEqual(['ictus']);
+    expect(meaningsInScope(stroke, {}).length).toBe(3);
 
     const [question] = buildQuiz([stroke], { direction: 'forward', mode: 'all', count: 0, topics: ['health'] });
     expect(question.accepted).toEqual(['ictus']);
     expect(question.topicHint).toBe('health');
+
+    // The kind filter works per meaning too: "stroke" as a verb is "accarezzare"
+    const both = { ...stroke, meanings: [...stroke.meanings, { text: 'accarezzare', examples: [], topics: [], partOfSpeech: 'verb' as const }] };
+    expect(meaningsInScope(both, { partsOfSpeech: ['verb'] }).map((m) => m.text)).toEqual(['accarezzare']);
 
     const [back] = buildQuiz([stroke], { direction: 'backward', mode: 'all', count: 0, topics: ['sport'] });
     expect(back.prompt).toBe('bracciata');

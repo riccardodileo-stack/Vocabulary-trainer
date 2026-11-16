@@ -77,6 +77,15 @@ describe('words get topics and a kind automatically', () => {
     expect(word.meanings.map((meaning) => meaning.topics)).toEqual([['health'], []]);
     expect(word.topics).toEqual(['health']);
     expect(word.partOfSpeechSource).toBe('guess');
+    // Each meaning has its own kind
+    const verb = createWord(EN_IT, {
+      term: 'stroke',
+      meanings: [
+        { text: 'ictus', examples: [] },
+        { text: 'accarezzare', examples: [] },
+      ],
+    });
+    expect(verb.meanings.map((meaning) => meaning.partOfSpeech)).toEqual(['noun', 'verb']);
 
     const chosen = createWord(EN_IT, {
       term: 'stroke',

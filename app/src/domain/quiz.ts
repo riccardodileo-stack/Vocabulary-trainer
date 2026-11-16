@@ -2,10 +2,10 @@
 
 import { dayKey, type DayKey } from './dates';
 import type { LanguageCode } from './languages';
-import type { PartOfSpeech } from './partOfSpeech';
+import { parsePartOfSpeechList, type PartOfSpeech } from './partOfSpeech';
 import { compareByUrgency, isDue } from './review';
 import { normalizeText, splitSlashOptions } from './text';
-import type { TopicId } from './topics';
+import { parseTopicList, type TopicId } from './topics';
 import { type Meaning, type Word } from './word';
 
 /** 'forward' asks the studied word, 'backward' asks the translation. */
@@ -34,11 +34,37 @@ export type QuizOptions = {
   partsOfSpeech?: PartOfSpeech[];
 };
 
-/** Whether a word passes the topic and kind filters of the quiz. */
-export function matchesFilters(word: Word, { topics, partsOfSpeech }: Pick<QuizOptions, 'topics' | 'partsOfSpeech'>): boolean {
-  const topicOk = !topics?.length || word.topics.some((topic) => topics.includes(topic));
-  const kindOk = !partsOfSpeech?.length || partsOfSpeech.includes(word.partOfSpeech);
+type Filters = Pick<QuizOptions, 'topics' | 'partsOfSpeech'>;
+
+/** Route params of the exercise screens (all text, as they travel in the address). */
+export type QuizParams = { direction?: string; mode?: string; count?: string; ids?: string; topics?: string; kinds?: string };
+
+/** Route params -> quiz options; anything missing or wrong falls back to "all words, forward". */
+export function quizOptionsFromParams(params: QuizParams): QuizOptions {
+  const ids = params.ids?.split(',').filter(Boolean);
+  return {
+    direction: params.direction === 'backward' ? 'backward' : 'forward',
+    mode: QUIZ_MODES.includes(params.mode as QuizMode) ? (params.mode as QuizMode) : 'all',
+    count: Number(params.count) || 0,
+    wordIds: ids && ids.length > 0 ? ids : undefined,
+    topics: parseTopicList(params.topics),
+    partsOfSpeech: parsePartOfSpeechList(params.kinds),
+  };
+}
+
+/** Whether ONE meaning passes the filters: one of the topics (if any) and one of the kinds (if any). */
+function meaningMatches(word: Word, meaning: Meaning, { topics, partsOfSpeech }: Filters): boolean {
+  const topicOk = !topics?.length || (meaning.topics ?? []).some((topic) => topics.includes(topic));
+  const kindOk = !partsOfSpeech?.length || partsOfSpeech.includes(meaning.partOfSpeech ?? word.partOfSpeech);
   return topicOk && kindOk;
+}
+
+/** Whether a word passes the filters: at least one of its meanings does. */
+export function matchesFilters(word: Word, filters: Filters): boolean {
+  if (!filters.topics?.length && !filters.partsOfSpeech?.length) {
+    return true;
+  }
+  return word.meanings.some((meaning) => meaningMatches(word, meaning, filters));
 }
 
 export type QuizQuestion = {
@@ -124,14 +150,14 @@ function termsWithMeaning(vocabulary: Word[], meaningText: string): string[] {
 }
 
 /**
- * The meanings a quiz asks: with a topic filter only those with one of the topics
- * (in a health quiz "stroke" asks "ictus", not "colpo"), otherwise all.
+ * The meanings a quiz asks: with filters only those that pass them (in a health quiz
+ * "stroke" asks "ictus", not "colpo"; with "verbs" it asks "accarezzare"), otherwise all.
  */
-export function meaningsInScope(word: Word, topics?: TopicId[]): Meaning[] {
-  if (!topics?.length) {
+export function meaningsInScope(word: Word, filters: Filters = {}): Meaning[] {
+  if (!filters.topics?.length && !filters.partsOfSpeech?.length) {
     return word.meanings;
   }
-  const inScope = word.meanings.filter((meaning) => meaning.topics?.some((topic) => topics.includes(topic)));
+  const inScope = word.meanings.filter((meaning) => meaningMatches(word, meaning, filters));
   return inScope.length > 0 ? inScope : word.meanings;
 }
 
@@ -140,21 +166,21 @@ function hintFor(meanings: Meaning[], topics?: TopicId[]): TopicId | undefined {
   return topics?.find((topic) => meanings.some((meaning) => meaning.topics?.includes(topic)));
 }
 
-function forwardQuestion(word: Word, topics?: TopicId[]): QuizQuestion {
-  const meanings = meaningsInScope(word, topics);
+function forwardQuestion(word: Word, filters: Filters): QuizQuestion {
+  const meanings = meaningsInScope(word, filters);
   return {
     word,
     prompt: word.term,
     accepted: meanings.map((meaning) => meaning.text),
-    topicHint: meanings.length < word.meanings.length ? hintFor(meanings, topics) : undefined,
+    topicHint: meanings.length < word.meanings.length ? hintFor(meanings, filters.topics) : undefined,
     answerLanguage: word.targetLang,
     correctText: meanings.map((meaning) => meaning.text).join(' / '),
   };
 }
 
 /** Asks one translation only; every studied word with that translation is accepted. */
-function backwardQuestion(word: Word, vocabulary: Word[], topics?: TopicId[]): QuizQuestion {
-  const meaning = randomItem(meaningsInScope(word, topics));
+function backwardQuestion(word: Word, vocabulary: Word[], filters: Filters): QuizQuestion {
+  const meaning = randomItem(meaningsInScope(word, filters));
   const accepted = termsWithMeaning(vocabulary, meaning.text);
 
   return {
@@ -172,6 +198,16 @@ function backwardQuestion(word: Word, vocabulary: Word[], topics?: TopicId[]): Q
  * `vocabulary` is the whole language pair, used to accept synonyms.
  * In 'due' mode the most overdue words are chosen first when there are more than `count`.
  */
+/**
+ * The words one round asks, cut to the number of questions: random, except in 'due' mode
+ * where the most overdue come first. Shared by the written quiz and the choice exercises.
+ */
+export function buildOrderedPool(vocabulary: Word[], options: QuizOptions, today: DayKey = dayKey()): Word[] {
+  const pool = shuffle(quizPool(vocabulary, options, today)).filter((word) => word.meanings.length > 0);
+  const ordered = options.mode === 'due' ? pool.sort(compareByUrgency(today)) : pool;
+  return options.count > 0 ? ordered.slice(0, options.count) : ordered;
+}
+
 export function buildQuiz(vocabulary: Word[], options: QuizOptions, today: DayKey = dayKey()): QuizQuestion[] {
   const pool = shuffle(quizPool(vocabulary, options, today));
   const ordered = options.mode === 'due' ? pool.sort(compareByUrgency(today)) : pool;
@@ -190,8 +226,8 @@ export function buildQuiz(vocabulary: Word[], options: QuizOptions, today: DayKe
 
     const question =
       options.direction === 'forward'
-        ? forwardQuestion(word, options.topics)
-        : backwardQuestion(word, vocabulary, options.topics);
+        ? forwardQuestion(word, options)
+        : backwardQuestion(word, vocabulary, options);
 
     // Two words with the same translation would produce the same question twice
     if (!askedPrompts.has(normalizeText(question.prompt))) {

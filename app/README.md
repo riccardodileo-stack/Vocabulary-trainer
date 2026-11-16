@@ -16,12 +16,12 @@ Il README ha due parti:
 
 | Schermata | A cosa serve |
 |-----------|--------------|
-| **Home** | Data e saluto personalizzato, selettore delle lingue, contatori con simboli e fiamma della serie a 1, 10, 100 e 1.000 giorni. Seguono **Ripasso di oggi**, **+ Aggiungi parola** e **Parole del giorno**. |
-| **Dizionario** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti) e filtro **Errori** (solo le parole sbagliate, con i contatori errori/giuste), barra di "quanto la so" per ogni parola. Tocca una parola per vedere i progressi e modificarla. |
-| **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da imparare*, *tutte*, *errori*), con il tasto **Filtra** sotto: **categorie** (Informatica, Salute, Cibo…, anche più di una) e **tipo di parola** (sostantivi, verbi, aggettivi, altro), quante domande (10, 20, tutte o **Altro**: un numero a scelta da 1 a 200). |
+| **Home** | Data e saluto personalizzato, selettore delle lingue, contatori con simboli e fiamma della serie a 1, 10, 100 e 1.000 giorni (toccandola si apre **La tua serie**: ultimi 7 giorni e **salvataggi** 🛡️). Seguono **Ripasso di oggi**, **+ Aggiungi parola** e **Parole del giorno**. |
+| **Dizionario** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti) e filtro **Errori** (solo le parole sbagliate, con i contatori errori/giuste), barra di "quanto la so" per ogni parola, **tipo e categorie** sotto ogni parola e tasto **Filtra** (categorie, tipo di parola). Tocca una parola per vedere i progressi e modificarla. |
+| **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da imparare*, *tutte*, *errori*), con il tasto **Filtra** sotto: **categorie** (Informatica, Salute, Cibo…, anche più di una) e **tipo di parola** (sostantivi, verbi, aggettivi, altro), quante domande (10, 20, tutte o **Altro**: un numero a scelta da 1 a 200). Sotto, **Altri esercizi**: *Scelta multipla* e *Ascolta e scegli*, con le stesse parole e filtri. In ogni esercizio 🔊 legge la parola. |
 | **Sfide** | In arrivo (rimandata di proposito). |
 | **Utente** | Il tuo nome come titolo della pagina; immagine profilo (12 avatar illustrati o una foto) con accanto il nick (`@stefano`), lingua studiata e data di inizio; contatore amici, record di giorni di fila, **6 medaglie a 4 livelli** (bronzo, argento, oro, diamante), sezione amici con la pagina **Aggiungi amici** e il tuo **codice amico**. In alto a destra ⚙️ apre le Impostazioni. |
-| **Impostazioni** (⚙️ in Utente) | Il tema chiaro/scuro direttamente nella pagina, poi quattro categorie che si aprono da destra: **Lingue** (lingua studiata, lingua madre, livello delle parole del giorno, lingua dell'app), **Suoni**, **Notifiche** (promemoria e orario), **Backup**. Accanto a ogni categoria si vede il valore attuale (es. `🇬🇧 → 🇮🇹 · B1–B2`, `On`, `18:00`). |
+| **Impostazioni** (⚙️ in Utente) | Il tema chiaro/scuro direttamente nella pagina, poi cinque categorie che si aprono da destra: **Lingue** (lingua studiata, lingua madre, livello delle parole del giorno, lingua dell'app), **Suoni**, **Notifiche** (promemoria e orario), **Importa da elenco** (incolli "parola - traduzione" o scegli un CSV), **Backup**. Accanto a ogni categoria si vede il valore attuale (es. `🇬🇧 → 🇮🇹 · B1–B2`, `On`, `18:00`). |
 | **Lingue** (selettore 🇬🇧 → 🇮🇹 in Home o nel Dizionario) | Solo le scelte di studio: lingua studiata, lingua madre, livello delle parole del giorno. |
 
 ## Le scelte di design, in una riga ciascuna
@@ -56,10 +56,12 @@ Se il telefono non si collega (reti universitarie, firewall di Windows): `npx ex
 ```sh
 npm run typecheck   # controllo dei tipi (tsc)
 npm run lint        # stile del codice
-npm test            # test della logica (jest)
+npm test            # test della logica e delle schermate (jest)
 ```
 
-> ⚠️ Dopo aver scaricato queste modifiche serve **`npm install`**: sono stati aggiunti `expo-audio` (suoni), `expo-notifications` (promemoria) ed `expo-image-picker` (foto profilo), oltre a `jest`, `jest-expo` e `@jest/globals` per i test. Sono tutti inclusi in Expo Go: non serve una development build.
+> ⚠️ Dopo aver scaricato queste modifiche serve **`npm install`**: è stato aggiunto `expo-speech` (pronuncia) e `@testing-library/react-native` (test delle schermate); è stato tolto `expo-web-browser` (non serviva più). Tutto è incluso in Expo Go: non serve una development build.
+>
+> 📌 **Fai commit anche di `package-lock.json`**: nell'ultimo commit era vuoto. È il file che fa installare a tutti e due le stesse identiche versioni; ora è rigenerato e allineato a `package.json`.
 
 ## "Voglio…" → dove mettere le mani
 
@@ -75,6 +77,11 @@ npm test            # test della logica (jest)
 | cambiare quando una risposta è giusta / "quasi"           | `evaluateAnswer` in `src/domain/text.ts`                         |
 | cambiare quando una parola esce dagli "errori"            | `MISTAKE_CLEAR_STREAK` in `src/domain/quiz.ts`                   |
 | cambiare le opzioni "numero di domande"                   | `QUIZ_COUNTS` in `src/domain/quiz.ts`                            |
+| aggiungere un esercizio                                   | logica in `src/domain/`, schermata in `src/app/` (come `choice.tsx`), una `ExerciseCard` in `train/index.tsx` |
+| cambiare ogni quanti giorni si guadagna un salvataggio    | `DAYS_PER_SAVE` e `MAX_SAVES` in `src/domain/activity.ts`        |
+| cambiare voce o velocità della pronuncia                  | `VOICE_LANGUAGE` e `RATE` in `src/services/speech.ts`            |
+| cambiare quanto restano in memoria le risposte dei siti   | `MAX_AGE_MS` in `src/services/netCache.ts`                       |
+| accettare un altro modo di scrivere gli elenchi           | `SEPARATORS` in `src/domain/wordList.ts`                         |
 | aggiungere una lingua dell'interfaccia                    | nuovo `src/i18n/xx.ts` + `TRANSLATIONS` in `src/i18n/index.ts`   |
 | aggiungere una lingua da studiare                         | `src/domain/languages.ts` + una colonna in `wordBank.ts` + nomi in `en.ts`/`it.ts` |
 | aggiungere un campo alla parola                           | `src/domain/word.ts` + `version`/`migrate` in `src/store/wordStore.ts` |
@@ -130,9 +137,9 @@ Perché così:
 
 | Chiave AsyncStorage | Store | Contenuto | Versione |
 |---|---|---|---|
-| `words` | `wordStore` | tutte le parole di tutte le coppie | 5 |
+| `words` | `wordStore` | tutte le parole di tutte le coppie | 6 |
 | `settings` | `settingsStore` | tema, lingue, livello parole del giorno, suoni, promemoria (attivo e ora), ultime scelte del quiz (numero di domande, tematiche, tipi) | 1 |
-| `activity` | `activityStore` | giorni in cui ti sei allenato (max 400), record di giorni di fila, quiz perfetti | 2 |
+| `activity` | `activityStore` | giorni in cui ti sei allenato (max 2.000; da qui si calcolano serie e salvataggi), record di giorni di fila, quiz perfetti | 2 |
 | `daily` | `dailyStore` | parole del giorno di oggi per coppia + parole segnate "la so già" | 1 |
 | `achievements` | `achievementStore` | data in cui è stato raggiunto ogni livello di ogni medaglia | 1 |
 | `profile` | `profileStore` | nome, nick, email, avatar (illustrato o foto), codice amico, contatore amici, data di inizio | 3 |
@@ -243,11 +250,24 @@ File: `src/domain/quiz.ts`, `src/app/quiz.tsx` (nello stack principale, sopra le
 **Durante il quiz**: barra di avanzamento; *Non lo so* conta come errore; **Termina** (in alto) chiude il quiz e mostra il risultato delle sole domande risposte. Dopo la risposta compaiono le frasi di esempio della parola, con la parola in grassetto (e la traduzione in grassetto nella frase tradotta).
 **Risultati**: punteggio, elenco errori, **Rifai gli errori** (un nuovo giro solo su quelle parole), *Allenati ancora*.
 
+**Pronuncia** (`services/speech.ts`, `components/SpeakButton.tsx`): il tasto 🔊 usa la voce del telefono (`expo-speech`: gratis, offline, in Expo Go) nella lingua giusta, un po' più lenta del normale. È nella carta della domanda (quando si vede la parola studiata), accanto alla risposta dopo aver risposto e accanto al campo *Parola* del modulo. Sul web usa la voce del browser.
+
+### Altri esercizi
+
+File: `src/domain/choiceQuiz.ts`, `src/app/choice.tsx`, `components/ExerciseCard.tsx`. In Allenamento, sotto *Inizia*, la sezione **Altri esercizi** (per ora lì: la posizione definitiva è da decidere):
+
+| Esercizio | Come funziona |
+|---|---|
+| 🔤 **Scelta multipla** (`/choice?kind=choice`) | la parola e 4 risposte |
+| 🎧 **Ascolta e scegli** (`/choice?kind=listen`) | la parola si **sente** soltanto (tocca l'altoparlante per riascoltarla) e si sceglie cosa vuol dire; la parola scritta compare dopo la risposta. Sempre lingua studiata → traduzione |
+
+Usano le stesse parole, filtri, direzione e numero di domande scelti sopra (stessi parametri di `/quiz`). Le risposte sbagliate (`buildChoiceQuiz`) sono traduzioni di altre parole tue, prima quelle dello **stesso tipo** (un verbo fra verbi), mai un sinonimo della risposta giusta; se hai poche parole si pesca dalla lista integrata. Risposta giusta: verde e si passa da soli alla prossima dopo 0,9 s; sbagliata: rossa, si vede quella giusta e si prosegue con *Avanti*. Statistiche, serie e risultati come nel quiz scritto.
+
 Ogni risposta aggiorna subito le statistiche della parola e segna oggi come giorno di allenamento.
 
 ## 4 bis. Categorie (tematiche) e tipo di parola
 
-File: `domain/topics.ts`, `domain/topicClassifier.ts`, `domain/partOfSpeech.ts`, `services/wiktionary.ts`, `hooks/useWordKindCheck.ts`, `components/ChoiceChips.tsx`.
+File: `domain/topics.ts`, `domain/topicClassifier.ts`, `domain/partOfSpeech.ts`, `services/wiktionary.ts`, `hooks/useWordKindCheck.ts`, `components/ChoiceChips.tsx`, `components/MeaningTags.tsx`.
 
 **12 categorie**: 💻 Informatica · 🩺 Medicina e salute · 🍝 Cibo e cucina · ✈️ Viaggi e trasporti · 💼 Lavoro ed economia · 🏠 Casa e oggetti · 🌿 Natura e animali · 👪 Persone e famiglia · 🎓 Scuola e scienza · ⚽ Sport e tempo libero · 🎨 Arte e cultura · 😊 Emozioni e carattere.
 
@@ -260,16 +280,16 @@ File: `domain/topics.ts`, `domain/topicClassifier.ts`, `domain/partOfSpeech.ts`,
 4. Se la traduzione arriva da Wiktionary con un'etichetta di settore (*(medicine)*, *(tennis)*), la categoria arriva da lì (`topicsOfLabel`).
 Misure di qualità, come è stata addestrata e come rigenerarla: `design/topic-model/README.md`. Quando ci sarà il server, la stessa funzione può chiedere a lui (modello più grande) senza toccare il resto.
 
-**Nel modulo della parola**: ogni carta di traduzione ha la riga *Categorie: 🩺 Salute · Modifica* (`components/MeaningTopics.tsx`); *Modifica* apre le 12 categorie da spuntare. Finché non le tocchi seguono la traduzione mentre scrivi; scelte a mano (`meaning.topicsByUser`) non cambiano più, *Usa i suggerimenti* torna a quelle automatiche.
+**Nel modulo della parola**: ogni carta di traduzione ha la riga *Sostantivo · 🩺 Salute · Modifica* (`components/MeaningTags.tsx`); *Modifica* apre il tipo di parola e le 12 categorie da spuntare. Finché non le tocchi seguono la traduzione mentre scrivi; scelte a mano (`meaning.topicsByUser`) non cambiano più, *Usa i suggerimenti* torna a quelle automatiche.
 
-**Tipo di parola** (sostantivo, verbo, aggettivo, altro):
+**Tipo di parola** (sostantivo, verbo, aggettivo, altro) — **anche lui di ogni traduzione** (`meaning.partOfSpeech`): *stroke* = *ictus* è un sostantivo, = *accarezzare* un verbo. Il tipo della parola (`word.partOfSpeech`) è quello della prima traduzione. La versione 6 dei dati salvati porta il tipo dentro le traduzioni (uno scelto a mano va a tutte).
 - *stima offline* (`guessPartOfSpeech`): "to run" → verbo; "il libro", "das Haus" → sostantivo; traduzione all'infinito ("correre") → verbo; finali tipiche (*-ous/-oso* → aggettivo, *-tion/-zione* → sostantivo); senza indizi → sostantivo.
 - *Wiktionary* (`fetchPartOfSpeech`): chiede i tipi della parola e della sua prima traduzione e sceglie quello in comune (*boring* = sost./verbo/agg., *noioso* = agg./sost. → aggettivo).
-- `partOfSpeechSource` dice chi l'ha deciso: `guess` → `dictionary` → `user`. All'avvio `useWordKindCheck` controlla su Wiktionary, una alla volta e con calma (una ogni 0,4 s), le parole ancora `guess`; senza rete riprova al prossimo avvio. Una scelta fatta a mano non viene mai cambiata.
+- `partOfSpeechSource` dice chi l'ha deciso: `guess` → `dictionary` → `user`. All'avvio `useWordKindCheck` controlla su Wiktionary, una alla volta e con calma (una ogni 0,4 s), le traduzioni ancora `guess`; senza rete riprova al prossimo avvio. Una scelta fatta a mano non viene mai cambiata.
 
-**Tipo di parola nel modulo**: si compila da solo mentre scrivi (Wiktionary viene chiesto 0,8 s dopo l'ultimo tasto); se lo tocchi vale la tua scelta (`user`).
+**Tipo di parola nel modulo**: ogni traduzione ha il suo; arriva da Wiktionary se la scegli da *Cerca significati*, altrimenti è stimato; se lo tocchi vale la tua scelta (`user`).
 
-**Nel quiz** (Allenamento): sotto *Da imparare / Tutte / Errori* c'è il tasto **Filtra** (`components/FilterButton.tsx`; diventa verde con il numero di filtri attivi). Apre dal basso la finestra *Filtra le parole* (`app/quiz-filters.tsx`, *form sheet*) con due menu: **Categorie** e **Tipo di parola**, se ne possono scegliere più d'uno (*Tutte*/*Tutti* = nessun filtro). Accanto a ogni scelta c'è quante parole dà con le altre scelte attuali; una parola entra se **almeno una delle sue traduzioni** ha una delle categorie scelte e se è di **uno** dei tipi scelti (`matchesFilters` in `domain/quiz.ts`). Il quiz chiede **solo le traduzioni di quelle categorie** (`meaningsInScope`): in un quiz di Salute *stroke* vuole *ictus*, non *colpo*, e sotto la parola compare *🩺 Medicina e salute* per dire quale significato si chiede. Accanto al tasto compare il riassunto (`🍝 Cibo · 🌿 Natura · Sostantivi`) con *Azzera*. Le scelte restano salvate. Nella rotta: `/quiz?…&topics=tech,food&kinds=verb`.
+**Nel quiz** (Allenamento): sotto *Da imparare / Tutte / Errori* c'è il tasto **Filtra** (`components/FilterButton.tsx`; diventa verde con il numero di filtri attivi). Apre dal basso la finestra *Filtra le parole* (`app/quiz-filters.tsx`, *form sheet*) con due menu: **Categorie** e **Tipo di parola**, se ne possono scegliere più d'uno (*Tutte*/*Tutti* = nessun filtro). Accanto a ogni scelta c'è quante parole dà con le altre scelte attuali; una parola entra se **almeno una delle sue traduzioni** ha una delle categorie scelte ed è di **uno** dei tipi scelti (`matchesFilters` in `domain/quiz.ts`). Il quiz chiede **solo le traduzioni di quelle categorie** (`meaningsInScope`): in un quiz di Salute *stroke* vuole *ictus*, non *colpo*, e **sopra la carta della domanda** compare l'etichetta *🩺 Medicina e salute* per dire quale significato si chiede. Accanto al tasto i filtri attivi sono etichette con ✕ per toglierli uno alla volta (`components/FilterSummary.tsx`). Le scelte restano salvate. Tipo e categorie contano **per traduzione**: con *Verbi* *stroke* chiede *accarezzare*. Nella rotta: `/quiz?…&topics=tech,food&kinds=verb`.
 
 ## 5. Come viene corretta una risposta
 
@@ -290,23 +310,32 @@ File: `src/domain/text.ts` → `evaluateAnswer(risposta, accettate, lingua)` res
 ## 6. Serie di giorni 🔥
 
 File: `src/domain/activity.ts`, `src/store/activityStore.ts`.
-Un giorno conta se hai risposto ad almeno una domanda. La serie è il numero di giorni consecutivi fino a oggi; **non si azzera finché oggi non è finito** (se ti sei allenato ieri e oggi non ancora, la serie resta).
+Un giorno conta se hai risposto ad almeno una domanda. La serie è il numero di giorni di allenamento di fila fino a oggi; **non si azzera finché oggi non è finito** (se ti sei allenato ieri e oggi non ancora, la serie resta).
+
+**Salvataggi 🛡️** (`streakStatus`): ogni **7 giorni di fila** se ne guadagna uno, se ne tengono al massimo **2**. Se salti un giorno ne viene usato uno da solo e la serie continua (il giorno saltato non aggiunge 1 alla serie, ma non la interrompe). Se i giorni saltati sono più dei salvataggi, la serie riparte da 0 e i salvataggi restano. Non c'è niente di nuovo da salvare: serie, salvataggi e giorni salvati si ricalcolano ogni volta dai giorni di allenamento, quindi valgono anche per le serie passate (il record tiene conto dei salvataggi).
+
+In Home, accanto alla fiamma, c'è uno 🛡️ per ogni salvataggio disponibile; toccando la serie sale dal basso **La tua serie** (`src/app/streak.tsx`): gli ultimi 7 giorni (✓ allenamento, 🛡️ giorno salvato, cerchio tratteggiato = oggi ancora da fare), i salvataggi con la barra verso il prossimo, il record.
 
 ## 7. Dizionario: lista, dettaglio, esempi
 
-- **Lista** (`words/index.tsx`): `FlatList` virtualizzata (fluida con centinaia di parole), ricerca su parola/traduzioni/tag, ordinamento *A–Z* e *Recenti*. **Errori** è anche un filtro: mostra solo le parole sbagliate almeno una volta (`stats.wrong > 0`, anche se poi corrette), dalla più sbagliata, con i contatori *N errori* e *N giuste*; in alto il numero di parole sbagliate. Quando cambia ordine o filtro le righe scivolano al nuovo posto. Ogni riga mostra la barra a 5 segmenti della scatola Leitner.
+- **Lista** (`words/index.tsx`): `FlatList` virtualizzata (fluida con centinaia di parole), ricerca su parola/traduzioni/tag, ordinamento *A–Z* e *Recenti*. Sotto, il tasto **Filtra** apre la stessa finestra dell'Allenamento (`/quiz-filters?target=words`) per vedere solo certe categorie o tipi di parola; questi filtri valgono finché l'app è aperta (`store/wordFilterStore.ts`, non salvato) e sono separati da quelli del quiz. Ogni riga mostra tipo e categorie (*Sostantivo · 🩺 Salute*). **Errori** è anche un filtro: mostra solo le parole sbagliate almeno una volta (`stats.wrong > 0`, anche se poi corrette), dalla più sbagliata, con i contatori *N errori* e *N giuste*; in alto il numero di parole sbagliate. Quando cambia ordine o filtro le righe scivolano al nuovo posto. Ogni riga mostra la barra a 5 segmenti della scatola Leitner.
 - **Dettaglio** (`words/[id].tsx`): card **Progressi** (giuste/sbagliate, prossimo ripasso: oggi / domani / tra N giorni) + modulo di modifica.
 - **Nuova parola**: niente duplicati nella stessa coppia (confronto senza maiuscole/spazi).
 - **Cerca significati** (sotto il campo *Parola*, `components/MeaningFinder.tsx`): prima chiede a **Wiktionary** le traduzioni **divise per senso** (`domain/wiktionarySenses.ts`, `fetchSenses` in `services/wiktionary.ts`): per una parola inglese legge le tabelle *Translations* (una per senso: *stroke* → (act of hitting) colpo · (swimming) bracciata · (loss of brain function) ictus…), per una parola di un'altra lingua tradotta in inglese legge le definizioni. Segue le forme (*barracks* → *barrack*) e le sottopagine delle traduzioni (*run*). I sensi sono **ordinati dal più comune**: Wiktionary non lo dice, quindi si stima da in quante lingue è tradotto ogni senso (i sensi d'uso quotidiano sono tradotti in decine di lingue, quelli rari in poche: *stroke* → accarezzare 76, ictus 48, colpo 31… capovoga 2); dentro un senso le parole singole vengono prima delle espressioni (*ictus* prima di *accidente cerebrovascolare*). Mostra i primi 5 sensi con tipo di parola e spiegazione (in inglese), *Mostra altri N significati* per gli altri. Se Wiktionary non ha nulla (o nessuna delle due lingue è l'inglese) chiede le traduzioni a [MyMemory](https://mymemory.translated.net) (memoria di traduzione gratuita, senza account; limite anonimo ~5000 caratteri al giorno per dispositivo) e le mostra come chip. Toccandone una va nel primo campo traduzione vuoto, o in una traduzione nuova; quelle già presenti hanno ✓. `domain/meanings.ts` (`pickMeanings`) tiene solo le voci per quella parola esatta, toglie duplicati, la parola non tradotta e le frasi lunghe, e ordina per affidabilità (max 6); `services/meanings.ts` fa la chiamata. Per cambiare fonte basta riscrivere `fetchMeanings`.
 - **Frasi di esempio**: da [Tatoeba](https://tatoeba.org) (CC BY), al massimo 3, con traduzione nella lingua madre; ogni frase aggiunta va sotto la traduzione che contiene.
 - **Parola in grassetto negli esempi** (`domain/highlight.ts`, componente `HighlightedText`): nella frase la parola studiata, nella traduzione i suoi significati. Trova anche altre forme (*noioso → noiose*, *run → running*, *try → tries*) senza prendere parole diverse (*run* non evidenzia *runway*); ignora maiuscole, accenti e l'articolo o il "to" iniziale; una parola di più termini (*give up*) è in grassetto solo dove compare intera.
 - Niente più link a WordReference e Reverso: i significati e gli esempi si vedono direttamente nell'app.
+- **Memoria delle risposte dei siti** (`services/netCache.ts`): le risposte di Wiktionary, MyMemory e Tatoeba restano salvate 30 giorni (le ultime 400): cercare di nuovo la stessa parola è immediato, funziona senza rete e non consuma il limite giornaliero di MyMemory. Se la rete non va si usa anche una risposta scaduta.
 
 ## 8. Backup
 
 File: `src/domain/backup.ts`, `src/services/backupFiles.ts`.
 - **Esporta**: file JSON `{ app, version: 2, exportedAt, words }` condiviso col foglio di condivisione (File, AirDrop, mail…). Include statistiche, livello e date di ripasso.
 - **Importa**: accetta il formato dell'app e quello della **vecchia PWA** (`{ english, italian }`, importato come Inglese → Italiano). Una parola già presente non viene duplicata: si aggiungono solo le traduzioni mancanti.
+
+### Importare da un elenco
+
+File: `src/domain/wordList.ts`, `src/app/settings/import-list.tsx` (Impostazioni → *Importa da elenco*). Si incolla un elenco o si sceglie un file di testo/CSV, una parola per riga: `stroke - colpo, ictus`. Tra parola e traduzione vanno bene ` - `, `–`, `=`, `:`, `;`, tabulazione o virgola (il primo trovato, in quest'ordine: `SEPARATORS`); più traduzioni si separano con virgola o punto e virgola. Puntini e numeri d'elenco, righe vuote e righe che iniziano con `#` sono ignorati; la stessa parola scritta due volte diventa una sola. Mentre scrivi vedi l'**anteprima** e le righe senza traduzione. Le parole entrano nella coppia di lingue attiva, con tipo e categorie assegnati in automatico come per ogni parola nuova, e senza duplicati (stessa regola del backup). Massimo 2.000 righe per volta.
 
 ## 9. Utente: profilo, medaglie, amici
 
@@ -354,6 +383,7 @@ File: `src/app/settings/`. Le impostazioni hanno una loro navigazione dentro la 
 | `languages.tsx` | lingua studiata, lingua madre, livello delle parole del giorno (`components/StudySettings.tsx`, lo stesso della finestra Lingue della Home) e lingua dell'app |
 | `sounds.tsx` | suoni del quiz (pensata per accogliere altre opzioni audio) |
 | `notifications.tsx` | promemoria giornaliero e orario |
+| `import-list.tsx` | importa parole da un elenco incollato o da un file di testo/CSV |
 | `backup.tsx` | esporta e importa |
 
 "Fine" chiude tutta la finestra (è la prima pagina del suo stack, quindi tornare indietro la chiude).
@@ -362,7 +392,12 @@ File: `src/app/settings/`. Le impostazioni hanno una loro navigazione dentro la 
 
 **Suoni** (`services/sounds.ts`, file in `assets/sounds/`): un suono breve per risposta giusta o "quasi", uno per risposta sbagliata, una piccola fanfara a fine quiz. Sono toni sintetici generati apposta, quindi senza problemi di licenza. Rispettano l'interruttore silenzioso del telefono, si mescolano con la musica che stai ascoltando e si spengono in Impostazioni. Quando li riattivi senti subito un esempio.
 
-*Ritardo*: caricare un suono e preparare l'audio richiede un attimo. Per questo `preloadSounds()` li carica quando si apre il quiz, e `playSound()` non aspetta nulla prima di partire (il riavvolgimento all'inizio non viene atteso).
+*Perché partono subito e sempre* (prima a volte erano in ritardo o mancavano):
+- **sessione audio attiva per tutto il quiz**: le schermate che suonano chiamano `useEffect(soundsForScreen, [])`, che carica i suoni e accende l'audio all'apertura e lo spegne alla chiusura. Prima iOS spegneva l'audio dopo ogni suono e lo riaccendeva al successivo: l'inizio del suono arrivava tardi o veniva tagliato;
+- **riavvolti appena finiscono**: quando un suono finisce torna subito all'inizio, così `playSound()` lo fa partire senza aspettare. Prima il riavvolgimento era chiesto un attimo prima di suonare, senza aspettarlo: su iOS un suono rimasto alla fine non suona;
+- **due lettori per suono**: se lo stesso suono serve mentre sta ancora suonando (due risposte veloci), parte il secondo invece di perdersi.
+
+Se un suono "non si sente", controlla l'interruttore silenzioso: con il telefono in silenzioso i suoni sono muti di proposito (`playsInSilentMode: false`).
 
 **Promemoria** (`services/reminders.ts`, `hooks/useReminderSync.ts`): una notifica locale ogni giorno all'ora scelta (8:00, 13:00, 18:00 o 21:00). Locale vuol dire che la programma il telefono stesso: nessun server, funziona offline e in Expo Go.
 - Il permesso viene chiesto **solo quando attivi l'interruttore**, mai all'avvio. Se lo neghi, l'interruttore torna spento e un messaggio spiega come riattivarlo dalle impostazioni del telefono.
@@ -442,6 +477,10 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 | `MasteryMeter` | 5 segmenti = scatola Leitner della parola |
 | `Screen` / `ListScreen` | pagina scorrevole / lista lunga virtualizzata, con swipe tra le tab |
 | `HighlightedText` | testo con alcune parole in grassetto (la parola studiata negli esempi) |
+| `SpeakButton` | 🔊 legge una parola con la voce del telefono; pulsa mentre parla |
+| `FilterButton` / `FilterSummary` | tasto *Filtra* con il numero di filtri; con `FilterSummary` anche le etichette dei filtri attivi, ognuna con ✕ |
+| `ExerciseCard` | riga grande con icona, titolo e descrizione per aprire un esercizio |
+| `MeaningTags` | tipo di parola e categorie di una traduzione, con *Modifica* |
 | `DailyWordsCard`, `WordStatsCard`, `WordForm`, `MeaningFinder`, `ExampleFinder`, `LanguagePairChip` | blocchi specifici dell'app |
 
 ### Accessibilità
@@ -454,8 +493,9 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 
 ## 13. Test
 
-`npm test` esegue i test in `src/domain/__tests__/` (55 test): correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello), serie di giorni e record, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, formato del codice amico.
-Sono test della logica pura: girano in un secondo, senza telefono.
+`npm test` esegue 106 test. Quelli in `src/domain/__tests__/` sono test della logica pura: correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello), serie di giorni, salvataggi e record, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, formato del codice amico, categorie e tipo per traduzione, sensi di Wiktionary, domande a scelta multipla, lettura degli elenchi di parole. Girano in un paio di secondi, senza telefono.
+
+**Test delle schermate** (`src/__tests__/`, con `@testing-library/react-native`): `choiceScreen.test.tsx` apre l'esercizio a scelta multipla, risponde a tutte le domande e controlla che le statistiche siano salvate e che *Fine* chiuda la schermata. Navigazione, suoni e voce sono sostituiti da finti; le animazioni da `src/__tests__/fakes/reanimated.tsx` (viste normali). Per provare un'altra schermata si copia quel file: i test stanno **fuori** da `src/app/`, dove ogni file sarebbe una pagina.
 
 ## 14. Limiti noti e prossimi passi
 
@@ -466,4 +506,6 @@ Sono test della logica pura: girano in un secondo, senza telefono.
 - **Categorie automatiche**: con la soglia severa, sulle parole difficili di prova 9 categorie proposte su 10 sono giuste, ma ne trova circa metà (dettagli in `design/topic-model/README.md`): molte traduzioni restano senza categoria e si spuntano a mano. Con il server si può usare un modello più grande.
 - **Wiktionary**: le spiegazioni dei sensi sono in inglese; per le coppie senza inglese (es. 🇪🇸→🇮🇹) restano le traduzioni di MyMemory, non divise per senso.
 - **Tipo di parola**: senza connessione resta la stima offline, che sbaglia spesso con gli aggettivi senza finale tipica (*big*, *tired* → sostantivo). Si corregge da sola appena c'è rete (Wiktionary).
+- **Pronuncia**: dipende dalle voci installate sul telefono (su iPhone: Impostazioni → Accessibilità → Contenuto letto ad alta voce → Voci, per scaricarne di migliori). Con il telefono in silenzioso iOS può non far sentire la voce.
+- **Altri esercizi**: la sezione in Allenamento è provvisoria; da decidere dove metterla.
 - **Notifiche push** (mandate da un server, per esempio "un amico ti ha sfidato"): richiedono una development build. Il promemoria giornaliero locale invece funziona già.

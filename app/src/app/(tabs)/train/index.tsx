@@ -4,13 +4,14 @@
 
 import { Stack, router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Appear } from '@/components/Appear';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { FilterButton } from '@/components/FilterButton';
+import { ExerciseCard } from '@/components/ExerciseCard';
+import { FilterSummary } from '@/components/FilterSummary';
 import { NumberStepper } from '@/components/NumberStepper';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
@@ -41,12 +42,6 @@ export default function TrainScreen() {
   const setKinds = useSettingsStore((state) => state.setQuizPartsOfSpeech);
 
   const availableCount = quizPool(words, { mode, topics, partsOfSpeech: kinds }).length;
-  const activeFilters = topics.length + kinds.length;
-  // "💻 Informatica · 🍝 Cibo · Verbi": what the filters keep, shown under the choice
-  const filterSummary = [
-    ...topics.map((topic) => `${TOPIC_ICONS[topic]} ${t.topicsShort[topic]}`),
-    ...kinds.map((kind) => t.partsOfSpeechPlural[kind]),
-  ].join(' · ');
   const openFilters = () => router.push({ pathname: '/quiz-filters', params: { mode } });
   const source = LANGUAGES[pair.source].flag;
   const target = LANGUAGES[pair.target].flag;
@@ -57,11 +52,11 @@ export default function TrainScreen() {
     mistakes: t.train.modeMistakesHint,
   };
 
-  const start = () =>
-    router.push({
-      pathname: '/quiz',
-      params: { direction, mode, count, topics: topics.join(','), kinds: kinds.join(',') },
-    });
+  const exerciseParams = { direction, mode, count, topics: topics.join(','), kinds: kinds.join(',') };
+  const start = () => router.push({ pathname: '/quiz', params: exerciseParams });
+  /** The other exercises use the same choices made above (words, filters, number of questions). */
+  const startChoice = (kind: 'choice' | 'listen') =>
+    router.push({ pathname: '/choice', params: { ...exerciseParams, kind } });
 
   return (
     <>
@@ -94,31 +89,25 @@ export default function TrainScreen() {
               {modeHints[mode]}
             </AppText>
           </Appear>
-          {/* Under the three choices: the filters and, when some are on, what they keep */}
-          <View style={styles.filterRow}>
-            <FilterButton
-              label={t.filters.button}
-              active={activeFilters}
-              onPress={openFilters}
-              accessibilityLabel={t.filters.buttonAccessibility(activeFilters)}
-            />
-            {activeFilters > 0 ? (
-              <Appear style={styles.summary}>
-                <AppText variant="small" color="primaryStrong" style={styles.flex} numberOfLines={2}>
-                  {filterSummary}
-                </AppText>
-                <Button
-                  label={t.filters.reset}
-                  tone="secondary"
-                  size="sm"
-                  onPress={() => {
-                    setTopics([]);
-                    setKinds([]);
-                  }}
-                />
-              </Appear>
-            ) : null}
-          </View>
+          {/* Under the three choices: the filter button and the active filters, removable one by one */}
+          <FilterSummary
+            label={t.filters.button}
+            accessibilityLabel={t.filters.buttonAccessibility(topics.length + kinds.length)}
+            chips={[
+              ...topics.map((topic) => ({
+                key: topic,
+                label: `${TOPIC_ICONS[topic]} ${t.topicsShort[topic]}`,
+                onRemove: () => setTopics(topics.filter((other) => other !== topic)),
+              })),
+              ...kinds.map((kind) => ({
+                key: kind,
+                label: t.partsOfSpeechPlural[kind],
+                onRemove: () => setKinds(kinds.filter((other) => other !== kind)),
+              })),
+            ]}
+            removeLabel={t.filters.remove}
+            onOpen={openFilters}
+          />
         </Section>
 
         <Section title={t.train.count}>
@@ -154,6 +143,24 @@ export default function TrainScreen() {
           </AppText>
           <Button label={t.train.start} onPress={start} disabled={availableCount === 0} />
         </Card>
+
+        {/* A section of its own for the exercises that aren't the written quiz */}
+        <Section title={t.exercises.title} hint={t.exercises.hint}>
+          <ExerciseCard
+            icon="🔤"
+            title={t.exercises.choiceTitle}
+            description={t.exercises.choiceDescription}
+            onPress={() => startChoice('choice')}
+            disabled={availableCount === 0}
+          />
+          <ExerciseCard
+            icon="🎧"
+            title={t.exercises.listenTitle}
+            description={t.exercises.listenDescription}
+            onPress={() => startChoice('listen')}
+            disabled={availableCount === 0}
+          />
+        </Section>
       </Screen>
     </>
   );
@@ -162,19 +169,5 @@ export default function TrainScreen() {
 const styles = StyleSheet.create({
   hint: {
     marginLeft: spacing.xs,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  flex: {
-    flex: 1,
-  },
-  summary: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
   },
 });

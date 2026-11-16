@@ -23,40 +23,26 @@ import { Pill } from '@/components/Pill';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
+import { SpeakButton } from '@/components/SpeakButton';
 import { TextField, type TextFieldRef } from '@/components/TextField';
 import { splitExample } from '@/domain/highlight';
-import { parsePartOfSpeechList } from '@/domain/partOfSpeech';
-import { parseTopicList, TOPIC_ICONS } from '@/domain/topics';
-import { buildQuiz, QUIZ_MODES, type QuizMode, type QuizOptions, type QuizQuestion } from '@/domain/quiz';
+import { TOPIC_ICONS } from '@/domain/topics';
+import { buildQuiz, quizOptionsFromParams, type QuizOptions, type QuizParams, type QuizQuestion } from '@/domain/quiz';
 import { evaluateAnswer, type AnswerVerdict } from '@/domain/text';
 import { meaningsToText } from '@/domain/word';
 import { useFocusAfterTransition } from '@/hooks/useFocusAfterTransition';
 import { useT } from '@/i18n';
-import { playSound, preloadSounds } from '@/services/sounds';
+import { playSound, soundsForScreen } from '@/services/sounds';
 import { useActivityStore } from '@/store/activityStore';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordStore, useWordsOfPair } from '@/store/wordStore';
 import { spacing } from '@/theme';
 
-type QuizParams = { direction?: string; mode?: string; count?: string; ids?: string; topics?: string; kinds?: string };
-
 type Mistake = { question: QuizQuestion; given: string };
-
-function optionsFromParams(params: QuizParams): QuizOptions {
-  const ids = params.ids?.split(',').filter(Boolean);
-  return {
-    direction: params.direction === 'backward' ? 'backward' : 'forward',
-    mode: QUIZ_MODES.includes(params.mode as QuizMode) ? (params.mode as QuizMode) : 'all',
-    count: Number(params.count) || 0,
-    wordIds: ids && ids.length > 0 ? ids : undefined,
-    topics: parseTopicList(params.topics),
-    partsOfSpeech: parsePartOfSpeechList(params.kinds),
-  };
-}
 
 export default function QuizScreen() {
   const t = useT();
-  const options = optionsFromParams(useLocalSearchParams<QuizParams>());
+  const options = quizOptionsFromParams(useLocalSearchParams<QuizParams>());
   const pair = useActivePair();
   const words = useWordsOfPair(pair);
   const recordAnswer = useWordStore((state) => state.recordAnswer);
@@ -64,7 +50,8 @@ export default function QuizScreen() {
   const inputRef = useRef<TextFieldRef>(null);
   useFocusAfterTransition(inputRef);
   // Sounds ready before the first answer, so they play without delay
-  useEffect(() => preloadSounds(), []);
+  // Sounds loaded and audio session on while the screen is open
+  useEffect(soundsForScreen, []);
 
   const { height: windowHeight } = useWindowDimensions();
   const [keyboardFrame, setKeyboardFrame] = useState(() => (
@@ -248,21 +235,29 @@ export default function QuizScreen() {
           accessibilityLabel={t.quiz.progressAccessibility(index + 1, questions.length)}
         />
 
+        {/* With a topic filter: which meaning is asked ("stroke" in Health = "ictus").
+            A small label at the top, away from the word, so it reads as context and not as a hint */}
+        {question.topicHint ? (
+          <Appear key={`hint-${index}`} style={styles.hintRow}>
+            <Pill label={`${TOPIC_ICONS[question.topicHint]} ${t.topics[question.topicHint]}`} tone="primary" />
+          </Appear>
+        ) : null}
+
         {/* Keyed by the question: each new one slides in from the right */}
         <Appear key={index} from="right" exit={false}>
           <Card style={styles.questionCard}>
+            {/* The studied word can be listened to; a translation in one's own language needs no voice */}
+            {options.direction === 'forward' ? (
+              <View style={styles.speak}>
+                <SpeakButton text={question.prompt} language={pair.source} />
+              </View>
+            ) : null}
             <AppText variant="hero" style={styles.centered} accessibilityRole="header">
               {question.prompt}
             </AppText>
             {question.note ? (
               <AppText color="textMuted" style={styles.centered}>
                 ({question.note})
-              </AppText>
-            ) : null}
-            {/* With a topic filter: which meaning is asked ("stroke" in Health = "ictus") */}
-            {question.topicHint ? (
-              <AppText color="textMuted" style={styles.centered}>
-                {TOPIC_ICONS[question.topicHint]} {t.topics[question.topicHint]}
               </AppText>
             ) : null}
           </Card>
@@ -298,9 +293,13 @@ export default function QuizScreen() {
                   {t.quiz.almostHint} <AppText variant="bodyBold">{question.correctText}</AppText>
                 </AppText>
               ) : null}
-              <AppText color="textMuted">
-                {question.word.term} → {meaningsToText(question.word)}
-              </AppText>
+              <View style={styles.answerRow}>
+                <AppText color="textMuted" style={styles.flex}>
+                  {question.word.term} → {meaningsToText(question.word)}
+                </AppText>
+                {/* After the answer the word can always be heard, in both directions */}
+                <SpeakButton text={question.word.term} language={pair.source} />
+              </View>
             </Card>
           </Appear>
         ) : null}
@@ -346,6 +345,22 @@ export default function QuizScreen() {
 }
 
 const styles = StyleSheet.create({
+  answerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  flex: {
+    flex: 1,
+  },
+  hintRow: {
+    alignItems: 'center',
+  },
+  speak: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+  },
   centered: {
     textAlign: 'center',
   },

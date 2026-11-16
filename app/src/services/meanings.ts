@@ -5,6 +5,8 @@
 import type { LanguagePair } from '@/domain/languages';
 import { pickMeanings, type TranslationMatch } from '@/domain/meanings';
 
+import { cached } from './netCache';
+
 const API_URL = 'https://api.mymemory.translated.net/get';
 
 type MyMemoryResponse = {
@@ -14,7 +16,11 @@ type MyMemoryResponse = {
 };
 
 /** The meanings of `term` in the native language, best first (empty if none found). */
-export async function fetchMeanings({ source, target }: LanguagePair, term: string): Promise<string[]> {
+export async function fetchMeanings(pair: LanguagePair, term: string): Promise<string[]> {
+  return cached(`mm:${pair.source}:${pair.target}:${term.trim().toLowerCase()}`, () => loadMeanings(pair, term));
+}
+
+async function loadMeanings({ source, target }: LanguagePair, term: string): Promise<string[]> {
   const params = new URLSearchParams({ q: term.trim(), langpair: `${source}|${target}` });
 
   const response = await fetch(`${API_URL}?${params}`);

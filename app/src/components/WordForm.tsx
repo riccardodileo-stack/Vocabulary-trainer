@@ -1,42 +1,44 @@
 // Form shared by the "new word" and "edit word" screens.
-// Each meaning has its own categories and the word has a kind; both are filled in by themselves
-// while typing (topic network, offline rules, Wiktionary); once the user touches them, their
-// choice wins.
+// Each meaning has its own kind of word and categories; they are filled in by themselves while
+// typing (offline rules, topic network) or come with the meaning from Wiktionary ("Find
+// meanings"); once the user touches them, their choice wins.
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { LanguagePair } from '@/domain/languages';
-import { guessPartOfSpeech, PARTS_OF_SPEECH, type PartOfSpeech } from '@/domain/partOfSpeech';
+import { guessPartOfSpeech, type PartOfSpeech } from '@/domain/partOfSpeech';
 import { normalizeText } from '@/domain/text';
 import { suggestMeaningTopics } from '@/domain/topicClassifier';
 import type { TopicId } from '@/domain/topics';
-import type { NewWordInput, Word } from '@/domain/word';
+import type { NewWordInput, PartOfSpeechSource, Word } from '@/domain/word';
 import { useFocusAfterTransition } from '@/hooks/useFocusAfterTransition';
 import { useT } from '@/i18n';
 import type { ExampleSentence } from '@/services/tatoeba';
-import { fetchPartOfSpeech } from '@/services/wiktionary';
 import { spacing } from '@/theme';
 
 import { AppText } from './AppText';
 import { Button } from './Button';
 import { Card } from './Card';
-import { ChoiceChips } from './ChoiceChips';
 import { ExampleFinder } from './ExampleFinder';
 import { MeaningFinder } from './MeaningFinder';
-import { MeaningTopics } from './MeaningTopics';
+import { MeaningTags } from './MeaningTags';
 import { Section } from './Section';
+import { SpeakButton } from './SpeakButton';
 import { TextField, type TextFieldRef } from './TextField';
 
 type MeaningDraft = {
   text: string;
   note: string;
   examples: string;
-  /** Topics given to this meaning (by the user, by Wiktionary or saved before). */
-  topics: TopicId[];
-  /** The translation `topics` was decided for: when the text changes, suggestions take over. */
-  topicsFor: string;
+  /** The translation the given topics / kind below were decided for (saved word, Wiktionary). */
+  givenFor: string;
+  /** Topics given to this meaning; null = none given, follow the suggestions. */
+  topics: TopicId[] | null;
   topicsByUser: boolean;
+  /** Kind given to this meaning; null = none given, follow the offline guess. */
+  kind: PartOfSpeech | null;
+  kindSource: PartOfSpeechSource;
 };
 
 type WordFormProps = {
@@ -48,7 +50,16 @@ type WordFormProps = {
   onDelete?: () => void;
 };
 
-const EMPTY_MEANING: MeaningDraft = { text: '', note: '', examples: '', topics: [], topicsFor: '', topicsByUser: false };
+const EMPTY_MEANING: MeaningDraft = {
+  text: '',
+  note: '',
+  examples: '',
+  givenFor: '',
+  topics: null,
+  topicsByUser: false,
+  kind: null,
+  kindSource: 'guess',
+};
 
 function draftsFromWord(word: Word | undefined): MeaningDraft[] {
   if (!word || word.meanings.length === 0) {
@@ -59,50 +70,59 @@ function draftsFromWord(word: Word | undefined): MeaningDraft[] {
     text: meaning.text,
     note: meaning.note ?? '',
     examples: meaning.examples.join('\n'),
-    topics: meaning.topics ?? [],
-    topicsFor: meaning.topics ? meaning.text.trim() : '',
+    givenFor: meaning.text.trim(),
+    topics: meaning.topics ?? null,
     topicsByUser: meaning.topicsByUser === true,
+    kind: meaning.partOfSpeech ?? null,
+    kindSource: meaning.partOfSpeechSource ?? 'guess',
   }));
 }
 
-/**
- * Topics shown for a meaning: the user's choice; the ones given for this very translation
- * (Wiktionary, saved word); otherwise the network's suggestion for the current text.
- */
+/** What was given (saved, from Wiktionary) still holds while the translation is the same. */
+function stillGiven(draft: MeaningDraft): boolean {
+  return draft.givenFor !== '' && draft.givenFor === draft.text.trim();
+}
+
+/** Topics shown for a meaning: the user's choice, the given ones, otherwise the network's suggestion. */
 function draftTopics(draft: MeaningDraft, term: string, pair: LanguagePair, onlyMeaning: boolean): TopicId[] {
-  if (draft.topicsByUser || (draft.topicsFor && draft.topicsFor === draft.text.trim())) {
+  if (draft.topics && (draft.topicsByUser || stillGiven(draft))) {
     return draft.topics;
   }
   return draft.text.trim() ? suggestMeaningTopics(term, draft.text, pair, onlyMeaning) : [];
+}
+
+/** Kind shown for a meaning, and who decided it. A guess already checked on Wiktionary stays "checked". */
+function draftKind(draft: MeaningDraft, term: string, pair: LanguagePair): { kind: PartOfSpeech; source: PartOfSpeechSource } {
+  if (draft.kind && (draft.kindSource === 'user' || (stillGiven(draft) && draft.kindSource !== 'guess'))) {
+    return { kind: draft.kind, source: draft.kindSource };
+  }
+  return { kind: guessPartOfSpeech(term, draft.text.trim() ? [draft.text] : [], pair), source: 'guess' };
 }
 
 function inputFromDrafts(term: string, drafts: MeaningDraft[], tags: string, pair: LanguagePair): NewWordInput {
   const filled = drafts.filter((draft) => draft.text.trim());
   return {
     term: term.trim(),
-    meanings: filled.map((draft) => ({
-      text: draft.text.trim(),
-      note: draft.note.trim() || undefined,
-      examples: draft.examples
-        .split('\n')
-        .map((example) => example.trim())
-        .filter(Boolean),
-      topics: draftTopics(draft, term, pair, filled.length === 1),
-      topicsByUser: draft.topicsByUser || undefined,
-    })),
+    meanings: filled.map((draft) => {
+      const { kind, source } = draftKind(draft, term, pair);
+      return {
+        text: draft.text.trim(),
+        note: draft.note.trim() || undefined,
+        examples: draft.examples
+          .split('\n')
+          .map((example) => example.trim())
+          .filter(Boolean),
+        topics: draftTopics(draft, term, pair, filled.length === 1),
+        topicsByUser: draft.topicsByUser || undefined,
+        partOfSpeech: kind,
+        partOfSpeechSource: source,
+      };
+    }),
     tags: tags
       .split(',')
       .map((tag) => tag.trim())
       .filter(Boolean),
   };
-}
-
-/** Wait after the last key before asking Wiktionary. */
-const DICTIONARY_DELAY_MS = 800;
-
-/** What a Wiktionary answer is about: the word and its first translation. */
-function lookupKey(term: string, meanings: string[]): string {
-  return `${normalizeText(term)}|${normalizeText(meanings[0] ?? '')}`;
 }
 
 /** The translation the sentence uses, so the example goes under the right meaning. */
@@ -119,22 +139,6 @@ export function WordForm({ pair, initialWord, autoFocus = true, onSave, onDelete
   const [tags, setTags] = useState(initialWord?.tags.join(', ') ?? '');
   const [error, setError] = useState<string | null>(null);
   const termRef = useRef<TextFieldRef>(null);
-
-  const [chosenKind, setChosenKind] = useState<PartOfSpeech | null>(
-    initialWord?.partOfSpeechSource === 'user' ? initialWord.partOfSpeech : null
-  );
-  // Last Wiktionary answer and the word/translation it was for
-  const [dictionaryKind, setDictionaryKind] = useState<{ key: string; kind: PartOfSpeech } | null>(
-    initialWord?.partOfSpeechSource === 'dictionary'
-      ? {
-          key: lookupKey(
-            initialWord.term,
-            initialWord.meanings.map((meaning) => meaning.text)
-          ),
-          kind: initialWord.partOfSpeech,
-        }
-      : null
-  );
   // New word: start typing at once (but only after the screen has slid in)
   useFocusAfterTransition(termRef, autoFocus && !initialWord);
 
@@ -147,63 +151,32 @@ export function WordForm({ pair, initialWord, autoFocus = true, onSave, onDelete
     const index = meaningIndexFor(drafts, sentence);
     const example = `${sentence.text} — ${sentence.translation}`;
     const current = drafts[index].examples.trim();
-    updateDraft(index, { examples: current ? `${current}
-${example}` : example });
+    updateDraft(index, { examples: current ? `${current}\n${example}` : example });
   };
 
   const meaningTexts = drafts.map((draft) => draft.text.trim()).filter(Boolean);
-
-  const key = lookupKey(term, meaningTexts);
-  const fromDictionary = dictionaryKind?.key === key ? dictionaryKind.kind : null;
-  const kind = chosenKind ?? fromDictionary ?? guessPartOfSpeech(term, meaningTexts, pair);
-  const kindSource = chosenKind ? 'user' : fromDictionary ? 'dictionary' : 'guess';
-
-  // Ask Wiktionary the kind of word, a moment after the user stops typing
-  const firstMeaning = meaningTexts[0] ?? '';
-  useEffect(() => {
-    if (chosenKind || !term.trim()) {
-      return;
-    }
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      try {
-        const found = await fetchPartOfSpeech(pair, term, firstMeaning ? [firstMeaning] : []);
-        if (!cancelled && found) {
-          setDictionaryKind({ key: lookupKey(term, firstMeaning ? [firstMeaning] : []), kind: found });
-        }
-      } catch {
-        // Offline: the guess stays, the background check retries after saving
-      }
-    }, DICTIONARY_DELAY_MS);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-    // pair is rebuilt on every render: depend on its parts
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [term, firstMeaning, chosenKind, pair.source, pair.target]);
+  const filledCount = meaningTexts.length;
 
   /**
-   * A meaning found online: in the first empty meaning, or in a new one. `topics` come with
-   * it when Wiktionary says the field ("(medicine) …" -> health).
+   * A meaning found online: in the first empty meaning, or in a new one. From Wiktionary it
+   * comes with its kind of word and, when the sense has a field ("(medicine) …"), its topics.
    */
-  const addMeaning = (text: string, topics?: TopicId[]) =>
+  const addMeaning = (text: string, given?: { topics?: TopicId[]; kind?: PartOfSpeech }) =>
     setDrafts((current) => {
-      const given = topics?.length ? { topics, topicsFor: text.trim() } : {};
+      const extra: Partial<MeaningDraft> = {
+        givenFor: text.trim(),
+        topics: given?.topics?.length ? given.topics : null,
+        kind: given?.kind ?? null,
+        kindSource: given?.kind ? 'dictionary' : 'guess',
+      };
       const empty = current.findIndex((draft) => !draft.text.trim());
       return empty >= 0
-        ? current.map((draft, i) => (i === empty ? { ...draft, text, ...given } : draft))
-        : [...current, { ...EMPTY_MEANING, text, ...given }];
+        ? current.map((draft, i) => (i === empty ? { ...draft, text, ...extra } : draft))
+        : [...current, { ...EMPTY_MEANING, text, ...extra }];
     });
 
-  const filledCount = drafts.filter((draft) => draft.text.trim()).length;
-
   const save = () => {
-    const input: NewWordInput = {
-      ...inputFromDrafts(term, drafts, tags, pair),
-      partOfSpeech: kind,
-      partOfSpeechSource: kindSource,
-    };
+    const input = inputFromDrafts(term, drafts, tags, pair);
 
     if (!input.term) {
       setError(t.wordForm.errorTermEmpty);
@@ -217,14 +190,18 @@ ${example}` : example });
   return (
     <>
       <Section title={t.wordForm.term}>
-        <TextField
-          value={term}
-          onChangeText={setTerm}
-          placeholder={t.wordForm.termPlaceholder}
-          autoCapitalize="none"
-          autoCorrect={false}
-          ref={termRef}
-        />
+        <View style={styles.termRow}>
+          <TextField
+            value={term}
+            onChangeText={setTerm}
+            placeholder={t.wordForm.termPlaceholder}
+            autoCapitalize="none"
+            autoCorrect={false}
+            ref={termRef}
+            style={styles.flex}
+          />
+          <SpeakButton text={term} language={pair.source} />
+        </View>
         {/* Right under the word: the meanings found fill the translation fields below */}
         <MeaningFinder pair={pair} term={term} meanings={meaningTexts} onAdd={addMeaning} />
       </Section>
@@ -250,11 +227,15 @@ ${example}` : example });
               placeholder={t.wordForm.examplesPlaceholder}
               multiline
             />
-            <MeaningTopics
+            <MeaningTags
+              kind={draftKind(draft, term, pair).kind}
               topics={draftTopics(draft, term, pair, filledCount <= 1)}
-              byUser={draft.topicsByUser}
-              onChange={(topics) => updateDraft(index, { topics, topicsByUser: true })}
-              onReset={() => updateDraft(index, { topicsByUser: false, topicsFor: '' })}
+              byUser={draft.topicsByUser || draft.kindSource === 'user'}
+              onKindChange={(kind) => updateDraft(index, { kind, kindSource: 'user' })}
+              onTopicsChange={(topics) => updateDraft(index, { topics, topicsByUser: true })}
+              onReset={() =>
+                updateDraft(index, { topics: null, topicsByUser: false, kind: null, kindSource: 'guess', givenFor: '' })
+              }
             />
             {drafts.length > 1 ? (
               <View style={styles.remove}>
@@ -265,21 +246,6 @@ ${example}` : example });
         ))}
 
         <Button label={t.wordForm.addMeaning} tone="secondary" onPress={() => setDrafts([...drafts, EMPTY_MEANING])} />
-      </Section>
-
-      <Section
-        title={t.wordForm.kindTitle}
-        hint={
-          { user: t.wordForm.kindHintUser, dictionary: t.wordForm.kindHintDictionary, guess: t.wordForm.kindHintGuess }[
-            kindSource
-          ]
-        }>
-        <ChoiceChips
-          select="one"
-          options={PARTS_OF_SPEECH.map((value) => ({ value, label: t.partsOfSpeech[value] }))}
-          value={[kind]}
-          onChange={([value]) => setChosenKind(value)}
-        />
       </Section>
 
       <Section title={t.examples.title}>
@@ -300,6 +266,14 @@ ${example}` : example });
 }
 
 const styles = StyleSheet.create({
+  termRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  flex: {
+    flex: 1,
+  },
   remove: {
     alignSelf: 'flex-end',
   },

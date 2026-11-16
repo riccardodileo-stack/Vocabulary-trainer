@@ -4,7 +4,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-import { currentStreak, longestStreak, withDay } from '@/domain/activity';
+import { longestStreak, streakStatus, withDay, type StreakStatus } from '@/domain/activity';
 import { dayKey, type DayKey } from '@/domain/dates';
 
 import { persistStorage } from './persistStorage';
@@ -34,7 +34,8 @@ export const useActivityStore = create<ActivityState>()(
       markToday: () =>
         set((state) => {
           const days = withDay(state.days, dayKey());
-          return { days, bestStreak: Math.max(state.bestStreak, longestStreak(days)) };
+          // The best streak counts the days kept alive by a save too
+          return { days, bestStreak: Math.max(state.bestStreak, streakStatus(days).best) };
         }),
 
       recordQuizFinished: (questions, mistakes) =>
@@ -55,9 +56,10 @@ export const useActivityStore = create<ActivityState>()(
   )
 );
 
-export function useStreak(): number {
+/** The streak with its saves (see domain/activity.ts). */
+export function useStreakStatus(): StreakStatus {
   const days = useActivityStore((state) => state.days);
-  return currentStreak(days, dayKey());
+  return streakStatus(days, dayKey());
 }
 
 export function useTrainedToday(): boolean {

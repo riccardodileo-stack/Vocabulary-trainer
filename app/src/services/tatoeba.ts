@@ -3,6 +3,8 @@
 
 import { LANGUAGES, type LanguagePair } from '@/domain/languages';
 
+import { cached } from './netCache';
+
 export type ExampleSentence = {
   id: number;
   text: string;
@@ -24,10 +26,16 @@ function exactQuery(term: string): string {
 }
 
 /** Short sentences containing the word, each with a translation in the native language. */
-export async function fetchExampleSentences(
+export async function fetchExampleSentences(pair: LanguagePair, term: string, limit = 3): Promise<ExampleSentence[]> {
+  return cached(`tt:${pair.source}:${pair.target}:${limit}:${term.trim().toLowerCase()}`, () =>
+    loadExampleSentences(pair, term, limit)
+  );
+}
+
+async function loadExampleSentences(
   { source, target }: LanguagePair,
   term: string,
-  limit = 3
+  limit: number
 ): Promise<ExampleSentence[]> {
   const params = new URLSearchParams({
     lang: LANGUAGES[source].tatoeba,

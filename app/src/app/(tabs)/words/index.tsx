@@ -10,6 +10,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { FilterSummary } from '@/components/FilterSummary';
 import { HeaderButton } from '@/components/HeaderButton';
 import { LanguagePairChip } from '@/components/LanguagePairChip';
 import { Pill } from '@/components/Pill';
@@ -18,8 +19,11 @@ import { ListScreen } from '@/components/Screen';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { TextField } from '@/components/TextField';
 import { MASTERED_BOX, reviewBox } from '@/domain/review';
+import { matchesFilters } from '@/domain/quiz';
 import { normalizeText } from '@/domain/text';
+import { TOPIC_ICONS } from '@/domain/topics';
 import { meaningsToText, type Word } from '@/domain/word';
+import { useWordFilterStore } from '@/store/wordFilterStore';
 import { useT } from '@/i18n';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
@@ -58,11 +62,18 @@ function openWord(id: string) {
 }
 
 /** Memoized: re-sorting moves rows around without re-rendering each of them. */
-type WordRowProps = { word: Word; errorsLabel?: string; correctLabel?: string; masteryLabel: string };
+type WordRowProps = {
+  word: Word;
+  errorsLabel?: string;
+  correctLabel?: string;
+  masteryLabel: string;
+  /** "Sostantivo · 🩺 Salute · ⚽ Sport": kind and categories, to check them at a glance. */
+  tagsLabel: string;
+};
 
 const MASTERY_SPARKLE = { ios: 'sparkle', android: 'auto_awesome', web: 'auto_awesome' } as const;
 
-const WordRow = memo(function WordRow({ word, errorsLabel, correctLabel, masteryLabel }: WordRowProps) {
+const WordRow = memo(function WordRow({ word, errorsLabel, correctLabel, masteryLabel, tagsLabel }: WordRowProps) {
   const { colors } = useTheme();
   const box = reviewBox(word);
   const mastered = box === MASTERED_BOX;
@@ -101,6 +112,9 @@ const WordRow = memo(function WordRow({ word, errorsLabel, correctLabel, mastery
       <AppText color="textMuted" numberOfLines={2}>
         {meaningsToText(word)}
       </AppText>
+      <AppText variant="small" color="textMuted" numberOfLines={1}>
+        {tagsLabel}
+      </AppText>
     </Card>
   );
 });
@@ -116,13 +130,27 @@ export default function WordsScreen() {
   const deferredSearch = useDeferredValue(search);
   const deferredSortOrder = useDeferredValue(sortOrder);
 
+  const filterTopics = useWordFilterStore((state) => state.topics);
+  const filterKinds = useWordFilterStore((state) => state.kinds);
+  const setFilterTopics = useWordFilterStore((state) => state.setTopics);
+  const setFilterKinds = useWordFilterStore((state) => state.setKinds);
+  const activeFilters = filterTopics.length + filterKinds.length;
+
   const visibleWords = useMemo(() => {
     const query = normalizeText(deferredSearch);
     return words
       .filter((word) => deferredSortOrder !== 'mistakes' || hasMistakes(word))
+      .filter((word) => matchesFilters(word, { topics: filterTopics, partsOfSpeech: filterKinds }))
       .filter((word) => !query || matchesSearch(word, query))
       .sort(COMPARE[deferredSortOrder]);
-  }, [words, deferredSearch, deferredSortOrder]);
+  }, [words, deferredSearch, deferredSortOrder, filterTopics, filterKinds]);
+
+  /** Kinds of all the meanings (no repeats), then the categories. */
+  const tagsOf = (word: Word) =>
+    [
+      [...new Set(word.meanings.map((meaning) => t.partsOfSpeech[meaning.partOfSpeech ?? word.partOfSpeech]))].join(', '),
+      ...word.topics.map((topic) => `${TOPIC_ICONS[topic]} ${t.topicsShort[topic]}`),
+    ].join(' · ');
 
   const showingMistakes = sortOrder === 'mistakes';
   const mistakenCount = words.filter(hasMistakes).length;
@@ -160,6 +188,24 @@ export default function WordsScreen() {
             clearButtonMode="while-editing"
           />
           <SegmentedControl options={sortOptions} value={sortOrder} onChange={setSortOrder} />
+          <FilterSummary
+            label={t.filters.button}
+            accessibilityLabel={t.filters.buttonAccessibility(activeFilters)}
+            chips={[
+              ...filterTopics.map((topic) => ({
+                key: topic,
+                label: `${TOPIC_ICONS[topic]} ${t.topicsShort[topic]}`,
+                onRemove: () => setFilterTopics(filterTopics.filter((other) => other !== topic)),
+              })),
+              ...filterKinds.map((kind) => ({
+                key: kind,
+                label: t.partsOfSpeechPlural[kind],
+                onRemove: () => setFilterKinds(filterKinds.filter((other) => other !== kind)),
+              })),
+            ]}
+            removeLabel={t.filters.remove}
+            onOpen={() => router.push({ pathname: '/quiz-filters', params: { target: 'words' } })}
+          />
           {visibleWords.length === 0 ? (
             <AppText color="textMuted">{showingMistakes && mistakenCount === 0 ? t.words.noMistakes : t.words.noResults}</AppText>
           ) : null}
@@ -185,6 +231,7 @@ export default function WordsScreen() {
         renderItem={({ item }) => (
           <WordRow
             word={item}
+            tagsLabel={tagsOf(item)}
             errorsLabel={item.stats.wrong > 0 ? t.words.errorsCount(item.stats.wrong) : undefined}
             correctLabel={showingMistakes ? t.words.correctCount(item.stats.correct) : undefined}
             masteryLabel={t.words.mastery(reviewBox(item), MASTERED_BOX)}

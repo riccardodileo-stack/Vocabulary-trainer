@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import type { LanguagePair } from '@/domain/languages';
+import type { PartOfSpeech } from '@/domain/partOfSpeech';
 import { normalizeText } from '@/domain/text';
 import { topicsOfLabel } from '@/domain/topicClassifier';
 import { TOPIC_ICONS, type TopicId } from '@/domain/topics';
@@ -26,7 +27,8 @@ type MeaningFinderProps = {
   term: string;
   /** Meanings already in the form: their chips show ✓ and can't be added twice. */
   meanings: string[];
-  onAdd: (meaning: string, topics?: TopicId[]) => void;
+  /** From Wiktionary the meaning comes with its kind of word and, when the sense has a field, its topics. */
+  onAdd: (meaning: string, given?: { topics?: TopicId[]; kind?: PartOfSpeech }) => void;
 };
 
 /** Senses shown before "Show more". */
@@ -69,12 +71,12 @@ export function MeaningFinder({ pair, term, meanings, onAdd }: MeaningFinderProp
   // Results of a word that has since been changed are hidden
   const shown = result.status === 'done' && normalizeText(result.term) === normalizeText(term) ? result : null;
 
-  const chip = (meaning: string, topics?: TopicId[]) => {
+  const chip = (meaning: string, given?: { topics?: TopicId[]; kind?: PartOfSpeech }) => {
     const added = present.has(normalizeText(meaning));
     return (
       <Pressable
         key={meaning}
-        onPress={() => onAdd(meaning, topics)}
+        onPress={() => onAdd(meaning, given)}
         disabled={added}
         accessibilityRole="button"
         accessibilityLabel={t.meanings.addAccessibility(meaning)}
@@ -119,7 +121,7 @@ export function MeaningFinder({ pair, term, meanings, onAdd }: MeaningFinderProp
                 </AppText>
                 {group.gloss ? ` · ${group.gloss}` : ''}
               </AppText>
-              <View style={styles.chips}>{group.translations.map((meaning) => chip(meaning, group.topics))}</View>
+              <View style={styles.chips}>{group.translations.map((meaning) => chip(meaning, { topics: group.topics, kind: group.partOfSpeech }))}</View>
             </View>
           ))}
           {groups.length > FIRST_GROUPS && !showAll ? (

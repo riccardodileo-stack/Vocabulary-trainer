@@ -1,7 +1,8 @@
-// Sheet opened by "Filter" in Train: topics and kinds of word for the quiz.
-// Several of each can be chosen; "All" = no filter. Choices are saved at once (settingsStore),
-// the counters say how many words each choice gives with the others as they are.
-// Param: mode=due|all|mistakes (the counters follow the mode chosen in Train).
+// Sheet opened by "Filter": categories and kinds of word. Used by Train (filters of the
+// exercises, saved in settingsStore) and by the Dictionary (filters of the list, target=words).
+// Several of each can be chosen; "All" = no filter. Choices apply at once; the counters say
+// how many words each choice gives with the others as they are.
+// Params: mode=due|all|mistakes (Train: the counters follow the chosen mode), target=words.
 
 import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -15,19 +16,23 @@ import { QUIZ_MODES, quizPool, type QuizMode } from '@/domain/quiz';
 import { TOPIC_ICONS, TOPIC_IDS, type TopicId } from '@/domain/topics';
 import { useT } from '@/i18n';
 import { useActivePair, useSettingsStore } from '@/store/settingsStore';
+import { useWordFilterStore } from '@/store/wordFilterStore';
 import { useWordsOfPair } from '@/store/wordStore';
 import { spacing, useTheme } from '@/theme';
 
 export default function QuizFiltersSheet() {
   const t = useT();
   const { colors } = useTheme();
-  const params = useLocalSearchParams<{ mode?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; target?: string }>();
+  const forWords = params.target === 'words';
   const mode: QuizMode = QUIZ_MODES.includes(params.mode as QuizMode) ? (params.mode as QuizMode) : 'all';
   const words = useWordsOfPair(useActivePair());
-  const topics = useSettingsStore((state) => state.quizTopics);
-  const kinds = useSettingsStore((state) => state.quizPartsOfSpeech);
-  const setTopics = useSettingsStore((state) => state.setQuizTopics);
-  const setKinds = useSettingsStore((state) => state.setQuizPartsOfSpeech);
+  const quiz = useSettingsStore();
+  const list = useWordFilterStore();
+  const topics = forWords ? list.topics : quiz.quizTopics;
+  const kinds = forWords ? list.kinds : quiz.quizPartsOfSpeech;
+  const setTopics = forWords ? list.setTopics : quiz.setQuizTopics;
+  const setKinds = forWords ? list.setKinds : quiz.setQuizPartsOfSpeech;
 
   const available = quizPool(words, { mode, topics, partsOfSpeech: kinds }).length;
   const topicCount = (topic: TopicId) => quizPool(words, { mode, topics: [topic], partsOfSpeech: kinds }).length;

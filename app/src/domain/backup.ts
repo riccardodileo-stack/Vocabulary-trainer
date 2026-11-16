@@ -2,9 +2,10 @@
 // and the files exported by the old PWA ({ english, italian } words).
 
 import { isLanguageCode, type LanguagePair } from './languages';
+import { isPartOfSpeech } from './partOfSpeech';
 import { normalizeText } from './text';
 import { isTopicId } from './topics';
-import { createWord, emptyStats, isCefrLevel, meaningsFromSlashText, withClassification, type Meaning, type Word } from './word';
+import { createWord, emptyStats, isCefrLevel, meaningsFromSlashText, topicsOfMeanings, withClassification, type Meaning, type Word } from './word';
 
 const BACKUP_APP_NAME = 'Vocabulary Trainer';
 const BACKUP_VERSION = 2;
@@ -41,6 +42,8 @@ function parseMeaning(value: unknown): Meaning | null {
     // Missing in old backups: suggested again (withClassification)
     topics: Array.isArray(value.topics) ? value.topics.filter(isTopicId) : undefined,
     topicsByUser: value.topicsByUser === true ? true : undefined,
+    partOfSpeech: isPartOfSpeech(value.partOfSpeech) ? value.partOfSpeech : undefined,
+    partOfSpeechSource: value.partOfSpeechSource as Meaning['partOfSpeechSource'],
   };
 }
 
@@ -166,7 +169,9 @@ export function mergeWords(existing: Word[], imported: Word[]): MergeResult {
     if (newMeanings.length === 0) {
       skipped += 1;
     } else {
-      words[index] = { ...current, meanings: [...current.meanings, ...newMeanings] };
+      const meanings = [...current.meanings, ...newMeanings];
+      // The word's categories follow its meanings
+      words[index] = { ...current, meanings, topics: topicsOfMeanings(meanings) };
       updated += 1;
     }
   }
