@@ -14,7 +14,7 @@ import {
   suggestTopics,
 } from '../topicClassifier';
 import { TOPIC_IDS } from '../topics';
-import { createWord, withClassification } from '../word';
+import { createWord, meaningToCheckOnServer, withClassification } from '../word';
 
 const EN_IT = { source: 'en', target: 'it' } as const;
 
@@ -135,5 +135,25 @@ describe('words get topics and a kind automatically', () => {
       partOfSpeech: 'noun',
       partOfSpeechSource: 'guess',
     });
+  });
+});
+
+describe('meanings asked to the server', () => {
+  it('are those left without topics, not chosen by hand and not asked yet', () => {
+    const word = createWord(EN_IT, {
+      term: 'stroke',
+      meanings: [
+        { text: 'ictus', examples: [] },
+        { text: 'colpo', examples: [] },
+      ],
+    });
+    // "ictus" has topics on the phone, "colpo" doesn't
+    expect(meaningToCheckOnServer([word])).toEqual({ word, index: 1 });
+
+    const asked = { ...word, meanings: word.meanings.map((meaning) => ({ ...meaning, topicsChecked: true })) };
+    expect(meaningToCheckOnServer([asked])).toBeNull();
+
+    const byHand = { ...word, meanings: word.meanings.map((meaning) => ({ ...meaning, topicsByUser: true })) };
+    expect(meaningToCheckOnServer([byHand])).toBeNull();
   });
 });

@@ -26,6 +26,11 @@ export type Meaning = {
   topics?: TopicId[];
   /** true once the user chose the topics of this meaning: suggestions never overwrite them. */
   topicsByUser?: boolean;
+  /**
+   * true once the server was asked about a meaning left without topics on the phone (whatever
+   * it answered): it is not asked again. Changing the meaning's text makes a new meaning.
+   */
+  topicsChecked?: boolean;
 };
 
 export type WordStats = {
@@ -188,4 +193,24 @@ export function belongsToPair(word: Word, pair: LanguagePair): boolean {
 
 export function hasSameTerm(word: Word, term: string): boolean {
   return normalizeText(word.term) === normalizeText(term);
+}
+
+/**
+ * The next meaning to ask the server about: no topics found on the phone, not chosen by hand,
+ * not asked yet. Null when there is none.
+ */
+export function meaningToCheckOnServer(words: Word[]): { word: Word; index: number } | null {
+  for (const word of words) {
+    const index = word.meanings.findIndex(
+      (meaning) =>
+        meaning.text.trim() !== '' &&
+        (meaning.topics?.length ?? 0) === 0 &&
+        meaning.topicsByUser !== true &&
+        meaning.topicsChecked !== true
+    );
+    if (index >= 0) {
+      return { word, index };
+    }
+  }
+  return null;
 }

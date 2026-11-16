@@ -266,6 +266,8 @@ File: `domain/topics.ts`, `domain/topicClassifier.ts`, `domain/partOfSpeech.ts`,
 - Wiktionary conosce la **traduzione** da sola → le sue categorie abituali;
 - se la parola ha un'unica traduzione, la parola studiata (prima la rete, poi Wiktionary).
 
+**Il server** (`hooks/useServerTopicCheck.ts`, `services/topicServer.ts`, `services/serverConfig.ts`): le traduzioni rimaste **senza categoria** sul telefono (parole rare, coppie nuove: *stroke* = *bracciata*) vengono chieste in background, una alla volta, alla funzione `classify-meaning` del server Supabase (branch `server`, `supabase/README.md`). Il server risponde dalla sua tabella (~408.000 coppie di Wiktionary, tutte, anche le rare) o, per una coppia mai vista, chiede a un modello di linguaggio (Gemini) e salva la risposta per tutti. Ogni traduzione viene chiesta una volta sola (`meaning.topicsChecked`); senza rete si riprova al prossimo avvio; le categorie scelte a mano non vengono mai toccate. `services/serverContract.ts` è la copia del formato di domanda e risposta del server: se cambia uno, va copiato nell'altro. In `serverConfig.ts` c'è solo la chiave pubblica `anon` (le regole del database decidono cosa permette): le chiavi segrete non vanno mai nell'app.
+
 **I sensi di Wiktionary** (`content/senseTopics.ts`, generato da `design/topic-model/wiktionary/`, vedi il suo README): dall'estratto di Wiktionary di kaikki.org si prendono, per ogni senso di ogni parola inglese, le etichette di settore (*medicine*, *cricket*…) e la tabella delle traduzioni; le etichette diventano le 12 categorie. Nell'app ~37.000 parole e ~50.000 coppie (le 50.000 parole più usate per lingua), 1,4 MB, aperte una lingua alla volta quando servono. Su un campione casuale sono giuste circa 9 volte su 10; le parole quotidiane (*cane*, *mela*) spesso non hanno etichetta e restano alla rete. La versione 6 dei dati salvati ricalcola le categorie automatiche delle parole già salvate (quelle scelte a mano restano).
 
 **La rete neurale**:
@@ -469,7 +471,7 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 
 ## 13. Test
 
-`npm test` esegue i test in `src/domain/__tests__/` (101 test): correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello e per categoria, filtro per categorie), serie di giorni e record, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, formato del codice amico, categorie dalla rete e dai sensi di Wiktionary.
+`npm test` esegue i test in `src/domain/__tests__/` (102 test): correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello e per categoria, filtro per categorie), serie di giorni e record, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, formato del codice amico, categorie dalla rete e dai sensi di Wiktionary.
 Sono test della logica pura: girano in un secondo, senza telefono.
 
 ## 14. Limiti noti e prossimi passi
@@ -477,7 +479,7 @@ Sono test della logica pura: girano in un secondo, senza telefono.
 - **Sfide**: rimandate. L'idea più semplice senza server è un codice/link che contiene le parole e il punteggio da battere.
 - **Versione web**: non è un obiettivo. Funziona per prove veloci (`npx expo start --web`), ma la barra delle tab nativa sul web si sovrappone all'intestazione.
 - **Parole del giorno**: la lista integrata ha 802 parole (circa 45 per categoria). Con una sola categoria e un livello singolo bastano per pochi giorni (es. Cibo C1–C2: 10 parole = 2 giorni). Il passo naturale è il server descritto sopra (o allungare la lista: basta aggiungere righe).
-- **Categorie da Wiktionary**: le parole rare (fuori dalle 50.000 più usate, es. *bracciata*) non sono nell'app per tenerla leggera; l'elenco completo (~200.000 coppie) può andare nella tabella `meaning_topics` del server.
+- **Categorie da Wiktionary**: le parole rare (fuori dalle 50.000 più usate, es. *bracciata*) non sono nell'app per tenerla leggera: le chiede al server, che ha l'elenco completo.
 - **Amici e account**: richiedono un server. Il profilo locale (`profileStore`) è già pensato per essere inviato alla registrazione.
 - **Categorie automatiche**: con la soglia severa, sulle parole difficili di prova 9 categorie proposte su 10 sono giuste, ma ne trova circa metà (dettagli in `design/topic-model/README.md`): molte traduzioni restano senza categoria e si spuntano a mano. Con il server si può usare un modello più grande.
 - **Wiktionary**: le spiegazioni dei sensi sono in inglese; per le coppie senza inglese (es. 🇪🇸→🇮🇹) restano le traduzioni di MyMemory, non divise per senso.

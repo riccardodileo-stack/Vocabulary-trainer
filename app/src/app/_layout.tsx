@@ -10,6 +10,7 @@ import { Platform } from 'react-native';
 import { HeaderButton } from '@/components/HeaderButton';
 import { AchievementTracker } from '@/hooks/useAchievements';
 import { useReminderSync } from '@/hooks/useReminderSync';
+import { useServerTopicCheck } from '@/hooks/useServerTopicCheck';
 import { useWordKindCheck } from '@/hooks/useWordKindCheck';
 import { useT } from '@/i18n';
 import { configureNotifications } from '@/services/reminders';
@@ -48,6 +49,8 @@ export default function RootLayout() {
   useReminderSync(hydrated);
   // Kinds of word guessed offline are checked on Wiktionary in the background
   useWordKindCheck(hydrated);
+  // Meanings left without topics on the phone are asked to the server in the background
+  useServerTopicCheck(hydrated);
 
   useEffect(() => {
     if (hydrated) {
