@@ -26,6 +26,8 @@ type SettingsState = {
   studyLanguage: LanguageCode;
   /** Difficulty of the words of the day. */
   dailyLevel: DailyLevel;
+  /** Categories of the words of the day; empty = all words. */
+  dailyTopics: TopicId[];
   /** Short sounds for right / wrong answers in the quiz. */
   soundsEnabled: boolean;
   /** Daily local notification reminding to review. */
@@ -50,6 +52,7 @@ type SettingsState = {
   setReminderEnabled: (enabled: boolean) => void;
   setReminderTime: (minutes: number) => void;
   setDailyLevel: (level: DailyLevel) => void;
+  setDailyTopics: (topics: TopicId[]) => void;
   setThemePreference: (preference: ThemePreference) => void;
   setUiLanguage: (language: UiLanguage | 'system') => void;
   setNativeLanguage: (language: LanguageCode) => void;
@@ -75,6 +78,7 @@ export const useSettingsStore = create<SettingsState>()(
       nativeLanguage: initialNativeLanguage,
       studyLanguage: defaultStudyLanguage(initialNativeLanguage),
       dailyLevel: 'all',
+      dailyTopics: [],
       soundsEnabled: true,
       reminderEnabled: false,
       reminderTime: 18 * 60,
@@ -93,6 +97,7 @@ export const useSettingsStore = create<SettingsState>()(
       setReminderEnabled: (reminderEnabled) => set({ reminderEnabled }),
       setReminderTime: (reminderTime) => set({ reminderTime }),
       setDailyLevel: (dailyLevel) => set({ dailyLevel }),
+      setDailyTopics: (dailyTopics) => set({ dailyTopics }),
       setThemePreference: (themePreference) => set({ themePreference }),
       setUiLanguage: (uiLanguage) => set({ uiLanguage }),
 

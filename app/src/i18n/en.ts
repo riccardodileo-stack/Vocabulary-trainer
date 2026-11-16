@@ -51,6 +51,18 @@ export const en = {
     undo: 'Undo',
     train: (count: number) => (count === 1 ? 'Train on the new word' : `Train on the ${count} new words`),
     allHandled: 'Done for today. New words tomorrow!',
+    categories: 'Categories',
+    categoriesAccessibility: (count: number) =>
+      count === 0 ? 'Choose the categories of the words of the day' : `Categories of the words of the day: ${count} chosen`,
+    topicsTitle: 'What do you want to learn?',
+    topicsSubtitle: 'Your words of the day will come from these categories.',
+    topicsHint: 'You can choose more than one. Next to each, how many new words are left at your level.',
+    topicsAll: 'All',
+    topicsAccessibility: (topic: string, count: number) =>
+      count === 1 ? `${topic}, 1 new word` : `${topic}, ${count} new words`,
+    topicsChanged: "Today's words change at once; the ones you already added stay in your dictionary.",
+    exhaustedTopics: "You've already seen every word of these categories at your level. Try other categories or another level.",
+    changeTopics: 'Change categories',
   },
   words: {
     title: 'Dictionary',

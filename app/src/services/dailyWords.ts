@@ -9,11 +9,14 @@ import { WORD_BANK, type BankEntry } from '@/content/wordBank';
 import { pickDailySuggestions, type DailyLevel, type DailySuggestion } from '@/domain/dailyWords';
 import type { DayKey } from '@/domain/dates';
 import type { LanguagePair } from '@/domain/languages';
+import type { TopicId } from '@/domain/topics';
 
 export type DailyWordsRequest = {
   pair: LanguagePair;
   day: DayKey;
   level: DailyLevel;
+  /** Categories chosen by the user (empty = all). */
+  topics: TopicId[];
   count: number;
   knownIds: string[];
   /** Normalized terms already in the vocabulary (never sent to a server). */
@@ -29,6 +32,7 @@ function pickFrom(entries: BankEntry[], request: DailyWordsRequest): DailySugges
     pair: request.pair,
     day: request.day,
     level: request.level,
+    topics: request.topics,
     count: request.count,
     knownIds: new Set(request.knownIds),
     vocabularyTerms: new Set(request.vocabularyTerms),
@@ -43,8 +47,8 @@ export const localDailyWordsSource: DailyWordsSource = {
 /**
  * Server source (not used yet). Expected API:
  *
- *   GET {baseUrl}/daily-words?source=en&target=it&level=intermediate&day=2026-10-29
- *   200 -> { "entries": BankEntry[] }   // a few dozen candidates, any order
+ *   GET {baseUrl}/daily-words?source=en&target=it&level=intermediate&day=2026-10-29&topics=food,travel
+ *   200 -> { "entries": BankEntry[] }   // a few dozen candidates, any order (topics optional)
  *
  * The server returns candidates and the phone does the final choice, so the
  * user's vocabulary never leaves the device and the same filtering rules apply.
@@ -57,6 +61,7 @@ export function createRemoteDailyWordsSource(baseUrl: string, timeoutMs = 5000):
         target: request.pair.target,
         level: request.level,
         day: request.day,
+        topics: request.topics.join(','),
       });
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -66,8 +71,11 @@ export function createRemoteDailyWordsSource(baseUrl: string, timeoutMs = 5000):
         if (!response.ok) {
           throw new Error(`Daily words server error ${response.status}`);
         }
-        const { entries } = (await response.json()) as { entries: BankEntry[] };
-        const suggestions = pickFrom(entries, request);
+        const { entries } = (await response.json()) as { entries: (Omit<BankEntry, 'topics'> & { topics?: BankEntry['topics'] })[] };
+        const suggestions = pickFrom(
+          entries.map((entry) => ({ ...entry, topics: entry.topics ?? [] })),
+          request
+        );
         // A server with few new words for this user is completed by the built-in list
         return suggestions.length > 0 ? suggestions : pickFrom(WORD_BANK, request);
       } catch (error) {

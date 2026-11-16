@@ -8,8 +8,12 @@
 // 2. Words not in the lexicon go through a small "student" network (hashed letter groups ->
 //    24 neurons -> 12 topics) trained to imitate the big one; it recognises pieces like
 //    "cardio", "program", "cucin" in words it has never seen.
+// 3. Wiktionary (content/senseTopics.ts, made by design/topic-model/wiktionary): the topics of
+//    the dictionary senses, e.g. "stroke" = "ictus" is in a "medicine" sense. It knows a pair
+//    of words ("court" = "campo" -> sport) and, for many translations, their usual topics.
 // Topics belong to each meaning, decided mainly by its translation (see suggestMeaningTopics).
 
+import { SENSE_TOPICS } from '@/content/senseTopics';
 import { TOPIC_MODEL } from '@/content/topicModel';
 
 import type { LanguageCode, LanguagePair } from './languages';
@@ -152,6 +156,77 @@ export function studentProbabilities(folded: string): number[] {
   return out.map((logit) => 1 / (1 + Math.exp(-logit)));
 }
 
+/**
+ * Wiktionary topics, unpacked one language (words) or one language pair (pairs) at a time,
+ * the first time it's needed: a phone only ever needs the pair being studied.
+ */
+const dictionaryParts = new Map<string, Map<string, number>>();
+
+function dictionaryPart(kind: 'words' | 'pairs', key: string): Map<string, number> {
+  const id = `${kind}:${key}`;
+  let part = dictionaryParts.get(id);
+  if (!part) {
+    part = new Map();
+    const text: string = (SENSE_TOPICS[kind] as Record<string, string>)[key] ?? '';
+    for (const group of text.split(';').filter(Boolean)) {
+      const [mask, entries] = group.split(':');
+      const bits = Number.parseInt(mask, 16);
+      for (const entry of entries.split(',')) {
+        part.set(entry, bits);
+      }
+    }
+    dictionaryParts.set(id, part);
+  }
+  return part;
+}
+
+/** Same form as the dictionary file: no leading article, lower case, no accents. */
+function dictionaryForm(text: string, language: LanguageCode): string {
+  return foldForModel(stripLeadingWord(text.trim().toLowerCase(), language));
+}
+
+function topicsOfBits(bits: number): TopicId[] {
+  return TOPIC_IDS.filter((_, i) => bits & (1 << i)).slice(0, MAX_SUGGESTED_TOPICS);
+}
+
+/**
+ * Wiktionary topics of a word together with one of its translations ("stroke" = "ictus" ->
+ * health), null when the dictionary doesn't have that pair. Alternatives ("a / b") count all.
+ */
+export function dictionaryPairTopics(term: string, meaning: string, { source, target }: LanguagePair): TopicId[] | null {
+  // Languages in alphabetical order, as in the file
+  const pairs = dictionaryPart('pairs', source < target ? `${source}-${target}` : `${target}-${source}`);
+  let bits = 0;
+  let found = false;
+  for (const termPart of splitSlashOptions(term)) {
+    for (const meaningPart of splitSlashOptions(meaning)) {
+      const a = dictionaryForm(termPart, source);
+      const b = dictionaryForm(meaningPart, target);
+      const value = pairs.get(source < target ? `${a}=${b}` : `${b}=${a}`);
+      if (value !== undefined) {
+        bits |= value;
+        found = true;
+      }
+    }
+  }
+  return found ? topicsOfBits(bits) : null;
+}
+
+/** Usual Wiktionary topics of a word in any of its meanings ("ictus" -> health); null if unknown. */
+export function dictionaryWordTopics(text: string, language: LanguageCode): TopicId[] | null {
+  const words = dictionaryPart('words', language);
+  let bits = 0;
+  let found = false;
+  for (const part of splitSlashOptions(text)) {
+    const value = words.get(dictionaryForm(part, language));
+    if (value !== undefined) {
+      bits |= value;
+      found = true;
+    }
+  }
+  return found ? topicsOfBits(bits) : null;
+}
+
 type PieceResult = {
   /** false when neither the lexicon nor a confident student network knows the text. */
   known: boolean;
@@ -199,22 +274,43 @@ function bestTopics(scores: number[]): TopicId[] {
 
 /**
  * Topics of ONE meaning of a word. The translation decides: "stroke" = "ictus" is health,
- * "stroke" = "bracciata" is sport. The studied word helps only when the word has a single
- * meaning and its translation is unknown to the network ("rash" = "eruzione cutanea").
- * A translation the network knows to have no topic ("caserma") gets none.
+ * "stroke" = "bracciata" is sport. In order:
+ * 1. Wiktionary knows this word with this translation: its sense says the topics;
+ * 2. the network knows the translation (lexicon or a confident student): its topics, also
+ *    none ("caserma");
+ * 3. Wiktionary knows the translation alone: its usual topics;
+ * 4. the studied word helps only when the word has a single meaning ("rash" = "eruzione
+ *    cutanea"): network first, then Wiktionary.
  * Empty when nothing is clear: better no topic than a wrong one.
  */
 export function suggestMeaningTopics(
   term: string,
   meaning: string,
-  { source, target }: LanguagePair,
+  pair: LanguagePair,
   onlyMeaning: boolean
 ): TopicId[] {
-  const fromMeaning = textResult(meaning, target);
-  if (fromMeaning.known || !onlyMeaning) {
+  const fromPair = dictionaryPairTopics(term, meaning, pair);
+  if (fromPair) {
+    return fromPair;
+  }
+  const fromMeaning = textResult(meaning, pair.target);
+  if (fromMeaning.known) {
     return bestTopics(fromMeaning.scores);
   }
-  return bestTopics(textResult(term, source).scores);
+  const fromDictionary = dictionaryWordTopics(meaning, pair.target);
+  if (fromDictionary || !onlyMeaning) {
+    return fromDictionary ?? bestTopics(fromMeaning.scores);
+  }
+  return termTopics(term, pair.source);
+}
+
+/** Topics of the studied word alone: network if it knows it, then Wiktionary. */
+function termTopics(term: string, language: LanguageCode): TopicId[] {
+  const fromTerm = textResult(term, language);
+  if (fromTerm.known) {
+    return bestTopics(fromTerm.scores);
+  }
+  return dictionaryWordTopics(term, language) ?? bestTopics(fromTerm.scores);
 }
 
 /**
@@ -224,7 +320,7 @@ export function suggestMeaningTopics(
 export function suggestTopics(term: string, meanings: string[], pair: LanguagePair): TopicId[] {
   const texts = meanings.filter((meaning) => meaning.trim());
   if (texts.length === 0) {
-    return bestTopics(textResult(term, pair.source).scores);
+    return termTopics(term, pair.source);
   }
   const found = new Set(texts.flatMap((meaning) => suggestMeaningTopics(term, meaning, pair, texts.length === 1)));
   return TOPIC_IDS.filter((topic) => found.has(topic));

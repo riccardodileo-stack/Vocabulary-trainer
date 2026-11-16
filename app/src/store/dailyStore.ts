@@ -7,12 +7,15 @@ import { persist } from 'zustand/middleware';
 import type { DailyLevel, DailySuggestion } from '@/domain/dailyWords';
 import type { DayKey } from '@/domain/dates';
 import type { LanguageCode, LanguagePair } from '@/domain/languages';
+import type { TopicId } from '@/domain/topics';
 
 import { persistStorage } from './persistStorage';
 
 export type DailyBatch = {
   day: DayKey;
   level: DailyLevel;
+  /** Categories chosen when the batch was made (missing in batches saved before categories). */
+  topics?: TopicId[];
   suggestions: DailySuggestion[];
 };
 

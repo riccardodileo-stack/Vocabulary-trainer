@@ -1,8 +1,18 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { SENSE_TOPICS } from '@/content/senseTopics';
 import { TOPIC_MODEL, TOPIC_MODEL_REFERENCE } from '@/content/topicModel';
 
-import { featureStrings, fnv1a, foldForModel, studentProbabilities, suggestMeaningTopics, suggestTopics } from '../topicClassifier';
+import {
+  dictionaryPairTopics,
+  dictionaryWordTopics,
+  featureStrings,
+  fnv1a,
+  foldForModel,
+  studentProbabilities,
+  suggestMeaningTopics,
+  suggestTopics,
+} from '../topicClassifier';
 import { TOPIC_IDS } from '../topics';
 import { createWord, withClassification } from '../word';
 
@@ -62,6 +72,34 @@ describe('suggestTopics', () => {
 
   it('suggests at most three topics per meaning', () => {
     expect(suggestMeaningTopics('kitchen', 'cucina', EN_IT, true).length).toBeLessThanOrEqual(3);
+  });
+});
+
+describe('Wiktionary senses', () => {
+  it('has every language and language pair', () => {
+    expect(Object.keys(SENSE_TOPICS.words).sort()).toEqual(['de', 'en', 'es', 'fr', 'it']);
+    expect(Object.keys(SENSE_TOPICS.pairs)).toHaveLength(10);
+  });
+
+  it('knows a word with one translation, in both directions and with articles', () => {
+    expect(dictionaryPairTopics('court', 'campo', EN_IT)).toEqual(['sport']);
+    expect(dictionaryPairTopics('campo', 'court', { source: 'it', target: 'en' })).toEqual(['sport']);
+    expect(dictionaryPairTopics('the court', 'il campo', EN_IT)).toEqual(['sport']);
+    expect(dictionaryPairTopics('xyzzy', 'campo', EN_IT)).toBeNull();
+  });
+
+  it('knows the usual topics of a translation', () => {
+    expect(dictionaryWordTopics('ictus', 'it')).toEqual(['health']);
+    expect(dictionaryWordTopics('der Schlaganfall', 'de')).toEqual(['health']);
+    expect(dictionaryWordTopics('colpo', 'it')).toBeNull();
+  });
+
+  it('picks the meaning from the translation where the network alone could not', () => {
+    // "campo" alone is a field, a camp, a court…: the pair says which
+    expect(suggestMeaningTopics('court', 'campo', EN_IT, false)).toEqual(['sport']);
+    expect(suggestMeaningTopics('bank', 'riva', EN_IT, false)).toEqual(['nature']);
+    // Between two languages without English, through the same Wiktionary sense
+    expect(suggestMeaningTopics('Schlaganfall', 'ictus', { source: 'de', target: 'it' }, false)).toEqual(['health']);
   });
 });
 

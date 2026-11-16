@@ -79,5 +79,9 @@ gli insegnanti su `testset.py`.
 **Per cambiare le categorie**: modificare `seeds.py`, `TOPIC_DESC` in `llm.py` **e**
 `src/domain/topics.ts` (stesso ordine) e i nomi in `src/i18n`, poi rigenerare.
 
+**Sensi di Wiktionary**: un secondo strato, che viene prima della rete, dà le categorie delle
+coppie parola + traduzione prese dai sensi di Wiktionary (*stroke* = *ictus* → Salute): vedi
+`wiktionary/README.md`.
+
 **In futuro (server)**: `suggestTopics` può chiedere al server un modello più grande; il resto
 dell'app non cambia.

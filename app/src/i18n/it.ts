@@ -52,6 +52,18 @@ export const it: Translations = {
     undo: 'Annulla',
     train: (count: number) => (count === 1 ? 'Allenati sulla parola nuova' : `Allenati sulle ${count} parole nuove`),
     allHandled: 'Fatto per oggi. Domani arrivano parole nuove!',
+    categories: 'Categorie',
+    categoriesAccessibility: (count: number) =>
+      count === 0 ? 'Scegli le categorie delle parole del giorno' : `Categorie delle parole del giorno: ${count} scelte`,
+    topicsTitle: 'Cosa vuoi imparare?',
+    topicsSubtitle: 'Le parole del giorno arriveranno da queste categorie.',
+    topicsHint: 'Puoi sceglierne più di una. Accanto a ognuna, quante parole nuove restano al tuo livello.',
+    topicsAll: 'Tutte',
+    topicsAccessibility: (topic: string, count: number) =>
+      count === 1 ? `${topic}, 1 parola nuova` : `${topic}, ${count} parole nuove`,
+    topicsChanged: 'Le parole di oggi cambiano subito; quelle già aggiunte restano nel tuo dizionario.',
+    exhaustedTopics: 'Hai già visto tutte le parole di queste categorie al tuo livello. Prova altre categorie o un altro livello.',
+    changeTopics: 'Cambia categorie',
   },
   words: {
     title: 'Dizionario',

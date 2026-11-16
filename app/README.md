@@ -16,7 +16,7 @@ Il README ha due parti:
 
 | Schermata | A cosa serve |
 |-----------|--------------|
-| **Home** | Data e saluto personalizzato, selettore delle lingue, contatori con simboli e fiamma della serie a 1, 10, 100 e 1.000 giorni. Seguono **Ripasso di oggi**, **+ Aggiungi parola** e **Parole del giorno**. |
+| **Home** | Data e saluto personalizzato, selettore delle lingue, contatori con simboli e fiamma della serie a 1, 10, 100 e 1.000 giorni. Seguono **Ripasso di oggi**, **+ Aggiungi parola** e **Parole del giorno**, con il tasto **Categorie** per scegliere cosa imparare (Cibo, Viaggi, Salute…). |
 | **Dizionario** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti) e filtro **Errori** (solo le parole sbagliate, con i contatori errori/giuste), barra di "quanto la so" per ogni parola. Tocca una parola per vedere i progressi e modificarla. |
 | **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da imparare*, *tutte*, *errori*), con il tasto **Filtra** sotto: **categorie** (Informatica, Salute, Cibo…, anche più di una) e **tipo di parola** (sostantivi, verbi, aggettivi, altro), quante domande (10, 20, tutte o **Altro**: un numero a scelta da 1 a 200). |
 | **Sfide** | In arrivo (rimandata di proposito). |
@@ -28,7 +28,7 @@ Il README ha due parti:
 
 - **Una sola azione principale al giorno**: in Home il bottone pieno è sempre *Inizia il ripasso*. Tutto il resto è secondario. Chi apre l'app per 2 minuti sa subito cosa fare.
 - **Ripasso spaziato (sistema Leitner)** invece di quiz casuali: l'app chiede le parole quando stai per dimenticarle, non tutte ogni volta.
-- **Parole del giorno = parole nuove**, 5 al giorno, scelte da una lista integrata. Il codice è già pronto per prenderle da un server: si cambia **una riga**.
+- **Parole del giorno = parole nuove**, 5 al giorno, scelte da una lista integrata, anche solo delle **categorie** che vuoi imparare. Il codice è già pronto per prenderle da un server: si cambia **una riga**.
 - **Correzione indulgente ma onesta**: articoli ("la batteria", "to run") e accenti mancanti non sono errori; una lettera sbagliata in una parola lunga vale "Quasi!" e mostra come si scrive.
 - **Local-first**: nessun account, nessun server, dati in AsyncStorage. Backup in un file JSON.
 - **Accessibile**: tutti i testi hanno contrasto WCAG AA (4.5:1), ogni elemento toccabile è almeno 44 pt, i bottoni-icona hanno un'etichetta per lo screen reader.
@@ -68,7 +68,8 @@ npm test            # test della logica (jest)
 | cambiare un colore (chiaro o scuro)                       | `src/theme/colors.ts` (controlla il contrasto, vedi Parte 2)     |
 | cambiare spaziature, raggi, dimensioni di testo e icone   | `src/theme/tokens.ts`                                            |
 | cambiare o aggiungere un testo                            | `src/i18n/en.ts` **e** `src/i18n/it.ts`                          |
-| aggiungere parole del giorno                              | righe in fondo a `src/content/wordBank.ts`                       |
+| aggiungere parole del giorno                              | righe in `src/content/wordBank.ts`, nella sezione della loro categoria |
+| rigenerare le categorie prese da Wiktionary               | `design/topic-model/wiktionary/` (vedi il suo README)            |
 | prendere le parole del giorno da un server                | `dailyWordsSource` in `src/services/dailyWords.ts`               |
 | cambiare quante parole del giorno al giorno               | `DAILY_WORDS_COUNT` in `src/domain/dailyWords.ts`                |
 | cambiare gli intervalli del ripasso                       | `REVIEW_INTERVAL_DAYS` in `src/domain/review.ts`                 |
@@ -130,10 +131,10 @@ Perché così:
 
 | Chiave AsyncStorage | Store | Contenuto | Versione |
 |---|---|---|---|
-| `words` | `wordStore` | tutte le parole di tutte le coppie | 5 |
+| `words` | `wordStore` | tutte le parole di tutte le coppie | 6 |
 | `settings` | `settingsStore` | tema, lingue, livello parole del giorno, suoni, promemoria (attivo e ora), ultime scelte del quiz (numero di domande, tematiche, tipi) | 1 |
 | `activity` | `activityStore` | giorni in cui ti sei allenato (max 400), record di giorni di fila, quiz perfetti | 2 |
-| `daily` | `dailyStore` | parole del giorno di oggi per coppia + parole segnate "la so già" | 1 |
+| `daily` | `dailyStore` | parole del giorno di oggi per coppia (con livello e categorie con cui sono state scelte) + parole segnate "la so già" | 1 |
 | `achievements` | `achievementStore` | data in cui è stato raggiunto ogni livello di ogni medaglia | 1 |
 | `profile` | `profileStore` | nome, nick, email, avatar (illustrato o foto), codice amico, contatore amici, data di inizio | 3 |
 
@@ -186,20 +187,26 @@ Ogni parola sta in una **"scatola"** che è semplicemente il suo `streak` (rispo
 File: `src/content/wordBank.ts` (dati), `src/domain/dailyWords.ts` (regole), `src/services/dailyWords.ts` (sorgente), `src/store/dailyStore.ts` (memoria), `src/hooks/useDailyWords.ts` (collante), `src/components/DailyWordsCard.tsx` (UI).
 
 ### La lista integrata
-258 parole, dall'A1 al C2 (39 A1, 50 A2, 53 B1, 44 B2, 40 C1, 32 C2), **ogni riga è un concetto in tutte e cinque le lingue**:
+802 parole, dall'A1 al C2 (113 A1, 161 A2, 172 B1, 164 B2, 112 C1, 80 C2), **ogni riga è un concetto in tutte e cinque le lingue**, con le sue categorie:
 ```ts
-['B1', 'battery', 'batteria / pila', 'batería / pila', 'batterie / pile', 'Batterie'],
-//      en         it                 es                fr                 de
+['B1', 'battery', 'batteria / pila', 'batería / pila', 'batterie / pile', 'Batterie', ['tech']],
+//      en         it                 es                fr                 de          categorie
 ```
+Le prime 258 sono parole generali (alcune con una categoria evidente: *kitchen* → Casa, Cibo); seguono **circa 45 parole per ognuna delle 12 categorie**, scritte apposta: per ogni categoria circa 15 di livello A, 20 di livello B e 10 di livello C (un test controlla che ce ne siano almeno 10 per gruppo). Le traduzioni sono state confrontate con le tabelle di Wiktionary.
 Così la stessa lista funziona per qualunque coppia: se studi italiano con lingua madre inglese, la parola è `batteria` e la traduzione `battery`. Le alternative separate da ` / ` sono: la **prima** è la parola suggerita, **tutte** sono accettate come traduzione.
 
 ### Come vengono scelte
-1. Si tengono le parole del **livello** scelto (Impostazioni: Tutti / A1–A2 / B1–B2 / C1–C2).
+1. Si tengono le parole del **livello** scelto (Impostazioni: Tutti / A1–A2 / B1–B2 / C1–C2) e, se ne hai scelte, delle **categorie** (almeno una in comune; le parole generali escono solo con *Tutte*).
 2. Si tolgono quelle **già nel vocabolario** (qualsiasi alternativa) e quelle segnate **"La so già"**.
-3. Si mescolano con un generatore casuale **con seme** = `giorno + coppia di lingue`: lo stesso giorno escono sempre le stesse parole, il giorno dopo altre.
+3. Si mescolano con un generatore casuale **con seme** = `giorno + coppia di lingue (+ categorie)`: lo stesso giorno escono sempre le stesse parole, il giorno dopo altre.
 4. Si prendono le prime 5, saltando i doppioni: in alcune lingue due concetti hanno la stessa parola (*improve* e *enhance* → "migliorare") e non devono uscire insieme.
 
-Il risultato viene **salvato** in `dailyStore` (con giorno e livello): così aggiungendo una parola la lista non cambia sotto le dita. Si ricalcola solo quando cambia il giorno, la coppia di lingue o il livello.
+Il risultato viene **salvato** in `dailyStore` (con giorno e livello): così aggiungendo una parola la lista non cambia sotto le dita. Si ricalcola solo quando cambia il giorno, la coppia di lingue, il livello o le categorie.
+
+### Le categorie
+Nella card, accanto al titolo, il tasto **Categorie** (verde con il numero quando ne hai scelte) apre dal basso *Cosa vuoi imparare?* (`app/daily-topics.tsx`, *form sheet*): le 12 categorie, se ne possono scegliere più d'una, *Tutte* = nessun filtro. Accanto a ognuna quante parole nuove restano al tuo livello (`remainingCount`). La scelta è salvata (`dailyTopics` in `settingsStore`); chiudendo, le parole di oggi cambiano subito (quelle già aggiunte restano nel dizionario). Sotto il titolo della card compaiono le categorie scelte (`🍝 Cibo · ✈️ Viaggi`). Se le parole di quelle categorie al tuo livello sono finite, la card lo dice e offre *Cambia categorie*.
+
+Una parola aggiunta da qui arriva nel dizionario **già con la sua categoria** (quella della lista, sicura), su ogni traduzione; si può cambiare come sempre.
 
 ### Le azioni
 - **+ Aggiungi** → crea la parola (con il livello CEFR) nel vocabolario. Diventa "nuova", quindi entra nel ripasso di oggi.
@@ -214,8 +221,8 @@ export const dailyWordsSource = createRemoteDailyWordsSource('https://api.exampl
 ```
 API attesa:
 ```
-GET /daily-words?source=en&target=it&level=intermediate&day=2026-10-29
-200 → { "entries": BankEntry[] }     // qualche decina di candidati, stesso formato della lista integrata
+GET /daily-words?source=en&target=it&level=intermediate&day=2026-10-29&topics=food,travel
+200 → { "entries": BankEntry[] }     // qualche decina di candidati, stesso formato della lista integrata (topics facoltativo)
 ```
 Scelte fatte apposta:
 - Il server manda **candidati**, il telefono fa la scelta finale con le stesse regole → **il vocabolario dell'utente non lascia mai il telefono**.
@@ -253,7 +260,15 @@ File: `domain/topics.ts`, `domain/topicClassifier.ts`, `domain/partOfSpeech.ts`,
 
 **Le categorie sono di ogni significato, non della parola**: *stroke* = *ictus* → Salute, = *bracciata* → Sport, = *colpo* → nessuna. Ogni traduzione può averne più d'una (*pollame* = Cibo + Natura) o nessuna (*sempre*). Le categorie della parola (`word.topics`) sono quelle di tutte le sue traduzioni insieme e servono ai filtri e ai contatori.
 
-**Chi le decide — la rete neurale** (`suggestMeaningTopics`, gira sul telefono, offline, funziona in Expo Go):
+**Chi le decide** (`suggestMeaningTopics`, gira sul telefono, offline, funziona in Expo Go): due fonti, i **sensi di Wiktionary** e una **rete neurale**, in quest'ordine:
+- la **coppia** parola + traduzione è nei sensi di Wiktionary (*stroke* = *ictus* → Salute, *court* = *campo* → Sport, anche tra lingue senza inglese: *Schlaganfall* = *ictus*) → quelle categorie;
+- la rete conosce la **traduzione** → le sue categorie (anche nessuna, *caserma*);
+- Wiktionary conosce la **traduzione** da sola → le sue categorie abituali;
+- se la parola ha un'unica traduzione, la parola studiata (prima la rete, poi Wiktionary).
+
+**I sensi di Wiktionary** (`content/senseTopics.ts`, generato da `design/topic-model/wiktionary/`, vedi il suo README): dall'estratto di Wiktionary di kaikki.org si prendono, per ogni senso di ogni parola inglese, le etichette di settore (*medicine*, *cricket*…) e la tabella delle traduzioni; le etichette diventano le 12 categorie. Nell'app ~37.000 parole e ~50.000 coppie (le 50.000 parole più usate per lingua), 1,4 MB, aperte una lingua alla volta quando servono. Su un campione casuale sono giuste circa 9 volte su 10; le parole quotidiane (*cane*, *mela*) spesso non hanno etichetta e restano alla rete. La versione 6 dei dati salvati ricalcola le categorie automatiche delle parole già salvate (quelle scelte a mano restano).
+
+**La rete neurale**:
 1. al computer, un modello di linguaggio (Qwen2.5) ha etichettato un campione di parole e una rete addestrata su quelle etichette ha classificato le 75.000 parole più usate delle 5 lingue, con una soglia severa (meglio nessuna categoria che una sbagliata): il risultato è nell'app come lessico **per lingua** (`content/topicModel.ts`, generato);
 2. per le parole non nel lessico c'è una piccola rete "studente" (gruppi di lettere → 24 neuroni → 12 categorie) che riconosce pezzi come *cardio*, *program*, *cucin*, e conta solo quando è sicura;
 3. decide la **traduzione**; la parola studiata aiuta solo se ha un'unica traduzione che la rete non conosce (*rash* = *eruzione cutanea* → Salute). Al massimo 3 per significato.
@@ -454,14 +469,15 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 
 ## 13. Test
 
-`npm test` esegue i test in `src/domain/__tests__/` (55 test): correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello), serie di giorni e record, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, formato del codice amico.
+`npm test` esegue i test in `src/domain/__tests__/` (101 test): correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello e per categoria, filtro per categorie), serie di giorni e record, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, formato del codice amico, categorie dalla rete e dai sensi di Wiktionary.
 Sono test della logica pura: girano in un secondo, senza telefono.
 
 ## 14. Limiti noti e prossimi passi
 
 - **Sfide**: rimandate. L'idea più semplice senza server è un codice/link che contiene le parole e il punteggio da battere.
 - **Versione web**: non è un obiettivo. Funziona per prove veloci (`npx expo start --web`), ma la barra delle tab nativa sul web si sovrappone all'intestazione.
-- **Parole del giorno**: la lista integrata ha 258 parole. Con 5 al giorno bastano per circa 50 giorni col livello *Tutti* e per 2–3 settimane con un livello singolo (A1–A2: 89, B1–B2: 97, C1–C2: 72). Il passo naturale è il server descritto sopra (o allungare la lista: basta aggiungere righe).
+- **Parole del giorno**: la lista integrata ha 802 parole (circa 45 per categoria). Con una sola categoria e un livello singolo bastano per pochi giorni (es. Cibo C1–C2: 10 parole = 2 giorni). Il passo naturale è il server descritto sopra (o allungare la lista: basta aggiungere righe).
+- **Categorie da Wiktionary**: le parole rare (fuori dalle 50.000 più usate, es. *bracciata*) non sono nell'app per tenerla leggera; l'elenco completo (~200.000 coppie) può andare nella tabella `meaning_topics` del server.
 - **Amici e account**: richiedono un server. Il profilo locale (`profileStore`) è già pensato per essere inviato alla registrazione.
 - **Categorie automatiche**: con la soglia severa, sulle parole difficili di prova 9 categorie proposte su 10 sono giuste, ma ne trova circa metà (dettagli in `design/topic-model/README.md`): molte traduzioni restano senza categoria e si spuntano a mano. Con il server si può usare un modello più grande.
 - **Wiktionary**: le spiegazioni dei sensi sono in inglese; per le coppie senza inglese (es. 🇪🇸→🇮🇹) restano le traduzioni di MyMemory, non divise per senso.

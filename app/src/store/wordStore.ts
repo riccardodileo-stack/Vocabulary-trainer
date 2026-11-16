@@ -74,6 +74,19 @@ function migrate(persisted: unknown, version: number): { words: Word[] } {
     });
   }
 
+  if (version < 6) {
+    // v6: the topics also come from Wiktionary senses (content/senseTopics.ts): the automatic
+    // topics of every meaning are suggested again; those chosen by hand stay as they are.
+    state.words = state.words.map((word) => {
+      const meanings = classifyMeanings(
+        { source: word.sourceLang, target: word.targetLang },
+        word.term,
+        word.meanings.map((meaning) => (meaning.topicsByUser ? meaning : { ...meaning, topics: undefined }))
+      );
+      return { ...word, meanings, topics: topicsOfMeanings(meanings) };
+    });
+  }
+
   return state;
 }
 
@@ -129,7 +142,7 @@ export const useWordStore = create<WordState>()(
     {
       name: 'words',
       // Increase and extend `migrate` when the saved Word shape changes
-      version: 5,
+      version: 6,
       migrate,
       storage: persistStorage,
     }

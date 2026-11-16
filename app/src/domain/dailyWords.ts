@@ -8,6 +8,7 @@ import type { BankEntry } from '../content/wordBank';
 import type { DayKey } from './dates';
 import type { LanguagePair } from './languages';
 import { normalizeText, splitSlashOptions } from './text';
+import type { TopicId } from './topics';
 import type { CefrLevel, NewWordInput } from './word';
 
 export const DAILY_WORDS_COUNT = 5;
@@ -30,6 +31,8 @@ export type DailySuggestion = {
   term: string;
   /** Its translations in the native language. */
   meanings: string[];
+  /** Categories of the word (empty for general words; missing in suggestions saved by older versions). */
+  topics?: TopicId[];
 };
 
 /** The entry seen from a language pair: first studied alternative, every translation. */
@@ -39,13 +42,18 @@ export function suggestionFromEntry(entry: BankEntry, { source, target }: Langua
     level: entry.level,
     term: splitSlashOptions(entry.text[source])[0],
     meanings: splitSlashOptions(entry.text[target]),
+    topics: entry.topics,
   };
 }
 
 export function suggestionToWordInput(suggestion: DailySuggestion): NewWordInput {
   return {
     term: suggestion.term,
-    meanings: suggestion.meanings.map((text) => ({ text, examples: [] })),
+    // The list knows the categories: they go to every meaning (automatic, the user can change them)
+    // (suggestions saved before categories existed have none)
+    meanings: suggestion.meanings.map((text) =>
+      suggestion.topics?.length ? { text, examples: [], topics: suggestion.topics } : { text, examples: [] }
+    ),
     level: suggestion.level,
   };
 }
@@ -75,6 +83,8 @@ export type PickOptions = {
   pair: LanguagePair;
   day: DayKey;
   level: DailyLevel;
+  /** Categories chosen by the user; empty = every word (general ones too). */
+  topics?: readonly TopicId[];
   count?: number;
   /** Entries marked as "I already know it". */
   knownIds: ReadonlySet<string>;
@@ -82,22 +92,48 @@ export type PickOptions = {
   vocabularyTerms: ReadonlySet<string>;
 };
 
+/** No category chosen: every word. Otherwise words of at least one of the chosen categories. */
+export function inTopics(entry: BankEntry, topics: readonly TopicId[]): boolean {
+  return topics.length === 0 || entry.topics.some((topic) => topics.includes(topic));
+}
+
+/**
+ * Words still to discover for these choices: of the level and categories, not known, not in
+ * the vocabulary. Used for the counters of the categories sheet.
+ */
+export function remainingCount(
+  entries: BankEntry[],
+  options: Pick<PickOptions, 'pair' | 'level' | 'topics' | 'knownIds' | 'vocabularyTerms'>
+): number {
+  const levels = DAILY_LEVELS[options.level];
+  return entries.filter(
+    (entry) =>
+      levels.includes(entry.level) &&
+      inTopics(entry, options.topics ?? []) &&
+      !options.knownIds.has(entry.id) &&
+      !splitSlashOptions(entry.text[options.pair.source]).some((term) => options.vocabularyTerms.has(normalizeText(term)))
+  ).length;
+}
+
 /**
  * The suggestions of one day. The order depends only on the day and the pair,
  * so reopening the app the same day shows the same words.
  */
 export function pickDailySuggestions(entries: BankEntry[], options: PickOptions): DailySuggestion[] {
-  const { pair, day, level, count = DAILY_WORDS_COUNT, knownIds, vocabularyTerms } = options;
+  const { pair, day, level, topics = [], count = DAILY_WORDS_COUNT, knownIds, vocabularyTerms } = options;
   const levels = DAILY_LEVELS[level];
 
   const candidates = entries.filter(
     (entry) =>
       levels.includes(entry.level) &&
+      inTopics(entry, topics) &&
       !knownIds.has(entry.id) &&
       !splitSlashOptions(entry.text[pair.source]).some((term) => vocabularyTerms.has(normalizeText(term)))
   );
 
-  const random = seededRandom(hashString(`${day}|${pair.source}|${pair.target}`));
+  // Same day, pair and categories -> same order. Without categories the seed is unchanged.
+  const topicKey = [...topics].sort().join(',');
+  const random = seededRandom(hashString(`${day}|${pair.source}|${pair.target}${topicKey ? `|${topicKey}` : ''}`));
   for (let i = candidates.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
     [candidates[i], candidates[j]] = [candidates[j], candidates[i]];

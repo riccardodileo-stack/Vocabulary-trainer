@@ -1,9 +1,10 @@
 // Today's words of the day for the active pair, with their state and actions.
-// Loads a new batch when the day, the pair or the level changes.
+// Loads a new batch when the day, the pair, the level or the categories change.
 
 import { useEffect, useMemo, useState } from 'react';
 
 import { DAILY_WORDS_COUNT, suggestionToWordInput, type DailySuggestion } from '@/domain/dailyWords';
+import type { TopicId } from '@/domain/topics';
 import { dayKey } from '@/domain/dates';
 import { normalizeText } from '@/domain/text';
 import { dailyWordsSource } from '@/services/dailyWords';
@@ -29,9 +30,16 @@ export type DailyWords = {
   retry: () => void;
 };
 
+/** Same categories in any order -> same key. */
+function sameTopicsKey(topics: readonly TopicId[]): string {
+  return [...topics].sort().join(',');
+}
+
 export function useDailyWords(): DailyWords {
   const pair = useActivePair();
   const level = useSettingsStore((state) => state.dailyLevel);
+  const topics = useSettingsStore((state) => state.dailyTopics);
+  const topicKey = sameTopicsKey(topics);
   const words = useWordsOfPair(pair);
   const knownIds = useKnownIds(pair.source);
   const batch = useDailyStore((state) => state.batches[pairKey(pair)]);
@@ -40,7 +48,8 @@ export function useDailyWords(): DailyWords {
   const addWord = useWordStore((state) => state.addWord);
 
   const today = dayKey();
-  const isFresh = batch !== undefined && batch.day === today && batch.level === level;
+  const isFresh =
+    batch !== undefined && batch.day === today && batch.level === level && sameTopicsKey(batch.topics ?? []) === topicKey;
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
@@ -59,6 +68,7 @@ export function useDailyWords(): DailyWords {
         pair,
         day: today,
         level,
+        topics,
         count: DAILY_WORDS_COUNT,
         knownIds: known[pair.source] ?? [],
         vocabularyTerms: allWords
@@ -68,7 +78,7 @@ export function useDailyWords(): DailyWords {
       .then((suggestions) => {
         if (!cancelled) {
           setFailed(false);
-          setBatch(pair, { day: today, level, suggestions });
+          setBatch(pair, { day: today, level, topics, suggestions });
         }
       })
       .catch((error) => {
@@ -83,7 +93,7 @@ export function useDailyWords(): DailyWords {
     };
     // pair is rebuilt on every render: depend on its parts
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isFresh, pair.source, pair.target, level, today, attempt, setBatch]);
+  }, [isFresh, pair.source, pair.target, level, topicKey, today, attempt, setBatch]);
 
   const items = useMemo<DailyWordItem[]>(() => {
     if (!isFresh) {

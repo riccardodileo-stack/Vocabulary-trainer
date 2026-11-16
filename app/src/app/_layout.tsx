@@ -79,6 +79,16 @@ export default function RootLayout() {
         {/* The quiz covers the tabs: opened from Home or Train, closing it goes back there */}
         <Stack.Screen name="quiz" options={{ title: t.train.title }} />
         <Stack.Screen
+          name="daily-topics"
+          options={{
+            presentation: 'formSheet',
+            sheetGrabberVisible: true,
+            sheetAllowedDetents: [0.75, 1],
+            sheetCornerRadius: 28,
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
           name="quiz-filters"
           options={{
             presentation: 'formSheet',

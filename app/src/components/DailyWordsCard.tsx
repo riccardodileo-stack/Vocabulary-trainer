@@ -4,14 +4,17 @@ import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import { TOPIC_ICONS } from '@/domain/topics';
 import { useDailyWords, type DailyWordItem, type DailyWords } from '@/hooks/useDailyWords';
 import { useT } from '@/i18n';
+import { useSettingsStore } from '@/store/settingsStore';
 import { fontSize, radius, spacing, useTheme } from '@/theme';
 
 import { AppText } from './AppText';
 import { Appear } from './Appear';
 import { Button } from './Button';
 import { Card } from './Card';
+import { FilterButton } from './FilterButton';
 import { Pill } from './Pill';
 
 function DailyWordRow({ item, actions }: { item: DailyWordItem; actions: DailyWords }) {
@@ -67,6 +70,8 @@ export function DailyWordsCard() {
   const t = useT();
   const { colors } = useTheme();
   const daily = useDailyWords();
+  const topics = useSettingsStore((state) => state.dailyTopics);
+  const openTopics = () => router.push('/daily-topics');
 
   const addedIds = daily.items.flatMap((item) => (item.state === 'added' && item.wordId ? [item.wordId] : []));
   const allHandled = daily.items.length > 0 && daily.items.every((item) => item.state !== 'new');
@@ -79,9 +84,24 @@ export function DailyWordsCard() {
 
   return (
     <Card>
-      <AppText variant="title" accessibilityRole="header">
-        {t.daily.title}
-      </AppText>
+      <View style={styles.header}>
+        <AppText variant="title" accessibilityRole="header" style={styles.title}>
+          {t.daily.title}
+        </AppText>
+        <FilterButton
+          label={t.daily.categories}
+          active={topics.length}
+          onPress={openTopics}
+          accessibilityLabel={t.daily.categoriesAccessibility(topics.length)}
+        />
+      </View>
+      {topics.length > 0 ? (
+        <Appear key={topics.join(',')}>
+          <AppText variant="small" color="textMuted">
+            {topics.map((topic) => `${TOPIC_ICONS[topic]} ${t.topicsShort[topic]}`).join('  ·  ')}
+          </AppText>
+        </Appear>
+      ) : null}
 
       {daily.status === 'loading' ? (
         <View style={styles.status}>
@@ -97,7 +117,16 @@ export function DailyWordsCard() {
         </>
       ) : null}
 
-      {daily.status === 'ready' && daily.items.length === 0 ? <AppText color="textMuted">{t.daily.exhausted}</AppText> : null}
+      {daily.status === 'ready' && daily.items.length === 0 ? (
+        topics.length > 0 ? (
+          <>
+            <AppText color="textMuted">{t.daily.exhaustedTopics}</AppText>
+            <Button label={t.daily.changeTopics} tone="secondary" size="sm" onPress={openTopics} />
+          </>
+        ) : (
+          <AppText color="textMuted">{t.daily.exhausted}</AppText>
+        )
+      ) : null}
 
       {daily.status === 'ready' && daily.items.length > 0 ? (
         <>
@@ -134,7 +163,14 @@ export function DailyWordsCard() {
 }
 
 const styles = StyleSheet.create({
-
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  title: {
+    flex: 1,
+  },
   studyIntro: {
     flexDirection: 'row',
     alignItems: 'center',
