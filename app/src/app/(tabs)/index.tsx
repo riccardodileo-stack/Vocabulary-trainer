@@ -47,11 +47,6 @@ export default function HomeScreen() {
   const greeting = name ? t.home.greetingName(name) : t.home.greeting;
 
   const today = dayKey();
-  const dateLabel = new Intl.DateTimeFormat(language, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(new Date(`${today}T12:00:00`));
   const numberFormat = new Intl.NumberFormat(language);
 
   const dueCount = words.filter((word) => isDue(word, today)).length;
@@ -95,12 +90,6 @@ export default function HomeScreen() {
     <Screen tab="/" contentContainerStyle={Platform.OS === 'android' && { paddingTop: insets.top + spacing.lg }}>
       <View style={styles.header}>
         <View style={styles.toolbar}>
-          <View style={styles.date}>
-            <View style={[styles.dateDot, { backgroundColor: colors.accent }]} />
-            <AppText variant="caption" color="primaryStrong" style={styles.dateLabel}>
-              {dateLabel.toLocaleUpperCase(language)}
-            </AppText>
-          </View>
           <LanguagePairChip pair={pair} compact onPress={() => router.push('/languages')} />
         </View>
         <View style={styles.greetingRow}>
@@ -270,13 +259,8 @@ const styles = StyleSheet.create({
   },
   toolbar: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
+    justifyContent: 'flex-end',
   },
-  date: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  dateDot: { width: spacing.sm, height: spacing.sm, borderRadius: radius.pill },
-  dateLabel: { flexShrink: 1 },
   stats: { flexDirection: 'row', gap: spacing.sm },
   statsStacked: { flexDirection: 'column' },
   stat: {
