@@ -298,6 +298,8 @@ Misure di qualità, come è stata addestrata e come rigenerarla: `design/topic-m
 
 **Nel quiz** (Allenamento): sotto *Da imparare / Tutte / Errori* c'è il tasto **Filtra** (`components/FilterButton.tsx`; diventa verde con il numero di filtri attivi). Apre dal basso la finestra *Filtra le parole* (`app/quiz-filters.tsx`, *form sheet*) con due menu: **Categorie** e **Tipo di parola**, se ne possono scegliere più d'uno (*Tutte*/*Tutti* = nessun filtro). Accanto a ogni scelta c'è quante parole dà con le altre scelte attuali; una parola entra se **almeno una delle sue traduzioni** ha una delle categorie scelte e se è di **uno** dei tipi scelti (`matchesFilters` in `domain/quiz.ts`). Il quiz chiede **solo le traduzioni di quelle categorie** (`meaningsInScope`): in un quiz di Salute *stroke* vuole *ictus*, non *colpo*, e sotto la parola compare *🩺 Medicina e salute* per dire quale significato si chiede. Accanto al tasto compare il riassunto (`🍝 Cibo · 🌿 Natura · Sostantivi`) con *Azzera*. Le scelte restano salvate. Nella rotta: `/quiz?…&topics=tech,food&kinds=verb`.
 
+**Blocchi** raggruppa le parole della coppia attiva per data di aggiunta, in gruppi da 50. I completamenti di ogni blocco sono salvati sul dispositivo. In Dizionario → Cronologico i gruppi sono separati da piccoli tratteggi.
+
 ## 5. Come viene corretta una risposta
 
 File: `src/domain/text.ts` → `evaluateAnswer(risposta, accettate, lingua)` restituisce `correct`, `almost` o `wrong`.

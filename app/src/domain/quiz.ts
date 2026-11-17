@@ -21,6 +21,23 @@ export type QuizMode = 'due' | 'all' | 'mistakes';
 
 export const QUIZ_MODES: QuizMode[] = ['due', 'all', 'mistakes'];
 
+export const QUIZ_BLOCK_SIZE = 50;
+
+export function compareWordsOldestFirst(a: Word, b: Word): number {
+  return (Date.parse(a.createdAt) || 0) - (Date.parse(b.createdAt) || 0);
+}
+
+export function getQuizBlocks(words: Word[]): Word[][] {
+  const ordered = [...words].sort(compareWordsOldestFirst);
+  const blocks: Word[][] = [];
+
+  for (let start = 0; start < ordered.length; start += QUIZ_BLOCK_SIZE) {
+    blocks.push(ordered.slice(start, start + QUIZ_BLOCK_SIZE));
+  }
+
+  return blocks;
+}
+
 export type QuizOptions = {
   direction: QuizDirection;
   mode: QuizMode;
@@ -28,6 +45,8 @@ export type QuizOptions = {
   count: number;
   /** If set, only these words are used (e.g. the words added today from Home). */
   wordIds?: string[];
+  /** Blocks ask every word, even when two words produce the same prompt. */
+  allowRepeatedPrompts?: boolean;
   /** Only words with at least one of these topics; empty or missing = every topic. */
   topics?: TopicId[];
   /** Only these kinds of word (e.g. only verbs); empty or missing = every kind. */
@@ -193,9 +212,11 @@ export function buildQuiz(vocabulary: Word[], options: QuizOptions, today: DayKe
         ? forwardQuestion(word, options.topics)
         : backwardQuestion(word, vocabulary, options.topics);
 
+
     // Two words with the same translation would produce the same question twice
-    if (!askedPrompts.has(normalizeText(question.prompt))) {
-      askedPrompts.add(normalizeText(question.prompt));
+    const prompt = normalizeText(question.prompt);
+    if (options.allowRepeatedPrompts || !askedPrompts.has(prompt)) {
+      askedPrompts.add(prompt);
       questions.push(question);
     }
   }

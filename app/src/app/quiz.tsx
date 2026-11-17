@@ -7,6 +7,7 @@
 //
 // Params: direction=forward|backward, mode=due|all|mistakes, count=number (0 = all),
 //         ids=comma separated word ids (optional, limits the quiz to those words),
+//         blockId=the first word ID of the block (optional, tracks full rounds),
 //         topics=tech,food… and kinds=noun,verb… (optional filters, empty = all)
 
 import { Stack, router, useLocalSearchParams } from 'expo-router';
@@ -38,7 +39,15 @@ import { useActivePair } from '@/store/settingsStore';
 import { useWordStore, useWordsOfPair } from '@/store/wordStore';
 import { spacing } from '@/theme';
 
-type QuizParams = { direction?: string; mode?: string; count?: string; ids?: string; topics?: string; kinds?: string };
+type QuizParams = {
+  direction?: string;
+  mode?: string;
+  count?: string;
+  ids?: string;
+  topics?: string;
+  kinds?: string;
+  blockId?: string;
+};
 
 type Mistake = { question: QuizQuestion; given: string };
 
@@ -56,7 +65,10 @@ function optionsFromParams(params: QuizParams): QuizOptions {
 
 export default function QuizScreen() {
   const t = useT();
-  const options = optionsFromParams(useLocalSearchParams<QuizParams>());
+  const params = useLocalSearchParams<QuizParams>();
+  const baseOptions = optionsFromParams(params);
+  const blockId = params.blockId === baseOptions.wordIds?.[0] ? params.blockId : undefined;
+  const options = { ...baseOptions, allowRepeatedPrompts: !!blockId };
   const pair = useActivePair();
   const words = useWordsOfPair(pair);
   const recordAnswer = useWordStore((state) => state.recordAnswer);
@@ -99,6 +111,8 @@ export default function QuizScreen() {
   const [answer, setAnswer] = useState('');
   const [verdict, setVerdict] = useState<AnswerVerdict | null>(null);
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
+  const [roundBlockId, setRoundBlockId] = useState(blockId);
+  const roundRecorded = useRef(false);
 
   const question = questions[index];
   const finished = index >= questions.length;
@@ -123,8 +137,12 @@ export default function QuizScreen() {
 
   const next = () => {
     if (isLast) {
+      if (roundRecorded.current) {
+        return;
+      }
+      roundRecorded.current = true;
       // The quiz is complete (not ended early): it can count for the "perfect quiz" medal
-      recordQuizFinished(questions.length, mistakes.length);
+      recordQuizFinished(questions.length, mistakes.length, roundBlockId);
       playSound('finish');
     }
     setIndex(index + 1);
@@ -133,7 +151,9 @@ export default function QuizScreen() {
     inputRef.current?.focus();
   };
 
-  const startRound = (roundOptions: QuizOptions) => {
+  const startRound = (roundOptions: QuizOptions, nextBlockId?: string) => {
+    roundRecorded.current = false;
+    setRoundBlockId(nextBlockId);
     setQuestions(buildQuiz(words, roundOptions));
     setIndex(0);
     setAnswer('');
@@ -150,6 +170,10 @@ export default function QuizScreen() {
   const endEarly = () => {
     if (answeredCount === 0) {
       close();
+      return;
+    }
+    if (roundBlockId && answeredCount === questions.length) {
+      next();
       return;
     }
     setQuestions(questions.slice(0, answeredCount));
@@ -219,7 +243,7 @@ export default function QuizScreen() {
           <Button
             label={t.quiz.again}
             tone={mistakes.length > 0 ? 'secondary' : 'primary'}
-            onPress={() => startRound(options)}
+            onPress={() => startRound(options, blockId)}
           />
           <Button label={t.quiz.done} tone="secondary" onPress={close} />
         </Screen>

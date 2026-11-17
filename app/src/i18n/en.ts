@@ -74,6 +74,7 @@ export const en = {
     noResults: 'No words match your search.',
     sortAlphabetical: 'A–Z',
     sortRecent: 'Recent',
+    sortOldest: 'Oldest',
     sortMistakes: 'Mistakes',
     errorsCount: (count: number) => (count === 1 ? '1 mistake' : `${count} mistakes`),
     correctCount: (count: number) => (count === 1 ? '1 right' : `${count} right`),
@@ -199,6 +200,13 @@ export const en = {
     modeDue: 'To learn',
     modeAll: 'All',
     modeMistakes: 'Mistakes',
+    modeBlocks: 'Blocks',
+    modeBlocksHint: 'I grouped your words into sets of 50, in the order you added them.',
+    blockTitle: (number: number) => `Quiz ${number}`,
+    blockRuns: (count: number) => {
+      if (count === 0) return 'Never completed';
+      return count === 1 ? 'Completed once' : `Completed ${count} times`;
+    },
     modeDueHint: 'Words to learn today: new words and words you are about to forget.',
     modeAllHint: 'Every word of this vocabulary, in random order.',
     modeMistakesHint: 'Words you got wrong. Two correct answers in a row fix them.',

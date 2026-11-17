@@ -13,6 +13,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { FilterButton } from '@/components/FilterButton';
 import { NumberStepper } from '@/components/NumberStepper';
+import { QuizBlockList } from '@/components/QuizBlockList';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
 import { SegmentedControl } from '@/components/SegmentedControl';
@@ -24,6 +25,9 @@ import { useActivePair, useSettingsStore, type QuizCountChoice } from '@/store/s
 import { useWordsOfPair } from '@/store/wordStore';
 import { radius, spacing, useTheme } from '@/theme';
 
+type TrainMode = QuizMode | 'blocks';
+const TRAIN_MODES: TrainMode[] = [...QUIZ_MODES, 'blocks'];
+
 export default function TrainScreen() {
   const t = useT();
   const { colors } = useTheme();
@@ -31,7 +35,9 @@ export default function TrainScreen() {
   const words = useWordsOfPair(pair);
   const [direction, setDirection] = useState<QuizDirection>('forward');
   // Start on the review when there is something to review
-  const [mode, setMode] = useState<QuizMode>(() => (quizPool(words, { mode: 'due' }).length > 0 ? 'due' : 'all'));
+  const [selectedMode, setSelectedMode] = useState<TrainMode>(() => (quizPool(words, { mode: 'due' }).length > 0 ? 'due' : 'all'));
+  const showingBlocks = selectedMode === 'blocks';
+  const mode = selectedMode === 'blocks' ? 'all' : selectedMode;
   const countChoice = useSettingsStore((state) => state.quizCountChoice);
   const customCount = useSettingsStore((state) => state.quizCustomCount);
   const setCountChoice = useSettingsStore((state) => state.setQuizCountChoice);
@@ -53,10 +59,11 @@ export default function TrainScreen() {
   const source = LANGUAGES[pair.source].flag;
   const target = LANGUAGES[pair.target].flag;
 
-  const modeHints: Record<QuizMode, string> = {
+  const modeHints: Record<TrainMode, string> = {
     due: t.train.modeDueHint,
     all: t.train.modeAllHint,
     mistakes: t.train.modeMistakesHint,
+    blocks: t.train.modeBlocksHint,
   };
 
   const start = () =>
@@ -80,15 +87,17 @@ export default function TrainScreen() {
           onChange={setDirection}
         />
 
+
         <Section title={t.train.mode}>
-          <SegmentedControl
+          <SegmentedControl<TrainMode>
             options={[
               { value: 'due', label: t.train.modeDue },
               { value: 'all', label: t.train.modeAll },
               { value: 'mistakes', label: t.train.modeMistakes },
+              { value: 'blocks', label: t.train.modeBlocks },
             ]}
-            value={mode}
-            onChange={setMode}
+            value={selectedMode}
+            onChange={setSelectedMode}
           />
           <View style={styles.mascotRow}>
             <View style={[styles.speechBubble, { backgroundColor: colors.cardMuted }]}>
@@ -98,8 +107,9 @@ export default function TrainScreen() {
               />
 
               <View style={styles.speechMessages}>
-                {QUIZ_MODES.map((option, index) => {
-                  const selected = option === mode;
+                {/* The overlapping messages reserve the height of the tallest one. */}
+                {TRAIN_MODES.map((option, index) => {
+                  const selected = option === selectedMode;
 
                   return (
                     <View
@@ -126,6 +136,9 @@ export default function TrainScreen() {
             />
           </View>
           {/* Under the three choices: the filters and, when some are on, what they keep */}
+          {showingBlocks ? (
+            <QuizBlockList words={words} direction={direction} />
+          ) : (
           <View style={styles.filterRow}>
             <FilterButton
               label={t.filters.button}
@@ -150,8 +163,11 @@ export default function TrainScreen() {
               </Appear>
             ) : null}
           </View>
+          )}
         </Section>
 
+        {!showingBlocks ? (
+          <>
         <Section title={t.train.count}>
           <SegmentedControl<QuizCountChoice>
             options={[
@@ -185,6 +201,8 @@ export default function TrainScreen() {
           </AppText>
           <Button label={t.train.start} onPress={start} disabled={availableCount === 0} />
         </Card>
+          </>
+        ) : null}
       </Screen>
     </>
   );

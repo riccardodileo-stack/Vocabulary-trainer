@@ -19,9 +19,11 @@ type ActivityState = {
   bestStreak: number;
   /** Finished quizzes with no mistakes and at least PERFECT_QUIZ_MIN_QUESTIONS questions. */
   perfectQuizzes: number;
+  /** Full rounds completed, keyed by the first word of each block. */
+  blockCompletions: Partial<Record<string, number>>;
 
   markToday: () => void;
-  recordQuizFinished: (questions: number, mistakes: number) => void;
+  recordQuizFinished: (questions: number, mistakes: number, blockId?: string) => void;
 };
 
 export const useActivityStore = create<ActivityState>()(
@@ -30,6 +32,7 @@ export const useActivityStore = create<ActivityState>()(
       days: [],
       bestStreak: 0,
       perfectQuizzes: 0,
+      blockCompletions: {},
 
       markToday: () =>
         set((state) => {
@@ -38,18 +41,29 @@ export const useActivityStore = create<ActivityState>()(
           return { days, bestStreak: Math.max(state.bestStreak, streakStatus(days).best) };
         }),
 
-      recordQuizFinished: (questions, mistakes) =>
-        set((state) =>
-          questions >= PERFECT_QUIZ_MIN_QUESTIONS && mistakes === 0 ? { perfectQuizzes: state.perfectQuizzes + 1 } : {}
-        ),
+      recordQuizFinished: (questions, mistakes, blockId) =>
+        set((state) => {
+          const perfect = questions >= PERFECT_QUIZ_MIN_QUESTIONS && mistakes === 0;
+          return {
+            perfectQuizzes: state.perfectQuizzes + (perfect ? 1 : 0),
+            blockCompletions: blockId
+              ? { ...state.blockCompletions, [blockId]: (state.blockCompletions[blockId] ?? 0) + 1 }
+              : state.blockCompletions,
+          };
+        }),
     }),
     {
       name: 'activity',
       // v2 adds bestStreak and perfectQuizzes; bestStreak is rebuilt from the saved days
-      version: 2,
+      version: 3,
       migrate: (persisted) => {
-        const state = persisted as { days: DayKey[]; bestStreak?: number; perfectQuizzes?: number };
-        return { ...state, bestStreak: state.bestStreak ?? longestStreak(state.days), perfectQuizzes: state.perfectQuizzes ?? 0 };
+        const state = persisted as Pick<ActivityState, 'days'> & Partial<ActivityState>;
+        return {
+          ...state,
+          bestStreak: state.bestStreak ?? longestStreak(state.days),
+          perfectQuizzes: state.perfectQuizzes ?? 0,
+          blockCompletions: state.blockCompletions ?? {},
+        };
       },
       storage: persistStorage,
     }

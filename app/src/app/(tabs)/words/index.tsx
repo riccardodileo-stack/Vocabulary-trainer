@@ -17,6 +17,7 @@ import { MasteryMeter } from '@/components/MasteryMeter';
 import { ListScreen } from '@/components/Screen';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { TextField } from '@/components/TextField';
+import { compareWordsOldestFirst, QUIZ_BLOCK_SIZE } from '@/domain/quiz';
 import { MASTERED_BOX, reviewBox } from '@/domain/review';
 import { normalizeText } from '@/domain/text';
 import { meaningsToText, type Word } from '@/domain/word';
@@ -32,7 +33,7 @@ const collator = new Intl.Collator(undefined, { sensitivity: 'base' });
 
 const COMPARE: Record<SortOrder, (a: Word, b: Word) => number> = {
   alphabetical: (a, b) => collator.compare(a.term, b.term),
-  recent: (a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0),
+  recent: compareWordsOldestFirst,
   mistakes: (a, b) => b.stats.wrong - a.stats.wrong || collator.compare(a.term, b.term),
 };
 
@@ -107,6 +108,7 @@ const WordRow = memo(function WordRow({ word, errorsLabel, correctLabel, mastery
 
 export default function WordsScreen() {
   const t = useT();
+  const { colors } = useTheme();
   const pair = useActivePair();
   const words = useWordsOfPair(pair);
   const [search, setSearch] = useState('');
@@ -118,13 +120,16 @@ export default function WordsScreen() {
 
   const visibleWords = useMemo(() => {
     const query = normalizeText(deferredSearch);
-    return words
+    const sortedWords = words
       .filter((word) => deferredSortOrder !== 'mistakes' || hasMistakes(word))
       .filter((word) => !query || matchesSearch(word, query))
       .sort(COMPARE[deferredSortOrder]);
+
+    return deferredSortOrder === 'recent' ? sortedWords.reverse() : sortedWords;
   }, [words, deferredSearch, deferredSortOrder]);
 
   const showingMistakes = sortOrder === 'mistakes';
+  const showDividers = deferredSortOrder === 'recent' && !deferredSearch.trim();
   const mistakenCount = words.filter(hasMistakes).length;
 
   const sortOptions: { value: SortOrder; label: string }[] = [
@@ -182,13 +187,22 @@ export default function WordsScreen() {
         data={visibleWords}
         keyExtractor={(word) => word.id}
         ListHeaderComponent={header}
-        renderItem={({ item }) => (
-          <WordRow
-            word={item}
-            errorsLabel={item.stats.wrong > 0 ? t.words.errorsCount(item.stats.wrong) : undefined}
-            correctLabel={showingMistakes ? t.words.correctCount(item.stats.correct) : undefined}
-            masteryLabel={t.words.mastery(reviewBox(item), MASTERED_BOX)}
-          />
+        renderItem={({ item, index }) => (
+          <>
+            {showDividers && index > 0 && (visibleWords.length - index) % QUIZ_BLOCK_SIZE === 0 ? (
+              <View style={styles.divider} accessible={false}>
+                {[0, 1, 2, 3, 4].map((dash) => (
+                  <View key={dash} style={[styles.dash, { backgroundColor: colors.track }]} />
+                ))}
+              </View>
+            ) : null}
+            <WordRow
+              word={item}
+              errorsLabel={item.stats.wrong > 0 ? t.words.errorsCount(item.stats.wrong) : undefined}
+              correctLabel={showingMistakes ? t.words.correctCount(item.stats.correct) : undefined}
+              masteryLabel={t.words.mastery(reviewBox(item), MASTERED_BOX)}
+            />
+          </>
         )}
       />
     </>
@@ -196,6 +210,13 @@ export default function WordsScreen() {
 }
 
 const styles = StyleSheet.create({
+  divider: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingBottom: spacing.md,
+  },
+  dash: { width: spacing.sm, height: StyleSheet.hairlineWidth },
 
   masteredCard: {
     borderWidth: StyleSheet.hairlineWidth * 2,

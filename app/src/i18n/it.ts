@@ -75,6 +75,7 @@ export const it: Translations = {
     noResults: 'Nessuna parola corrisponde alla ricerca.',
     sortAlphabetical: 'A–Z',
     sortRecent: 'Recenti',
+    sortOldest: 'Cronologico',
     sortMistakes: 'Errori',
     errorsCount: (count: number) => (count === 1 ? '1 errore' : `${count} errori`),
     correctCount: (count: number) => (count === 1 ? '1 giusta' : `${count} giuste`),
@@ -200,6 +201,13 @@ export const it: Translations = {
     modeDue: 'Da imparare',
     modeAll: 'Tutte',
     modeMistakes: 'Errori',
+    modeBlocks: 'Blocchi',
+    modeBlocksHint: 'Ho diviso le tue parole in gruppi da 50, seguendo l’ordine in cui le hai aggiunte.',
+    blockTitle: (number: number) => `Quiz ${number}`,
+    blockRuns: (count: number) => {
+      if (count === 0) return 'Mai completato';
+      return count === 1 ? 'Completato 1 volta' : `Completato ${count} volte`;
+    },
     modeDueHint: 'Le parole da imparare oggi: quelle nuove e quelle che stai per dimenticare.',
     modeAllHint: 'Tutte le parole di questo vocabolario, in ordine casuale.',
     modeMistakesHint: 'Le parole che hai sbagliato. Due risposte giuste di fila le correggono.',
