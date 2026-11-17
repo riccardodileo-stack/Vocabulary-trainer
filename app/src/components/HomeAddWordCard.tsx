@@ -1,57 +1,25 @@
+import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
-import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
-import Animated, { LinearTransition } from 'react-native-reanimated';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { LanguagePair } from '@/domain/languages';
-import { belongsToPair, hasSameTerm, type NewWordInput } from '@/domain/word';
 import { useT } from '@/i18n';
-import { useWordStore } from '@/store/wordStore';
-import { iconSize, motion, radius, spacing, touchTarget, useTheme } from '@/theme';
+import { iconSize, radius, spacing, touchTarget, useTheme } from '@/theme';
 
 import { AppText } from './AppText';
-import { WordForm } from './WordForm';
-
-type FormState = 'idle' | 'open' | 'collapsed';
-
-const CARD_TRANSITION = LinearTransition.duration(motion.fast);
 
 export function HomeAddWordCard({ pair }: { pair: LanguagePair }) {
   const t = useT();
   const { colors } = useTheme();
-  const [formState, setFormState] = useState<FormState>('idle');
-  const open = formState === 'open';
   const source = t.languages[pair.source];
   const target = t.languages[pair.target];
 
-  function toggleForm() {
-    if (open) {
-      Keyboard.dismiss();
-    }
-    setFormState(open ? 'collapsed' : 'open');
-  }
-
-  function saveWord(input: NewWordInput): string | null {
-    const { words, addWord } = useWordStore.getState();
-    if (words.some((word) => belongsToPair(word, pair) && hasSameTerm(word, input.term))) {
-      return t.wordForm.errorDuplicate;
-    }
-
-    addWord(pair, input);
-    Keyboard.dismiss();
-    setFormState('idle');
-    return null;
-  }
-
   return (
-    <Animated.View
-      layout={CARD_TRANSITION}
-      style={[styles.card, { backgroundColor: colors.cardMuted, borderColor: colors.border }]}>
+    <View style={[styles.card, { backgroundColor: colors.cardMuted, borderColor: colors.border }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${t.words.add}. ${t.common.languagePair(source, target)}`}
-        aria-expanded={open}
-        onPress={toggleForm}
+        onPress={() => router.push('/add-word')}
         style={({ pressed }) => [
           styles.header,
           { backgroundColor: colors.primary },
@@ -78,16 +46,9 @@ export function HomeAddWordCard({ pair }: { pair: LanguagePair }) {
           size={iconSize.md}
           tintColor={colors.onPrimary}
           accessible={false}
-          style={open ? styles.chevronOpen : undefined}
         />
       </Pressable>
-
-      {formState !== 'idle' ? (
-        <View style={[styles.form, !open && styles.hidden]}>
-          <WordForm pair={pair} autoFocus={false} onSave={saveWord} />
-        </View>
-      ) : null}
-    </Animated.View>
+    </View>
   );
 }
 
@@ -127,17 +88,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     gap: spacing.xs,
   },
-  chevronOpen: {
-    transform: [{ rotate: '180deg' }],
-  },
   pressed: {
     transform: [{ scale: 0.99 }],
-  },
-  form: {
-    padding: spacing.lg,
-    gap: spacing.lg,
-  },
-  hidden: {
-    display: 'none',
   },
 });

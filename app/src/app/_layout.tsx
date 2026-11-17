@@ -83,6 +83,18 @@ export default function RootLayout() {
         </Stack.Protected>
         <Stack.Protected guard={signedIn}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+          <Stack.Screen
+            name="add-word"
+            options={{
+              presentation: 'formSheet',
+              sheetGrabberVisible: true,
+              sheetAllowedDetents: [0.75, 1],
+              sheetCornerRadius: 28,
+              headerShown: false,
+            }}
+          />
+
           {/* The settings have their own stack (app/settings/_layout.tsx) with its own header */}
           <Stack.Screen name="settings" options={{ presentation: 'modal', headerShown: false }} />
           <Stack.Screen
