@@ -2,6 +2,7 @@
 // under them (topics and kinds of word, in a sheet: app/quiz-filters.tsx), number of
 // questions (10, 20, all or a custom number). Filters and number are remembered.
 
+import { Image } from 'expo-image';
 import { Stack, router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -16,15 +17,16 @@ import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { LANGUAGES } from '@/domain/languages';
-import { QUIZ_COUNTS, QUIZ_CUSTOM_MAX, QUIZ_CUSTOM_MIN, quizPool, type QuizDirection, type QuizMode } from '@/domain/quiz';
+import { QUIZ_COUNTS, QUIZ_CUSTOM_MAX, QUIZ_CUSTOM_MIN, QUIZ_MODES, quizPool, type QuizDirection, type QuizMode } from '@/domain/quiz';
 import { TOPIC_ICONS } from '@/domain/topics';
 import { useT } from '@/i18n';
 import { useActivePair, useSettingsStore, type QuizCountChoice } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
-import { spacing } from '@/theme';
+import { radius, spacing, useTheme } from '@/theme';
 
 export default function TrainScreen() {
   const t = useT();
+  const { colors } = useTheme();
   const pair = useActivePair();
   const words = useWordsOfPair(pair);
   const [direction, setDirection] = useState<QuizDirection>('forward');
@@ -88,12 +90,41 @@ export default function TrainScreen() {
             value={mode}
             onChange={setMode}
           />
-          {/* The hint right under the choice it explains (Section would put it at the end) */}
-          <Appear key={mode}>
-            <AppText variant="small" color="textMuted" style={styles.hint}>
-              {modeHints[mode]}
-            </AppText>
-          </Appear>
+          <View style={styles.mascotRow}>
+            <View style={[styles.speechBubble, { backgroundColor: colors.cardMuted }]}>
+              <View
+                pointerEvents="none"
+                style={[styles.speechTail, { backgroundColor: colors.cardMuted }]}
+              />
+
+              <View style={styles.speechMessages}>
+                {QUIZ_MODES.map((option, index) => {
+                  const selected = option === mode;
+
+                  return (
+                    <View
+                      key={option}
+                      aria-hidden={!selected}
+                      style={[
+                        styles.speechMessage,
+                        index > 0 && styles.speechMessageOverlap,
+                        { opacity: selected ? 1 : 0 },
+                      ]}>
+                      <Appear key={selected ? 'shown' : 'hidden'} exit={false}>
+                        <AppText>{modeHints[option]}</AppText>
+                      </Appear>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+            <Image
+              source={require('../../../../assets/mascot/goricheco-sleeping.png')}
+              contentFit="contain"
+              style={styles.mascot}
+              accessible={false}
+            />
+          </View>
           {/* Under the three choices: the filters and, when some are on, what they keep */}
           <View style={styles.filterRow}>
             <FilterButton
@@ -160,8 +191,44 @@ export default function TrainScreen() {
 }
 
 const styles = StyleSheet.create({
-  hint: {
-    marginLeft: spacing.xs,
+  mascotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  speechBubble: {
+    flex: 1,
+    minWidth: 0,
+    padding: spacing.md,
+    borderRadius: radius.md,
+  },
+  speechMessages: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  speechMessage: {
+    width: '100%',
+    flexShrink: 0,
+  },
+  speechMessageOverlap: {
+    marginStart: '-100%',
+  },
+  speechTail: {
+    position: 'absolute',
+    top: '50%',
+    right: -spacing.xs,
+    marginTop: -spacing.sm,
+    width: spacing.lg,
+    height: spacing.lg,
+    transform: [{ rotate: '45deg' }],
+  },
+  mascot: {
+    width: '40%',
+    maxWidth: spacing.xxl * 4.5,
+    aspectRatio: 3 / 2,
+    flexShrink: 0,
+    marginLeft: -spacing.xl,
+    marginRight: -spacing.lg,
   },
   filterRow: {
     flexDirection: 'row',
