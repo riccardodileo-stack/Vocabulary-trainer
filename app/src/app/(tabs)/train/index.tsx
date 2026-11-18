@@ -4,6 +4,7 @@
 
 import { Image } from 'expo-image';
 import { Stack, router } from 'expo-router';
+import { GorichecoPose } from '@/components/goricheco/GorichecoPose';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -76,7 +77,7 @@ export default function TrainScreen() {
     <>
       <Stack.Screen options={{ title: t.train.title }} />
 
-      <Screen tab="/train">
+      <Screen tab="/train" trackViewport>
       
         <SegmentedControl
           options={[
@@ -128,12 +129,7 @@ export default function TrainScreen() {
                 })}
               </View>
             </View>
-            <Image
-              source={require('../../../../assets/mascot/goricheco-sleeping.png')}
-              contentFit="contain"
-              style={styles.mascot}
-              accessible={false}
-            />
+            <GorichecoPose scene="training" style={styles.mascot} />
           </View>
           {/* Under the three choices: the filters and, when some are on, what they keep */}
           {showingBlocks ? (

@@ -2,6 +2,7 @@
 
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
+import { GorichecoPose } from '@/components/goricheco/GorichecoPose';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { TOPIC_ICONS } from '@/domain/topics';
@@ -138,12 +139,7 @@ export function DailyWordsCard() {
               />
               <AppText>{allHandled ? t.daily.allHandled : t.daily.subtitle}</AppText>
             </View>
-            <Image
-              source={require('../../assets/mascot/goricheco-study.png')}
-              contentFit="contain"
-              style={styles.studyMascot}
-              accessible={false}
-            />
+            <GorichecoPose scene="daily" style={styles.studyMascot} />
           </View>
           <View>
             {daily.items.map((item) => (

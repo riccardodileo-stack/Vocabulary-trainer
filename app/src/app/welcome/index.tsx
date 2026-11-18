@@ -2,6 +2,7 @@
 // A user signed in without a profile yet (new email account) goes straight to the nickname.
 
 import { Image } from 'expo-image';
+import { GorichecoPose } from '@/components/goricheco/GorichecoPose';
 import { Redirect, router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
@@ -22,14 +23,9 @@ export default function WelcomeScreen() {
   }
 
   return (
-    <Screen contentContainerStyle={styles.container}>
+    <Screen trackViewport contentContainerStyle={styles.container}>
       <View style={styles.hero}>
-        <Image
-          source={require('../../../assets/mascot/goricheco-wave.png')}
-          contentFit="contain"
-          style={styles.mascot}
-          accessible={false}
-        />
+        <GorichecoPose scene="welcome" style={styles.mascot} />
         <AppText variant="hero" accessibilityRole="header" style={styles.centered}>
           {t.welcome.title}
         </AppText>

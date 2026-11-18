@@ -1,3 +1,4 @@
+import { createContext, useMemo, useRef, type ComponentRef, type RefObject } from 'react';
 import { ScrollView, StyleSheet, View, type FlatListProps, type ScrollViewProps } from 'react-native';
 
 import Animated, { LayoutAnimationConfig, LinearTransition } from 'react-native-reanimated';
@@ -10,6 +11,11 @@ type TabSwipeProps = {
   tab?: TabRoute;
 };
 
+export const ScreenViewport = createContext<{
+  scrollRef: RefObject<ComponentRef<typeof ScrollView> | null>;
+  subscribe: (listener: () => void) => () => void;
+} | null>(null);
+
 /**
  * Scrollable page with the app background.
  * contentInsetAdjustmentBehavior keeps content clear of the header and tab bar on iOS.
@@ -18,9 +24,31 @@ type TabSwipeProps = {
  * space under the header from it, and a wrapper can leave content hidden behind the
  * header. Only tab roots need the wrapper, to catch the swipe between tabs.
  */
-export function Screen({ tab, contentContainerStyle, style, children, ...rest }: ScrollViewProps & TabSwipeProps) {
+export function Screen({
+  tab,
+  trackViewport = false,
+  contentContainerStyle,
+  style,
+  children,
+  onLayout,
+  onScroll,
+  onContentSizeChange,
+  scrollEventThrottle,
+  ...rest
+}: ScrollViewProps & TabSwipeProps & { trackViewport?: boolean }) {
   const { colors } = useTheme();
   const swipeHandlers = useTabSwipe(tab);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const listeners = useRef(new Set<() => void>());
+  const viewport = useMemo(() => ({
+    scrollRef,
+    subscribe(listener: () => void) {
+      const currentListeners = listeners.current;
+      currentListeners.add(listener);
+      return () => { currentListeners.delete(listener); };
+    },
+  }), []);
+  const notifyViewport = () => listeners.current.forEach((listener) => listener());
 
   const scrollView = (
     <ScrollView
@@ -29,9 +57,19 @@ export function Screen({ tab, contentContainerStyle, style, children, ...rest }:
       automaticallyAdjustKeyboardInsets
       style={[{ backgroundColor: colors.background }, style]}
       contentContainerStyle={[styles.content, contentContainerStyle]}
-      {...rest}>
-      {/* What is on screen when it opens appears at once; later changes animate (see Appear) */}
-      <LayoutAnimationConfig skipEntering>{children}</LayoutAnimationConfig>
+      {...rest}
+      ref={trackViewport ? scrollRef : undefined}
+      scrollEventThrottle={scrollEventThrottle ?? (trackViewport ? 64 : undefined)}
+      onScroll={trackViewport ? (event) => { onScroll?.(event); notifyViewport(); } : onScroll}
+      onLayout={trackViewport ? (event) => { onLayout?.(event); notifyViewport(); } : onLayout}
+      onContentSizeChange={trackViewport ? (width, height) => {
+        onContentSizeChange?.(width, height);
+        notifyViewport();
+      } : onContentSizeChange}
+    >
+      <ScreenViewport.Provider value={trackViewport ? viewport : null}>
+        <LayoutAnimationConfig skipEntering>{children}</LayoutAnimationConfig>
+      </ScreenViewport.Provider>
     </ScrollView>
   );
 

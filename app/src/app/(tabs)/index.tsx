@@ -1,4 +1,4 @@
-import { Image } from 'expo-image';
+import { GorichecoHome } from '@/components/goricheco/GorichecoHome';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -43,7 +43,7 @@ export default function HomeScreen() {
   const pair = useActivePair();
   const words = useWordsOfPair(pair);
   const { streak, saves } = useStreakStatus();
-  const name = useProfileStore((state) => state.name);
+  const name = useProfileStore((state) => state.name)?.trim();
   const greeting = name ? t.home.greetingName(name) : t.home.greeting;
 
   const today = dayKey();
@@ -87,29 +87,20 @@ export default function HomeScreen() {
   ];
 
   return (
-    <Screen tab="/" contentContainerStyle={Platform.OS === 'android' && { paddingTop: insets.top + spacing.lg }}>
+    <Screen
+      tab="/"
+      trackViewport
+      contentContainerStyle={Platform.OS === 'android' && { paddingTop: insets.top + spacing.lg }}
+    >
       <View style={styles.header}>
         <View style={styles.toolbar}>
           <LanguagePairChip pair={pair} compact onPress={() => router.push('/languages')} />
         </View>
-        <View style={styles.greetingRow}>
-          <View style={[styles.greetingBubble, { backgroundColor: colors.card }]}>
-            <View
-              pointerEvents="none"
-              style={[styles.greetingTail, { backgroundColor: colors.card }]}
-            />
-            <AppText variant="hero" accessibilityRole="header">
-              {greeting}
-            </AppText>
-          </View>
-
-          <Image
-            source={require('../../../assets/mascot/goricheco-wave.png')}
-            contentFit="contain"
-            style={[styles.greetingMascot, largeText && styles.greetingMascotCompact]}
-            accessible={false}
-          />
-        </View>
+        <GorichecoHome
+          greeting={greeting}
+          bubbleColor={colors.card}
+          compact={largeText}
+        />
       </View>
 
       <View style={[styles.stats, largeText && styles.statsStacked]}>
@@ -222,41 +213,6 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   header: { gap: spacing.xs },
-    greetingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  greetingBubble: {
-    flex: 1,
-    minWidth: 0,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radius.lg,
-  },
-  greetingTail: {
-    position: 'absolute',
-    top: '50%',
-    right: -spacing.xs,
-    marginTop: -spacing.sm,
-    width: spacing.lg,
-    height: spacing.lg,
-    borderRadius: spacing.xs / 2,
-    transform: [{ rotate: '45deg' }],
-  },
-  greetingMascot: {
-    width: '44%',
-    maxWidth: spacing.xxl * 5.5,
-    aspectRatio: 3 / 2,
-    flexShrink: 0,
-    marginLeft: -spacing.xl,
-    marginRight: -spacing.lg,
-  },
-  greetingMascotCompact: {
-    width: '36%',
-    maxWidth: spacing.xxl * 4,
-    marginLeft: -spacing.lg,
-  },
   toolbar: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
