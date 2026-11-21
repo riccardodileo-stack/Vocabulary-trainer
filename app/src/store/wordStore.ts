@@ -12,6 +12,7 @@ import {
   classifyMeanings,
   createWord,
   statsAfterAnswer,
+  statsAfterChoice,
   topicsOfMeanings,
   withClassification,
   type NewWordInput,
@@ -31,6 +32,8 @@ type WordState = {
   importWords: (imported: Word[]) => Omit<MergeResult, 'words'>;
   /** Updates the stats of a word after a quiz answer and marks today as a training day. */
   recordAnswer: (id: string, correct: boolean) => void;
+  /** A multiple-choice answer: half a box up, or one box down (statsAfterChoice). */
+  recordChoiceAnswer: (id: string, correct: boolean) => void;
 };
 
 /**
@@ -135,6 +138,13 @@ export const useWordStore = create<WordState>()(
       recordAnswer: (id, correct) => {
         set((state) => ({
           words: state.words.map((word) => (word.id === id ? { ...word, stats: statsAfterAnswer(word.stats, correct) } : word)),
+        }));
+        useActivityStore.getState().markToday();
+      },
+
+      recordChoiceAnswer: (id, correct) => {
+        set((state) => ({
+          words: state.words.map((word) => (word.id === id ? { ...word, stats: statsAfterChoice(word.stats, correct) } : word)),
         }));
         useActivityStore.getState().markToday();
       },

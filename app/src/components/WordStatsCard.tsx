@@ -28,7 +28,7 @@ export function WordStatsCard({ word }: { word: Word }) {
           {t.wordStats.title}
         </AppText>
         {isMastered(word) ? <Pill label={t.wordStats.mastered} tone="primary" /> : null}
-        <MasteryMeter box={box} accessibilityLabel={t.words.mastery(box, MASTERED_BOX)} />
+        <MasteryMeter box={box} half={word.stats.halfStep} accessibilityLabel={t.words.mastery(box, MASTERED_BOX)} />
       </View>
 
       {next === undefined ? (

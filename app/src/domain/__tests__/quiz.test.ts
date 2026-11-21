@@ -1,6 +1,15 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { buildQuiz, clampQuizCount, meaningsInScope, QUIZ_CUSTOM_DEFAULT, QUIZ_CUSTOM_MAX, quizPool } from '../quiz';
+import {
+  buildDictation,
+  buildQuiz,
+  clampQuizCount,
+  meaningsInScope,
+  QUIZ_CUSTOM_DEFAULT,
+  QUIZ_CUSTOM_MAX,
+  quizOptionsFromParams,
+  quizPool,
+} from '../quiz';
 import { makeWord } from './helpers';
 
 const TODAY = '2026-10-29';
@@ -110,3 +119,25 @@ describe('topics per meaning in the quiz', () => {
   });
 });
 
+
+describe('buildDictation and quizOptionsFromParams', () => {
+  it('asks to write the studied word, every form accepted', () => {
+    const colour = makeWord('colour / color', ['colore']);
+    const [question] = buildDictation([colour], { direction: 'backward', mode: 'all', count: 0 });
+    expect(question.prompt).toBe('colour / color');
+    expect(question.accepted).toEqual(['colour', 'color']);
+    expect(question.answerLanguage).toBe('en');
+  });
+
+  it('reads the route params with safe defaults', () => {
+    expect(quizOptionsFromParams({ direction: 'backward', mode: 'due', count: '10', ids: 'a,b', topics: 'food,xx' })).toEqual({
+      direction: 'backward',
+      mode: 'due',
+      count: 10,
+      wordIds: ['a', 'b'],
+      topics: ['food'],
+      partsOfSpeech: [],
+    });
+    expect(quizOptionsFromParams({ mode: 'nope' })).toMatchObject({ direction: 'forward', mode: 'all', count: 0, wordIds: undefined });
+  });
+});

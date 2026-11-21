@@ -73,6 +73,7 @@ function parseAppWord(item: Record<string, unknown>): Word | null {
       streak: typeof stats.streak === 'number' ? stats.streak : 0,
       lastWrongAt: typeof stats.lastWrongAt === 'string' ? stats.lastWrongAt : undefined,
       lastAnsweredAt: typeof stats.lastAnsweredAt === 'string' ? stats.lastAnsweredAt : undefined,
+      ...(stats.halfStep === true ? { halfStep: true } : {}),
     },
     level: isCefrLevel(item.level) ? item.level : undefined,
     tags: Array.isArray(item.tags) ? item.tags.filter((tag): tag is string => typeof tag === 'string') : [],

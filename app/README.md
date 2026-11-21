@@ -17,8 +17,8 @@ Il README ha due parti:
 | Schermata | A cosa serve |
 |-----------|--------------|
 | **Home** | Data e saluto personalizzato, selettore delle lingue, contatori con simboli e fiamma della serie a 1, 10, 100 e 1.000 giorni, con uno 🛡️ per ogni **salvaserie**; toccando la serie sale dal basso **La tua serie** (ultimi 7 giorni, salvaserie, record). Seguono **Ripasso di oggi**, **+ Aggiungi parola** e **Parole del giorno**, con il tasto **Categorie** per scegliere cosa imparare (Cibo, Viaggi, Salute…). |
-| **Dizionario** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti) e filtro **Errori** (solo le parole sbagliate, con i contatori errori/giuste), barra di "quanto la so" per ogni parola. Tocca una parola per vedere i progressi e modificarla. |
-| **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da imparare*, *tutte*, *errori*), con il tasto **Filtra** sotto: **categorie** (Informatica, Salute, Cibo…, anche più di una) e **tipo di parola** (sostantivi, verbi, aggettivi, altro), quante domande (10, 20, tutte o **Altro**: un numero a scelta da 1 a 200). |
+| **Dizionario** | Il vocabolario della coppia di lingue attiva: ricerca, ordinamento (A–Z, recenti) e filtro **Errori** (solo le parole sbagliate, con i contatori errori/giuste), barra di "quanto la so" per ogni parola (anche a mezzo trattino) e 🔊 per **sentire la pronuncia**. Tocca una parola per vedere i progressi e modificarla (anche lì c'è 🔊). |
+| **Allenati** | Quiz a risposta scritta: direzione (🇬🇧→🇮🇹 o al contrario), quali parole (*da imparare*, *tutte*, *errori*), con il tasto **Filtra** sotto: **categorie** (Informatica, Salute, Cibo…, anche più di una) e **tipo di parola** (sostantivi, verbi, aggettivi, altro), quante domande (10, 20, tutte o **Altro**: un numero a scelta da 1 a 200). Sotto, **Altri esercizi** con le stesse scelte: **Scelta multipla** (le parole con meno di 3 trattini; giusta +½ trattino, sbagliata −1), **Ascolta e scegli** e **Ascolta e scrivi** (dettato). Nel quiz 🔊 fa sentire la parola. |
 | **Sfide** | In arrivo (rimandata di proposito). |
 | **Benvenuto** (primo avvio, senza account) | **Registrati o accedi con la mail** (codice di 6 cifre, niente password) oppure **Continua come ospite** (scegli solo nick e immagine: uno dei 12 avatar o una **foto dalla galleria**). Il nick è **unico**: mentre lo scrivi l'app ti dice se è libero. |
 | **Utente** | Il tuo nome come titolo della pagina; immagine profilo (12 avatar illustrati o una foto) con accanto il nick (`@stefano`), lingua studiata e data di inizio; contatori amici, record di giorni di fila e medaglie (ognuno apre dal basso la sua finestra: **Amici**, **La tua serie**, **Le tue medaglie**), **6 medaglie a 4 livelli** (bronzo, argento, oro, diamante), sezione **Amici** che apre la finestra degli amici: in alto *Aggiungi un amico* (cercando il nick o con il codice amico) e il tuo **codice amico**, sotto richieste e lista amici: toccando un amico si apre il suo **profilo** (lingue, serie, medaglie, categorie preferite, ultime parole imparate, ultimo allenamento); account (ospite o mail), **Registrati** per gli ospiti, **Esci**, **Elimina account**. In alto a destra ⚙️ apre le Impostazioni. |
@@ -184,6 +184,7 @@ Ogni parola sta in una **"scatola"** che è semplicemente il suo `streak` (rispo
 
 - Risposta **giusta** (o "quasi") → `streak + 1` → la parola sale di scatola e torna più tardi.
 - Risposta **sbagliata** → `streak = 0` → torna nel ripasso di oggi.
+- **Scelta multipla** (più facile, `statsAfterChoice` in `domain/word.ts`): giusta = **mezzo trattino** (`stats.halfStep`; due giuste = una scatola), mai oltre la scatola 3 (`CHOICE_MAX_BOX`): da lì la parola va scritta e la scelta multipla non la chiede più. Sbagliata = **un trattino in meno** (2½ → 1½), non a 0. Una risposta scritta giusta tiene il mezzo trattino, una sbagliata lo toglie. Il mezzo trattino si vede come metà segmento in `MasteryMeter` e resta nei backup.
 - Parola **mai chiesta** → è subito tra quelle "da imparare".
 - **Imparata** 🏆 = scatola 5 (5 giuste di fila). È il numero "imparate" in Home e la barra piena nella lista.
 - I conti sono in **giorni di calendario**, non in ore (`domain/dates.ts`): una parola ripassata alle 23:50 con intervallo 1 torna disponibile alle 00:00, e i cambi di ora legale non spostano nulla.
@@ -243,7 +244,7 @@ Scelte fatte apposta:
 File: `src/domain/quiz.ts`, `src/app/quiz.tsx` (nello stack principale, sopra le tab: *Termina* e *Fine* tornano a dove il quiz è stato aperto, Home o Allenamento, e il quiz si chiude davvero).
 
 **Parametri della rotta** (così Home può aprire direttamente un quiz):
-`/quiz?direction=forward|backward&mode=due|all|mistakes&count=10&ids=a,b,c`
+`/quiz?direction=forward|backward&mode=due|all|mistakes&count=10&ids=a,b,c` (+ `&exercise=dictation` per *Ascolta e scrivi*)
 
 | Modalità | Parole usate |
 |---|---|
@@ -262,6 +263,20 @@ File: `src/domain/quiz.ts`, `src/app/quiz.tsx` (nello stack principale, sopra le
 
 Ogni risposta aggiorna subito le statistiche della parola e segna oggi come giorno di allenamento.
 
+**Pronuncia** (`services/speech.ts`, `components/SpeakButton.tsx`): 🔊 legge la parola con le **voci del telefono** (`expo-speech`: gratis, offline, funziona in Expo Go), un po' più lenta del normale, con la voce della lingua studiata (🇬🇧 `en-GB`, 🇮🇹 `it-IT`…); di "colour / color" legge solo la prima forma, e il bottone pulsa mentre parla. Si trova nel Dizionario (in ogni riga, `size="sm"`, e accanto alla parola in *Modifica*), nel quiz accanto alla parola studiata (solo in direzione Avanti: la traduzione è nella tua lingua) e dopo ogni risposta, in entrambe le direzioni.
+
+### Altri esercizi
+
+In Allenamento, sotto il quiz scritto, la sezione **Altri esercizi** (`components/ExerciseCard.tsx`) usa la direzione, i filtri e il numero di domande scelti sopra.
+
+| Esercizio | Schermata | Cosa si fa | Trattini |
+|---|---|---|---|
+| 🔤 **Scelta multipla** | `app/choice.tsx?kind=choice` | si vede la parola (o la traduzione, all'indietro) e si sceglie tra 4 risposte | solo le parole **sotto i 3 trattini**, le più urgenti prima (ignora *da imparare/tutte/errori*); giusta +½, sbagliata −1, mostrato con un'etichetta dopo la risposta |
+| 🎧 **Ascolta e scegli** | `app/choice.tsx?kind=listen` | si sente la parola studiata (parte da sola, 🔊 per riascoltare) e si sceglie la traduzione; la parola scritta compare solo dopo la risposta | non cambiano: è allenamento (conta come giorno di serie) |
+| ✍️ **Ascolta e scrivi** | `app/quiz.tsx?exercise=dictation` | dettato: si sente la parola e la si scrive come si scrive (stessa correzione del quiz, "quasi" compreso; `buildDictation`) | non cambiano: è allenamento |
+
+**Le risposte sbagliate della scelta multipla** (`domain/choiceQuiz.ts`) devono somigliare a quella giusta, così non si indovina per esclusione: la prima è la più **simile nella scrittura** (distanza di modifica, somiglianza ≥ 0,5: *pensiero* / *pensione*), le altre si scelgono per punteggio: stesso **tipo di parola** (2), una **categoria** in comune (1), dalle **tue parole** (½); a parità di punteggio a caso. Non compaiono mai risposte che sarebbero giuste anch'esse (sinonimi, altre traduzioni). Con poche parole si pescano anche dalla lista integrata (`WORD_BANK`); senza almeno una risposta sbagliata la domanda viene saltata. Dopo una risposta giusta si passa da soli alla domanda dopo; dopo una sbagliata si aspetta *Avanti*. Risultati, *Rifai gli errori* e *Allenati ancora* come nel quiz.
+
 ## 4 bis. Categorie (tematiche) e tipo di parola
 
 File: `domain/topics.ts`, `domain/topicClassifier.ts`, `domain/partOfSpeech.ts`, `services/wiktionary.ts`, `hooks/useWordKindCheck.ts`, `components/ChoiceChips.tsx`.
@@ -276,7 +291,7 @@ File: `domain/topics.ts`, `domain/topicClassifier.ts`, `domain/partOfSpeech.ts`,
 - Wiktionary conosce la **traduzione** da sola → le sue categorie abituali;
 - se la parola ha un'unica traduzione, la parola studiata (prima la rete, poi Wiktionary).
 
-**Il server** (`hooks/useServerTopicCheck.ts`, `services/topicServer.ts`, `services/serverConfig.ts`): le traduzioni rimaste **senza categoria** sul telefono (parole rare, coppie nuove: *stroke* = *bracciata*) vengono chieste in background, una alla volta, alla funzione `classify-meaning` del server Supabase (branch `server`, `supabase/README.md`). Il server risponde dalla sua tabella (~408.000 coppie di Wiktionary, tutte, anche le rare) o, per una coppia mai vista, chiede a un modello di linguaggio (Gemini) e salva la risposta per tutti. Ogni traduzione viene chiesta una volta sola (`meaning.topicsChecked`); senza rete si riprova al prossimo avvio; le categorie scelte a mano non vengono mai toccate. `services/serverContract.ts` è la copia del formato di domanda e risposta del server: se cambia uno, va copiato nell'altro. In `serverConfig.ts` c'è solo la chiave pubblica `anon` (le regole del database decidono cosa permette): le chiavi segrete non vanno mai nell'app.
+**Il server** (`hooks/useServerTopicCheck.ts`, `services/topicServer.ts`, `services/serverConfig.ts`): le traduzioni rimaste **senza categoria** sul telefono (parole rare, coppie nuove: *stroke* = *bracciata*) vengono chieste in background, una alla volta, alla funzione `classify-meaning` del server Supabase (branch `server`, `supabase/README.md`). Il server risponde dalla sua tabella (~408.000 coppie di Wiktionary, tutte, anche le rare); una coppia che non c'è riceve `not_found` e resta la stima del telefono (nessun modello di linguaggio: Gemini è stato tolto il 21/11/2026, le sue condizioni non permettono il piano gratuito con utenti nell'UE né app usate da minori). Ogni traduzione viene chiesta una volta sola (`meaning.topicsChecked`); senza rete si riprova al prossimo avvio; le categorie scelte a mano non vengono mai toccate. `services/serverContract.ts` è la copia del formato di domanda e risposta del server: se cambia uno, va copiato nell'altro. In `serverConfig.ts` c'è solo la chiave pubblica `anon` (le regole del database decidono cosa permette): le chiavi segrete non vanno mai nell'app.
 
 **I sensi di Wiktionary** (`content/senseTopics.ts`, generato da `design/topic-model/wiktionary/`, vedi il suo README): dall'estratto di Wiktionary di kaikki.org si prendono, per ogni senso di ogni parola inglese, le etichette di settore (*medicine*, *cricket*…) e la tabella delle traduzioni; le etichette diventano le 12 categorie. Nell'app ~37.000 parole e ~50.000 coppie (le 50.000 parole più usate per lingua), 1,4 MB, aperte una lingua alla volta quando servono. Su un campione casuale sono giuste circa 9 volte su 10; le parole quotidiane (*cane*, *mela*) spesso non hanno etichetta e restano alla rete. La versione 6 dei dati salvati ricalcola le categorie automatiche delle parole già salvate (quelle scelte a mano restano).
 
@@ -415,7 +430,7 @@ File: `src/app/settings/`. Le impostazioni hanno una loro navigazione dentro la 
 
 **Suoni** (`services/sounds.ts`, file in `assets/sounds/`): un suono breve per risposta giusta o "quasi", uno per risposta sbagliata, una piccola fanfara a fine quiz. Sono toni sintetici generati apposta, quindi senza problemi di licenza. Rispettano l'interruttore silenzioso del telefono, si mescolano con la musica che stai ascoltando e si spengono in Impostazioni. Quando li riattivi senti subito un esempio.
 
-*Ritardo*: caricare un suono e preparare l'audio richiede un attimo. Per questo `preloadSounds()` li carica quando si apre il quiz, e `playSound()` non aspetta nulla prima di partire (il riavvolgimento all'inizio non viene atteso).
+*Ritardo e suoni persi*: caricare un suono e preparare l'audio richiede un attimo. `soundsForScreen()` (nell'effetto di quiz e scelta multipla) carica i suoni e tiene **attiva la sessione audio** finché la schermata è aperta: prima iOS la spegneva dopo ogni suono e il successivo partiva in ritardo o tagliato. Ogni suono si **riavvolge appena finisce**, così `play()` parte subito, e ha **due lettori**: un suono chiesto di nuovo mentre suona ancora (due risposte veloci) usa il secondo invece di perdersi.
 
 **Promemoria** (`services/reminders.ts`, `hooks/useReminderSync.ts`): una notifica locale ogni giorno all'ora scelta (8:00, 13:00, 18:00 o 21:00). Locale vuol dire che la programma il telefono stesso: nessun server, funziona offline e in Expo Go.
 - Il permesso viene chiesto **solo quando attivi l'interruttore**, mai all'avvio. Se lo neghi, l'interruttore torna spento e un messaggio spiega come riattivarlo dalle impostazioni del telefono.
@@ -492,7 +507,9 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 | `TextField` | campo di testo con i colori del tema |
 | `StatTile` | un numero grande con etichetta; 2–3 in fila |
 | `ProgressBar` | avanzamento 0–1, annunciato dallo screen reader |
-| `MasteryMeter` | 5 segmenti = scatola Leitner della parola |
+| `MasteryMeter` | 5 segmenti = scatola Leitner della parola (`half` riempie metà del successivo) |
+| `SpeakButton` | 🔊 rotondo che legge una parola; taglie `sm` (righe), `md`, `lg` (esercizi di ascolto); pulsa mentre parla |
+| `ExerciseCard` | un esercizio da avviare: icona, nome, una riga di descrizione, freccia |
 | `Screen` / `ListScreen` | pagina scorrevole / lista lunga virtualizzata, con swipe tra le tab |
 | `HighlightedText` | testo con alcune parole in grassetto (la parola studiata negli esempi) |
 | `DailyWordsCard`, `WordStatsCard`, `WordForm`, `MeaningFinder`, `ExampleFinder`, `LanguagePairChip` | blocchi specifici dell'app |
@@ -507,7 +524,7 @@ Stessi nomi in chiaro e scuro, i componenti usano solo i nomi:
 
 ## 13. Test
 
-`npm test` esegue 138 test, in `src/domain/__tests__/` e `src/services/__tests__/`: correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello e per categoria, filtro per categorie), serie di giorni, salvaserie (guadagnati, usati) e record, dati della serie per il server, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, testo della ricerca per nick, formato del codice amico, categorie dalla rete e dai sensi di Wiktionary, lettura degli elenchi di parole da importare, riepilogo per gli amici e lettura del profilo di un amico (valori non validi scartati), serie di un amico portata a oggi, memoria delle risposte dei siti (con un AsyncStorage finto).
+`npm test` esegue 152 test, in `src/domain/__tests__/` e `src/services/__tests__/`: correzione delle risposte, intervalli del ripasso e cambi d'ora legale, costruzione dei quiz e sinonimi, scelta delle parole del giorno e integrità della lista (id unici, ogni parola in tutte le lingue, abbastanza parole per livello e per categoria, filtro per categorie), serie di giorni, salvaserie (guadagnati, usati) e record, dati della serie per il server, medaglie, passaggio fra i livelli e stima delle date, controllo di email e nick, testo della ricerca per nick, formato del codice amico, categorie dalla rete e dai sensi di Wiktionary, lettura degli elenchi di parole da importare, riepilogo per gli amici e lettura del profilo di un amico (valori non validi scartati), serie di un amico portata a oggi, memoria delle risposte dei siti (con un AsyncStorage finto), mezzo trattino della scelta multipla, somiglianza delle risposte e scelta di quelle sbagliate, domande a scelta multipla e dettato, lettura dei parametri del quiz.
 Sono test della logica pura: girano in un secondo, senza telefono.
 
 ## 14. Limiti noti e prossimi passi

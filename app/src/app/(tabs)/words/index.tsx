@@ -16,6 +16,7 @@ import { Pill } from '@/components/Pill';
 import { MasteryMeter } from '@/components/MasteryMeter';
 import { ListScreen } from '@/components/Screen';
 import { SegmentedControl } from '@/components/SegmentedControl';
+import { SpeakButton } from '@/components/SpeakButton';
 import { TextField } from '@/components/TextField';
 import { compareWordsOldestFirst, QUIZ_BLOCK_SIZE } from '@/domain/quiz';
 import { MASTERED_BOX, reviewBox } from '@/domain/review';
@@ -77,11 +78,12 @@ const WordRow = memo(function WordRow({ word, errorsLabel, correctLabel, mastery
         <AppText variant="bodyBold" style={styles.term}>
           {word.term}
         </AppText>
+        <SpeakButton text={word.term} language={word.sourceLang} size="sm" />
         {errorsLabel ? <Pill label={errorsLabel} tone="warning" /> : null}
         {correctLabel ? <Pill label={correctLabel} /> : null}
 
         <View style={styles.mastery}>
-          <MasteryMeter box={box} accessibilityLabel={masteryLabel} />
+          <MasteryMeter box={box} half={word.stats.halfStep} accessibilityLabel={masteryLabel} />
           {mastered ? (
             <View
               pointerEvents="none"

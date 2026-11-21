@@ -2,10 +2,10 @@
 
 import { dayKey, type DayKey } from './dates';
 import type { LanguageCode } from './languages';
-import type { PartOfSpeech } from './partOfSpeech';
+import { parsePartOfSpeechList, type PartOfSpeech } from './partOfSpeech';
 import { compareByUrgency, isDue } from './review';
 import { normalizeText, splitSlashOptions } from './text';
-import type { TopicId } from './topics';
+import { parseTopicList, type TopicId } from './topics';
 import { type Meaning, type Word } from './word';
 
 /** 'forward' asks the studied word, 'backward' asks the translation. */
@@ -52,6 +52,29 @@ export type QuizOptions = {
   /** Only these kinds of word (e.g. only verbs); empty or missing = every kind. */
   partsOfSpeech?: PartOfSpeech[];
 };
+
+/** Quiz options as route params (all strings), shared by the quiz and the other exercises. */
+export type QuizParams = {
+  direction?: string;
+  mode?: string;
+  count?: string;
+  ids?: string;
+  topics?: string;
+  kinds?: string;
+  blockId?: string;
+};
+
+export function quizOptionsFromParams(params: QuizParams): QuizOptions {
+  const ids = params.ids?.split(',').filter(Boolean);
+  return {
+    direction: params.direction === 'backward' ? 'backward' : 'forward',
+    mode: QUIZ_MODES.includes(params.mode as QuizMode) ? (params.mode as QuizMode) : 'all',
+    count: Number(params.count) || 0,
+    wordIds: ids && ids.length > 0 ? ids : undefined,
+    topics: parseTopicList(params.topics),
+    partsOfSpeech: parsePartOfSpeechList(params.kinds),
+  };
+}
 
 /** Whether a word passes the topic and kind filters of the quiz. */
 export function matchesFilters(word: Word, { topics, partsOfSpeech }: Pick<QuizOptions, 'topics' | 'partsOfSpeech'>): boolean {
@@ -223,4 +246,19 @@ export function buildQuiz(vocabulary: Word[], options: QuizOptions, today: DayKe
 
   // The urgency order decides which words are asked, not in which order
   return options.mode === 'due' ? shuffle(questions) : questions;
+}
+
+/**
+ * Dictation ("Listen and write"): the studied word is only heard and has to be written as
+ * it is spelled. Same words as a forward quiz with these options; every form of
+ * "colour / color" is accepted.
+ */
+export function buildDictation(vocabulary: Word[], options: QuizOptions, today: DayKey = dayKey()): QuizQuestion[] {
+  return buildQuiz(vocabulary, { ...options, direction: 'forward' }, today).map(({ word }) => ({
+    word,
+    prompt: word.term,
+    accepted: splitSlashOptions(word.term),
+    answerLanguage: word.sourceLang,
+    correctText: word.term,
+  }));
 }

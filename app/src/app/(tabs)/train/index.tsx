@@ -1,6 +1,8 @@
 // Quiz setup: direction, which words (to learn / all / mistakes) with the "Filter" button
 // under them (topics and kinds of word, in a sheet: app/quiz-filters.tsx), number of
 // questions (10, 20, all or a custom number). Filters and number are remembered.
+// Under the written quiz, "Other exercises" with the same choices: multiple choice (words
+// below CHOICE_MAX_BOX), listen and choose, listen and write (app/choice.tsx, app/quiz.tsx).
 
 import { Image } from 'expo-image';
 import { Stack, router } from 'expo-router';
@@ -12,6 +14,7 @@ import { AppText } from '@/components/AppText';
 import { Appear } from '@/components/Appear';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { ExerciseCard } from '@/components/ExerciseCard';
 import { FilterButton } from '@/components/FilterButton';
 import { NumberStepper } from '@/components/NumberStepper';
 import { QuizBlockList } from '@/components/QuizBlockList';
@@ -20,7 +23,9 @@ import { Section } from '@/components/Section';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { LANGUAGES } from '@/domain/languages';
 import { QUIZ_COUNTS, QUIZ_CUSTOM_MAX, QUIZ_CUSTOM_MIN, QUIZ_MODES, quizPool, type QuizDirection, type QuizMode } from '@/domain/quiz';
+import { reviewBox } from '@/domain/review';
 import { TOPIC_ICONS } from '@/domain/topics';
+import { CHOICE_MAX_BOX } from '@/domain/word';
 import { useT } from '@/i18n';
 import { useActivePair, useSettingsStore, type QuizCountChoice } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
@@ -50,6 +55,10 @@ export default function TrainScreen() {
   const setKinds = useSettingsStore((state) => state.setQuizPartsOfSpeech);
 
   const availableCount = quizPool(words, { mode, topics, partsOfSpeech: kinds }).length;
+  // Multiple choice has its own words: those below CHOICE_MAX_BOX (with the same filters)
+  const choiceCount = quizPool(words, { mode: 'all', topics, partsOfSpeech: kinds }).filter(
+    (word) => reviewBox(word) < CHOICE_MAX_BOX
+  ).length;
   const activeFilters = topics.length + kinds.length;
   // "💻 Informatica · 🍝 Cibo · Verbi": what the filters keep, shown under the choice
   const filterSummary = [
@@ -67,11 +76,11 @@ export default function TrainScreen() {
     blocks: t.train.modeBlocksHint,
   };
 
-  const start = () =>
-    router.push({
-      pathname: '/quiz',
-      params: { direction, mode, count, topics: topics.join(','), kinds: kinds.join(',') },
-    });
+  const exerciseParams = { direction, mode, count, topics: topics.join(','), kinds: kinds.join(',') };
+  const start = () => router.push({ pathname: '/quiz', params: exerciseParams });
+  /** The other exercises use the same choices made above (direction, words, filters, number). */
+  const startChoice = (kind: 'choice' | 'listen') => router.push({ pathname: '/choice', params: { ...exerciseParams, kind } });
+  const startDictation = () => router.push({ pathname: '/quiz', params: { ...exerciseParams, exercise: 'dictation' } });
 
   return (
     <>
@@ -197,6 +206,31 @@ export default function TrainScreen() {
           </AppText>
           <Button label={t.train.start} onPress={start} disabled={availableCount === 0} />
         </Card>
+
+        {/* A section of its own for the exercises that aren't the written quiz */}
+        <Section title={t.exercises.title} hint={t.exercises.hint}>
+          <ExerciseCard
+            icon="🔤"
+            title={t.exercises.choiceTitle}
+            description={t.exercises.choiceDescription(choiceCount)}
+            onPress={() => startChoice('choice')}
+            disabled={choiceCount === 0}
+          />
+          <ExerciseCard
+            icon="🎧"
+            title={t.exercises.listenTitle}
+            description={t.exercises.listenDescription}
+            onPress={() => startChoice('listen')}
+            disabled={availableCount === 0}
+          />
+          <ExerciseCard
+            icon="✍️"
+            title={t.exercises.dictationTitle}
+            description={t.exercises.dictationDescription}
+            onPress={startDictation}
+            disabled={availableCount === 0}
+          />
+        </Section>
           </>
         ) : null}
       </Screen>

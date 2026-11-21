@@ -112,6 +112,7 @@ export default function RootLayout() {
           />
           {/* The quiz covers the tabs: opened from Home or Train, closing it goes back there */}
           <Stack.Screen name="quiz" options={{ title: t.train.title }} />
+          <Stack.Screen name="choice" options={{ title: t.train.title }} />
           <Stack.Screen
             name="daily-topics"
             options={{

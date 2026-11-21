@@ -195,6 +195,27 @@ export const it: Translations = {
     done: 'Fatto',
     reset: 'Azzera',
   },
+  exercises: {
+    title: 'Altri esercizi',
+    hint: 'Usano la direzione, i filtri e il numero di domande scelti sopra.',
+    choiceTitle: 'Scelta multipla',
+    choiceDescription: (count: number) =>
+      `Le parole con meno di 3 trattini (${count}). Giusta: +½ trattino, sbagliata: −1.`,
+    listenTitle: 'Ascolta e scegli',
+    listenDescription: 'Senti la parola e scegli cosa vuol dire.',
+    listenHint: 'Tocca per riascoltare',
+    dictationTitle: 'Ascolta e scrivi',
+    dictationDescription: 'Senti la parola e scrivila come si scrive.',
+    dictationHint: 'Tocca per riascoltare, poi scrivi la parola',
+    dictationPlaceholder: 'La parola che hai sentito',
+    tooFew: 'Servono almeno due parole per questo esercizio.',
+    allAboveChoice: 'Tutte le parole hanno già almeno 3 trattini: allenale scrivendo! ✍️',
+    halfUp: '+½ trattino',
+    oneDown: '−1 trattino',
+  },
+  speech: {
+    listen: 'Ascolta la pronuncia',
+  },
   train: {
     title: 'Allenamento',
     mode: 'Parole',

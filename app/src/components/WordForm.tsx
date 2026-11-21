@@ -26,6 +26,7 @@ import { ExampleFinder } from './ExampleFinder';
 import { MeaningFinder } from './MeaningFinder';
 import { MeaningTopics } from './MeaningTopics';
 import { Section } from './Section';
+import { SpeakButton } from './SpeakButton';
 import { TextField, type TextFieldRef } from './TextField';
 
 type MeaningDraft = {
@@ -217,14 +218,18 @@ ${example}` : example });
   return (
     <>
       <Section title={t.wordForm.term}>
-        <TextField
-          value={term}
-          onChangeText={setTerm}
-          placeholder={t.wordForm.termPlaceholder}
-          autoCapitalize="none"
-          autoCorrect={false}
-          ref={termRef}
-        />
+        <View style={styles.termRow}>
+          <TextField
+            value={term}
+            onChangeText={setTerm}
+            placeholder={t.wordForm.termPlaceholder}
+            autoCapitalize="none"
+            autoCorrect={false}
+            ref={termRef}
+            style={styles.flex}
+          />
+          <SpeakButton text={term} language={pair.source} />
+        </View>
         {/* Right under the word: the meanings found fill the translation fields below */}
         <MeaningFinder pair={pair} term={term} meanings={meaningTexts} onAdd={addMeaning} />
       </Section>
@@ -300,6 +305,14 @@ ${example}` : example });
 }
 
 const styles = StyleSheet.create({
+  termRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  flex: {
+    flex: 1,
+  },
   remove: {
     alignSelf: 'flex-end',
   },

@@ -44,15 +44,51 @@ export type WordStats = {
   lastWrongAt?: string;
   /** Last time the word was asked in a quiz; undefined for words never asked. */
   lastAnsweredAt?: string;
+  /**
+   * Half a box earned with a right multiple-choice answer (two make one box, see
+   * statsAfterChoice). Missing = no half.
+   */
+  halfStep?: boolean;
 };
 
-/** Stats after one quiz answer. */
+/** Stats after one written quiz answer: right = one box up (a half box is kept), wrong = back to 0. */
 export function statsAfterAnswer(stats: WordStats, correct: boolean, now: Date = new Date()): WordStats {
   const lastAnsweredAt = now.toISOString();
 
   return correct
     ? { ...stats, correct: stats.correct + 1, streak: stats.streak + 1, lastAnsweredAt }
-    : { ...stats, wrong: stats.wrong + 1, streak: 0, lastWrongAt: lastAnsweredAt, lastAnsweredAt };
+    : { ...stats, wrong: stats.wrong + 1, streak: 0, halfStep: false, lastWrongAt: lastAnsweredAt, lastAnsweredAt };
+}
+
+/**
+ * Multiple choice moves a word only up to this box: from here on it has to be written
+ * (and multiple choice no longer asks it, see domain/choiceQuiz.ts).
+ */
+export const CHOICE_MAX_BOX = 3;
+
+/**
+ * Stats after one multiple-choice answer, easier than writing:
+ * - right = half a box (two right answers = one box), never beyond CHOICE_MAX_BOX;
+ * - wrong = one box down (2½ -> 1½, ½ -> 0), not back to 0 like a written answer.
+ */
+export function statsAfterChoice(stats: WordStats, correct: boolean, now: Date = new Date()): WordStats {
+  const lastAnsweredAt = now.toISOString();
+  // In half boxes: box 2 with a half = 5
+  const halves = stats.streak * 2 + (stats.halfStep ? 1 : 0);
+
+  if (correct) {
+    const next = stats.streak >= CHOICE_MAX_BOX ? halves : Math.min(halves + 1, CHOICE_MAX_BOX * 2);
+    return { ...stats, correct: stats.correct + 1, streak: Math.floor(next / 2), halfStep: next % 2 === 1, lastAnsweredAt };
+  }
+  const next = Math.max(halves - 2, 0);
+  return {
+    ...stats,
+    wrong: stats.wrong + 1,
+    streak: Math.floor(next / 2),
+    halfStep: next % 2 === 1,
+    lastWrongAt: lastAnsweredAt,
+    lastAnsweredAt,
+  };
 }
 
 export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;

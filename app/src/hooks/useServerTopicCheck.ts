@@ -1,7 +1,8 @@
 // Background check of the topics on the server, for the meanings the phone left without topics
 // (rare words, new pairs: "stroke" = "bracciata"). One meaning at a time while the app is open;
 // each meaning is asked once (topicsChecked). Topics chosen by hand are never touched.
-// Offline, or when the server has no model available today: stops and tries again at the next
+// The server answers from its Wiktionary pairs; a pair it doesn't know (not_found) keeps the
+// phone's guess. Offline, or when the server can't answer: stops and tries again at the next
 // launch.
 
 import { useEffect } from 'react';
@@ -36,7 +37,7 @@ export function useServerTopicCheck(enabled: boolean) {
         const { word, index } = next;
         const meaning = word.meanings[index];
         const answer = await classifyOnServer({ source: word.sourceLang, target: word.targetLang }, word.term, meaning.text);
-        // Offline, timeout, no model today: try again at the next launch
+        // Offline, timeout, server not answering: try again at the next launch
         if (cancelled || !answer || (!answer.ok && answer.error === 'unavailable')) {
           return;
         }

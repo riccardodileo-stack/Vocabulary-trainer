@@ -194,6 +194,27 @@ export const en = {
     done: 'Done',
     reset: 'Clear',
   },
+  exercises: {
+    title: 'Other exercises',
+    hint: 'They use the direction, filters and number of questions chosen above.',
+    choiceTitle: 'Multiple choice',
+    choiceDescription: (count: number) =>
+      `Words with fewer than 3 bars (${count}). Right: +½ bar, wrong: −1.`,
+    listenTitle: 'Listen and choose',
+    listenDescription: 'Hear the word and pick what it means.',
+    listenHint: 'Tap to listen again',
+    dictationTitle: 'Listen and write',
+    dictationDescription: 'Hear the word and write how it is spelled.',
+    dictationHint: 'Tap to listen again, then write the word',
+    dictationPlaceholder: 'The word you heard',
+    tooFew: 'This exercise needs at least two words.',
+    allAboveChoice: 'Every word already has at least 3 bars: train them by writing! ✍️',
+    halfUp: '+½ bar',
+    oneDown: '−1 bar',
+  },
+  speech: {
+    listen: 'Listen to the pronunciation',
+  },
   train: {
     title: 'Training',
     mode: 'Words',

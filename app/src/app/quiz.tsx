@@ -8,7 +8,9 @@
 // Params: direction=forward|backward, mode=due|all|mistakes, count=number (0 = all),
 //         ids=comma separated word ids (optional, limits the quiz to those words),
 //         blockId=the first word ID of the block (optional, tracks full rounds),
-//         topics=tech,food… and kinds=noun,verb… (optional filters, empty = all)
+//         topics=tech,food… and kinds=noun,verb… (optional filters, empty = all),
+//         exercise=dictation (optional): "Listen and write", the studied word is only heard
+//         and has to be written; it is practice, so the words' boxes don't change.
 
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -23,50 +25,37 @@ import { HighlightedText } from '@/components/HighlightedText';
 import { Pill } from '@/components/Pill';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Screen } from '@/components/Screen';
+import { SpeakButton } from '@/components/SpeakButton';
 import { Section } from '@/components/Section';
 import { TextField, type TextFieldRef } from '@/components/TextField';
 import { splitExample } from '@/domain/highlight';
-import { parsePartOfSpeechList } from '@/domain/partOfSpeech';
-import { parseTopicList, TOPIC_ICONS } from '@/domain/topics';
-import { buildQuiz, QUIZ_MODES, type QuizMode, type QuizOptions, type QuizQuestion } from '@/domain/quiz';
+import { TOPIC_ICONS } from '@/domain/topics';
+import {
+  buildDictation,
+  buildQuiz,
+  quizOptionsFromParams,
+  type QuizOptions,
+  type QuizParams,
+  type QuizQuestion,
+} from '@/domain/quiz';
 import { evaluateAnswer, type AnswerVerdict } from '@/domain/text';
 import { meaningsToText } from '@/domain/word';
 import { useFocusAfterTransition } from '@/hooks/useFocusAfterTransition';
 import { useT } from '@/i18n';
-import { playSound, preloadSounds } from '@/services/sounds';
+import { playSound, soundsForScreen } from '@/services/sounds';
+import { speak } from '@/services/speech';
 import { useActivityStore } from '@/store/activityStore';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordStore, useWordsOfPair } from '@/store/wordStore';
 import { spacing } from '@/theme';
 
-type QuizParams = {
-  direction?: string;
-  mode?: string;
-  count?: string;
-  ids?: string;
-  topics?: string;
-  kinds?: string;
-  blockId?: string;
-};
-
 type Mistake = { question: QuizQuestion; given: string };
-
-function optionsFromParams(params: QuizParams): QuizOptions {
-  const ids = params.ids?.split(',').filter(Boolean);
-  return {
-    direction: params.direction === 'backward' ? 'backward' : 'forward',
-    mode: QUIZ_MODES.includes(params.mode as QuizMode) ? (params.mode as QuizMode) : 'all',
-    count: Number(params.count) || 0,
-    wordIds: ids && ids.length > 0 ? ids : undefined,
-    topics: parseTopicList(params.topics),
-    partsOfSpeech: parsePartOfSpeechList(params.kinds),
-  };
-}
 
 export default function QuizScreen() {
   const t = useT();
-  const params = useLocalSearchParams<QuizParams>();
-  const baseOptions = optionsFromParams(params);
+  const params = useLocalSearchParams<QuizParams & { exercise?: string }>();
+  const dictation = params.exercise === 'dictation';
+  const baseOptions = quizOptionsFromParams(params);
   const blockId = params.blockId === baseOptions.wordIds?.[0] ? params.blockId : undefined;
   const options = { ...baseOptions, allowRepeatedPrompts: !!blockId };
   const pair = useActivePair();
@@ -75,8 +64,8 @@ export default function QuizScreen() {
   const recordQuizFinished = useActivityStore((state) => state.recordQuizFinished);
   const inputRef = useRef<TextFieldRef>(null);
   useFocusAfterTransition(inputRef);
-  // Sounds ready before the first answer, so they play without delay
-  useEffect(() => preloadSounds(), []);
+  // Sounds ready before the first answer (and the audio session on while the quiz is open)
+  useEffect(soundsForScreen, []);
 
   const { height: windowHeight } = useWindowDimensions();
   const [keyboardFrame, setKeyboardFrame] = useState(() => (
@@ -106,7 +95,8 @@ export default function QuizScreen() {
     : 0;
 
   // The questions are chosen once per round, so stats updates don't reshuffle them
-  const [questions, setQuestions] = useState(() => buildQuiz(words, options));
+  const build = (roundOptions: QuizOptions) => (dictation ? buildDictation(words, roundOptions) : buildQuiz(words, roundOptions));
+  const [questions, setQuestions] = useState(() => build(options));
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState('');
   const [verdict, setVerdict] = useState<AnswerVerdict | null>(null);
@@ -119,9 +109,24 @@ export default function QuizScreen() {
   const isLast = index === questions.length - 1;
   const answeredCount = index + (verdict ? 1 : 0);
 
+  // Dictation: the word is read as soon as the question appears (and again with 🔊)
+  const toRead = dictation && !finished ? questions[index]?.prompt : undefined;
+  useEffect(() => {
+    if (!toRead) {
+      return;
+    }
+    const wait = setTimeout(() => speak(toRead, pair.source), 350);
+    return () => clearTimeout(wait);
+  }, [toRead, index, pair.source]);
+
   const submit = (given: string) => {
     const result = given.trim() ? evaluateAnswer(given, question.accepted, question.answerLanguage) : 'wrong';
-    recordAnswer(question.word.id, result !== 'wrong');
+    if (dictation) {
+      // Practice: it counts as a training day, the word's box doesn't change
+      useActivityStore.getState().markToday();
+    } else {
+      recordAnswer(question.word.id, result !== 'wrong');
+    }
     setVerdict(result);
     playSound(result === 'wrong' ? 'wrong' : 'correct');
     if (result === 'wrong') {
@@ -154,7 +159,7 @@ export default function QuizScreen() {
   const startRound = (roundOptions: QuizOptions, nextBlockId?: string) => {
     roundRecorded.current = false;
     setRoundBlockId(nextBlockId);
-    setQuestions(buildQuiz(words, roundOptions));
+    setQuestions(build(roundOptions));
     setIndex(0);
     setAnswer('');
     setVerdict(null);
@@ -224,7 +229,7 @@ export default function QuizScreen() {
               mistakes.map(({ question: wrong, given }) => (
                 <Card key={wrong.word.id}>
                   <AppText variant="bodyBold">
-                    {wrong.prompt} → {wrong.correctText}
+                    {dictation ? wrong.correctText : `${wrong.prompt} → ${wrong.correctText}`}
                   </AppText>
                   <AppText variant="small" color="textMuted">
                     {t.quiz.yourAnswer} {given.trim() || '–'}
@@ -274,6 +279,15 @@ export default function QuizScreen() {
 
         {/* Keyed by the question: each new one slides in from the right */}
         <Appear key={index} from="right" exit={false}>
+          {dictation ? (
+            <Card style={styles.listenCard}>
+              <SpeakButton text={question.prompt} language={pair.source} size="lg" />
+              {/* The written word appears only after answering: before, it would be the answer */}
+              <AppText color="textMuted" style={styles.centered}>
+                {verdict ? question.word.term : t.exercises.dictationHint}
+              </AppText>
+            </Card>
+          ) : (
           <Card style={styles.questionCard}>
             <AppText variant="hero" style={styles.centered} accessibilityRole="header">
               {question.prompt}
@@ -289,15 +303,23 @@ export default function QuizScreen() {
                 {TOPIC_ICONS[question.topicHint]} {t.topics[question.topicHint]}
               </AppText>
             ) : null}
+            {/* The studied word can be listened to (bottom right of its card); a translation in
+                one's own language needs no voice */}
+            {options.direction === 'forward' ? (
+              <View style={styles.speak}>
+                <SpeakButton text={question.prompt} language={pair.source} />
+              </View>
+            ) : null}
           </Card>
+          )}
         </Appear>
 
         <TextField
           ref={inputRef}
           value={answer}
           onChangeText={setAnswer}
-          placeholder={t.quiz.answerPlaceholder}
-          accessibilityLabel={t.quiz.answerPlaceholder}
+          placeholder={dictation ? t.exercises.dictationPlaceholder : t.quiz.answerPlaceholder}
+          accessibilityLabel={dictation ? t.exercises.dictationPlaceholder : t.quiz.answerPlaceholder}
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType={verdict === null ? 'done' : 'next'}
@@ -322,9 +344,13 @@ export default function QuizScreen() {
                   {t.quiz.almostHint} <AppText variant="bodyBold">{question.correctText}</AppText>
                 </AppText>
               ) : null}
-              <AppText color="textMuted">
-                {question.word.term} → {meaningsToText(question.word)}
-              </AppText>
+              <View style={styles.answerRow}>
+                <AppText color="textMuted" style={styles.flex}>
+                  {question.word.term} → {meaningsToText(question.word)}
+                </AppText>
+                {/* After the answer the word can always be heard, in both directions */}
+                <SpeakButton text={question.word.term} language={pair.source} />
+              </View>
             </Card>
           </Appear>
         ) : null}
@@ -381,6 +407,24 @@ const styles = StyleSheet.create({
   },
   questionCard: {
     paddingVertical: spacing.xl,
+  },
+  listenCard: {
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.xl,
+  },
+  speak: {
+    position: 'absolute',
+    right: spacing.xs,
+    bottom: spacing.xs,
+  },
+  answerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  flex: {
+    flex: 1,
   },
   actions: {
     gap: spacing.md,
