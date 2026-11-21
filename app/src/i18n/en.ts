@@ -281,6 +281,10 @@ export const en = {
     resetKnown: (count: number) =>
       count === 1 ? 'Suggest again 1 word marked as known' : `Suggest again ${count} words marked as known`,
     backup: 'Backup',
+    privacy: 'Privacy',
+    shareStats: 'Show my stats to friends',
+    shareStatsOn: 'Friends see your languages, streak, medals, favourite topics, last learned words and the day you last trained. Your other words stay on the phone.',
+    shareStatsOff: 'Friends see only your nickname and picture.',
     backupHint: 'Backups of the old web app are imported as English → Italian.',
     exportBackup: 'Export backup',
     importBackup: 'Import backup',
@@ -322,7 +326,7 @@ export const en = {
     addFriends: 'Tap to add friends ›',
     email: 'Email',
     notSet: 'Not set',
-    accountHint: 'Nick, friend code, picture, friends and streak are saved on the server; name and words stay on this phone.',
+    accountHint: 'Nick, friend code, picture, friends, streak and a summary of your studies for friends are saved on the server; name and words stay on this phone.',
     accountType: 'Account',
     guest: 'Guest',
     register: 'Sign up with email',
@@ -404,6 +408,31 @@ export const en = {
     shareShort: 'Share',
     shareMessage: (code: string) => `Add me on Echo - WordKeeper! My friend code is ${code}`,
     codeAccessibility: (code: string) => `Friend code ${code.split('').join(' ')}`,
+  },
+  friendProfile: {
+    loading: 'Loading the profile…',
+    error: 'Can\'t load the profile.',
+    notFriends: 'You are no longer friends.',
+    retry: 'Try again',
+    lastTraining: 'Last training',
+    lastTrainingDays: (days: number | null): string =>
+      days === null ? 'never' : days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`,
+    private: (nickname: string) => `🔒 @${nickname} keeps their stats private.`,
+    nothingYet: (nickname: string) =>
+      `@${nickname} hasn't shared any stats yet: they will appear when they open the latest version of the app.`,
+    streak: 'days in a row',
+    bestStreak: 'best streak',
+    languages: 'Languages studied',
+    native: (language: string) => `Native language: ${language}`,
+    languageWords: (words: number, learned: number) =>
+      `${words === 1 ? '1 word' : `${words} words`} · ${learned} learned`,
+    medals: 'Medals',
+    topics: 'Favourite topics',
+    topicWords: (words: number) => (words === 1 ? '1 word' : `${words} words`),
+    learnedWords: 'Last learned words',
+    noLearnedWords: 'No learned words yet.',
+    remove: 'Remove from friends',
+    openHint: 'Opens the profile',
   },
   account: {
     problems: {

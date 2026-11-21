@@ -1,7 +1,7 @@
 // Root of the app: loads saved data, applies the theme and declares
 // the top-level screens (the welcome screens without an account; with one the tab bar, the settings, the language sheet, the
-// medal sheet, the medals-per-level sheet, the streak sheet and the friends sheet). It also mounts the tracker that dates
-// the medal levels and keeps the streak on the server up to date.
+// medal sheet, the medals-per-level sheet, the streak sheet, the friends sheet and a friend's profile). It also mounts the tracker that
+// dates the medal levels and keeps the streak and the summary friends see on the server up to date.
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,6 +11,7 @@ import { Platform } from 'react-native';
 import { HeaderButton } from '@/components/HeaderButton';
 import { AchievementTracker } from '@/hooks/useAchievements';
 import { useAccountSession } from '@/hooks/useAccountSession';
+import { useProfileStatsSync } from '@/hooks/useProfileStatsSync';
 import { useReminderSync } from '@/hooks/useReminderSync';
 import { useServerTopicCheck } from '@/hooks/useServerTopicCheck';
 import { useStreakSync } from '@/hooks/useStreakSync';
@@ -61,6 +62,8 @@ export default function RootLayout() {
   useServerTopicCheck(hydrated);
   // The streak (current, record, saves) is copied to the server
   useStreakSync(hydrated && signedIn);
+  // The summary friends see in the user's profile (languages, medals, learned words)
+  useProfileStatsSync(hydrated && signedIn);
 
   const ready = hydrated && account !== 'loading';
 
@@ -141,6 +144,16 @@ export default function RootLayout() {
           />
           <Stack.Screen
             name="friends"
+            options={{
+              presentation: 'formSheet',
+              sheetGrabberVisible: true,
+              sheetAllowedDetents: [0.75, 1],
+              sheetCornerRadius: 28,
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="friend/[id]"
             options={{
               presentation: 'formSheet',
               sheetGrabberVisible: true,

@@ -282,6 +282,10 @@ export const it: Translations = {
     resetKnown: (count: number) =>
       count === 1 ? 'Suggerisci di nuovo 1 parola segnata come conosciuta' : `Suggerisci di nuovo ${count} parole segnate come conosciute`,
     backup: 'Backup',
+    privacy: 'Privacy',
+    shareStats: 'Mostra le mie statistiche agli amici',
+    shareStatsOn: 'Gli amici vedono lingue, serie, medaglie, categorie preferite, ultime parole imparate e il giorno dell\'ultimo allenamento. Le altre parole restano sul telefono.',
+    shareStatsOff: 'Gli amici vedono solo il tuo nick e la tua immagine.',
     backupHint: 'I backup della vecchia web app vengono importati come Inglese → Italiano.',
     exportBackup: 'Esporta backup',
     importBackup: 'Importa backup',
@@ -323,7 +327,7 @@ export const it: Translations = {
     addFriends: 'Tocca per aggiungere amici ›',
     email: 'Email',
     notSet: 'Non impostato',
-    accountHint: 'Nick, codice amico, immagine, amici e serie sono salvati sul server; nome e parole restano su questo telefono.',
+    accountHint: 'Nick, codice amico, immagine, amici, serie e un riepilogo dei tuoi studi per gli amici sono salvati sul server; nome e parole restano su questo telefono.',
     accountType: 'Account',
     guest: 'Ospite',
     register: 'Registrati con la mail',
@@ -405,6 +409,31 @@ export const it: Translations = {
     shareShort: 'Condividi',
     shareMessage: (code: string) => `Aggiungimi su Echo - WordKeeper! Il mio codice amico è ${code}`,
     codeAccessibility: (code: string) => `Codice amico ${code.split('').join(' ')}`,
+  },
+  friendProfile: {
+    loading: 'Carico il profilo…',
+    error: 'Non riesco a caricare il profilo.',
+    notFriends: 'Non siete più amici.',
+    retry: 'Riprova',
+    lastTraining: 'Ultimo allenamento',
+    lastTrainingDays: (days: number | null): string =>
+      days === null ? 'mai' : days === 0 ? 'oggi' : days === 1 ? 'ieri' : `${days} giorni fa`,
+    private: (nickname: string) => `🔒 @${nickname} tiene private le sue statistiche.`,
+    nothingYet: (nickname: string) =>
+      `@${nickname} non ha ancora condiviso statistiche: compariranno quando aprirà l'ultima versione dell'app.`,
+    streak: 'giorni di fila',
+    bestStreak: 'record di giorni',
+    languages: 'Lingue che studia',
+    native: (language: string) => `Madrelingua: ${language}`,
+    languageWords: (words: number, learned: number) =>
+      `${words === 1 ? '1 parola' : `${words} parole`} · ${learned === 1 ? '1 imparata' : `${learned} imparate`}`,
+    medals: 'Medaglie',
+    topics: 'Categorie preferite',
+    topicWords: (words: number) => (words === 1 ? '1 parola' : `${words} parole`),
+    learnedWords: 'Ultime parole imparate',
+    noLearnedWords: 'Ancora nessuna parola imparata.',
+    remove: 'Rimuovi dagli amici',
+    openHint: 'Apre il profilo',
   },
   account: {
     problems: {

@@ -42,7 +42,10 @@ type SettingsState = {
   quizTopics: TopicId[];
   /** Kinds of word chosen for the quiz; empty = every kind. */
   quizPartsOfSpeech: PartOfSpeech[];
+  /** Friends see languages, streak, medals and last learned words (off = only nick and photo). */
+  shareStats: boolean;
 
+  setShareStats: (share: boolean) => void;
   setQuizTopics: (topics: TopicId[]) => void;
   setQuizPartsOfSpeech: (kinds: PartOfSpeech[]) => void;
 
@@ -86,7 +89,9 @@ export const useSettingsStore = create<SettingsState>()(
       quizCustomCount: QUIZ_CUSTOM_DEFAULT,
       quizTopics: [],
       quizPartsOfSpeech: [],
+      shareStats: true,
 
+      setShareStats: (shareStats) => set({ shareStats }),
       setQuizTopics: (quizTopics) => set({ quizTopics }),
       setQuizPartsOfSpeech: (quizPartsOfSpeech) => set({ quizPartsOfSpeech }),
 

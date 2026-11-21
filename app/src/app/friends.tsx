@@ -1,11 +1,12 @@
 // Sheet opened from the friends in Profile. At the top: add a friend by nickname (search as
 // you type) or with their friend code (they get a request to accept), and the user's own code,
-// ready to share. Below: requests received, friends, requests sent.
+// ready to share. Below: requests received, friends (tap one to open their profile, where they
+// can also be removed: app/friend/[id].tsx), requests sent.
 // Everything comes from the server (services/account.ts); the counters in Profile follow.
 
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Appear } from '@/components/Appear';
@@ -49,11 +50,12 @@ type Found = { query: string; round: number } & ({ results: ProfileSearchResult[
 
 type Person = Pick<FriendEntry, 'nickname' | 'avatar' | 'photo_path'>;
 
-function FriendRow({ entry, children }: { entry: Person; children: ReactNode }) {
+function FriendRow({ entry, children, onPress }: { entry: Person; children?: ReactNode; onPress?: () => void }) {
   const { colors } = useTheme();
+  const t = useT();
   const avatarId = entry.avatar && isAvatarId(entry.avatar) ? entry.avatar : AVATAR_PRESETS[0].id;
-  return (
-    <View style={[styles.row, { borderTopColor: colors.border }]}>
+  const content = (
+    <>
       <Avatar
         avatar={entry.photo_path ? { kind: 'photo', uri: photoUrl(entry.photo_path) } : { kind: 'preset', id: avatarId }}
         size={44}
@@ -61,8 +63,25 @@ function FriendRow({ entry, children }: { entry: Person; children: ReactNode }) 
       <AppText variant="bodyBold" style={styles.flex} numberOfLines={1}>
         @{entry.nickname}
       </AppText>
-      <View style={styles.rowActions}>{children}</View>
-    </View>
+      {children ? <View style={styles.rowActions}>{children}</View> : null}
+      {onPress ? (
+        <AppText variant="bodyBold" color="textMuted" accessible={false}>
+          ›
+        </AppText>
+      ) : null}
+    </>
+  );
+  return onPress ? (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`@${entry.nickname}`}
+      accessibilityHint={t.friendProfile.openHint}
+      style={({ pressed }) => [styles.row, { borderTopColor: colors.border }, pressed && styles.pressed]}>
+      {content}
+    </Pressable>
+  ) : (
+    <View style={[styles.row, { borderTopColor: colors.border }]}>{content}</View>
   );
 }
 
@@ -193,11 +212,11 @@ export default function FriendsSheet() {
     refreshFriendCounts();
   };
 
-  const confirmRemove = (entry: FriendEntry) =>
-    Alert.alert(t.friends.removeConfirm(entry.nickname), undefined, [
-      { text: t.common.cancel, style: 'cancel' },
-      { text: t.friends.remove, style: 'destructive', onPress: act(() => removeFriend(entry.id)) },
-    ]);
+  const openProfile = (entry: FriendEntry) =>
+    router.push({
+      pathname: '/friend/[id]',
+      params: { id: entry.id, nickname: entry.nickname, avatar: entry.avatar ?? '', photo: entry.photo_path ?? '' },
+    });
 
   const shareCode = () => {
     Share.share({ message: t.friends.shareMessage(friendCode) }).catch((error) => console.warn('Share error:', error));
@@ -319,9 +338,7 @@ export default function FriendsSheet() {
             </AppText>
           ) : null}
           {lists.friends.map((entry) => (
-            <FriendRow key={entry.id} entry={entry}>
-              <Button label={t.friends.remove} tone="secondary" size="sm" onPress={() => confirmRemove(entry)} />
-            </FriendRow>
+            <FriendRow key={entry.id} entry={entry} onPress={() => openProfile(entry)} />
           ))}
         </Card>
       </Section>
@@ -366,6 +383,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.sm + 2,
+  },
+  pressed: {
+    opacity: 0.6,
   },
   rowActions: {
     flexDirection: 'row',

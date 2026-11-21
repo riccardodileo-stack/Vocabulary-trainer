@@ -1,4 +1,4 @@
-// Main settings page: the theme right here, everything else in categories.
+// Main settings page: the theme and the privacy switch right here, everything else in categories.
 
 import { router } from 'expo-router';
 
@@ -57,6 +57,16 @@ export default function SettingsScreen() {
         <ListRow icon="📋" label={t.importList.title} onPress={() => router.push('/settings/import-list')} />
         <ListRow icon="💾" label={t.settings.backup} onPress={() => router.push('/settings/backup')} />
       </ListGroup>
+
+      <Section title={t.settings.privacy} hint={settings.shareStats ? t.settings.shareStatsOn : t.settings.shareStatsOff}>
+        <ListGroup>
+          <ListRow
+            icon="👥"
+            label={t.settings.shareStats}
+            toggle={{ value: settings.shareStats, onChange: settings.setShareStats }}
+          />
+        </ListGroup>
+      </Section>
     </Screen>
   );
 }
