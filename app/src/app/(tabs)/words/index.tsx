@@ -65,6 +65,7 @@ type WordRowProps = { word: Word; errorsLabel?: string; correctLabel?: string; m
 const MASTERY_SPARKLE = { ios: 'sparkle', android: 'auto_awesome', web: 'auto_awesome' } as const;
 
 const WordRow = memo(function WordRow({ word, errorsLabel, correctLabel, masteryLabel }: WordRowProps) {
+  const t = useT();
   const { colors } = useTheme();
   const box = reviewBox(word);
   const mastered = box === MASTERED_BOX;
@@ -101,9 +102,16 @@ const WordRow = memo(function WordRow({ word, errorsLabel, correctLabel, mastery
           ) : null}
         </View>
       </View>
-      <AppText color="textMuted" numberOfLines={2}>
-        {meaningsToText(word)}
-      </AppText>
+      <View style={styles.wordFooter}>
+        <AppText color="textMuted" numberOfLines={2} style={styles.translation}>
+          {meaningsToText(word)}
+        </AppText>
+        {box <= 2 ? (
+          <View>
+            <Pill label={t.words.newBadge} tone="primary" />
+          </View>
+        ) : null}
+      </View>
     </Card>
   );
 });
@@ -249,6 +257,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+    wordFooter: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+  },
+  translation: {
+    flex: 1,
+    minWidth: 0,
   },
   term: {
     flex: 1,

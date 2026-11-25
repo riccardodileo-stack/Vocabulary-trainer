@@ -73,6 +73,7 @@ export const it: Translations = {
   },
   words: {
     title: 'Dizionario',
+    newBadge: 'New',
     empty: 'Nessuna parola. Aggiungi la prima, oppure scegline qualcuna tra le parole del giorno in Home.',
     add: 'Aggiungi parola',
     searchPlaceholder: 'Cerca',

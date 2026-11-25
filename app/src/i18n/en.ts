@@ -72,6 +72,7 @@ export const en = {
   },
   words: {
     title: 'Dictionary',
+    newBadge: 'New',
     empty: 'No words yet. Add your first word, or pick some from the words of the day in Home.',
     add: 'Add word',
     searchPlaceholder: 'Search',
