@@ -103,6 +103,8 @@ export const en = {
     termPlaceholder: 'e.g. battery',
     meanings: 'Translations',
     meaningPlaceholder: 'Translation',
+    noteTitle: 'Note',
+    examplesTitle: 'Examples',
     notePlaceholder: 'Note (optional), e.g. electric',
     examplesPlaceholder: 'Examples, one per line (optional)',
     addMeaning: '+ Add translation',
@@ -129,7 +131,7 @@ export const en = {
     notFound: 'This word no longer exists.',
   },
   meanings: {
-    find: '📖 Find meanings',
+    find: 'Find meanings',
     none: 'No meanings found for this word.',
     error: 'Meanings could not be loaded. Check your connection.',
     addAccessibility: (meaning: string) => `Add ${meaning} to the meanings`,
@@ -139,7 +141,7 @@ export const en = {
   },
   examples: {
     title: 'Example sentences',
-    find: '🔎 Find example sentences',
+    find: 'Find example sentences',
     none: 'No sentences found for this word.',
     error: 'Sentences could not be loaded. Check your connection.',
     add: '+ Add to the word',

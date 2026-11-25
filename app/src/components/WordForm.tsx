@@ -3,8 +3,9 @@
 // while typing (topic network, offline rules, Wiktionary); once the user touches them, their
 // choice wins.
 
-import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { LanguagePair } from '@/domain/languages';
 import { guessPartOfSpeech, PARTS_OF_SPEECH, type PartOfSpeech } from '@/domain/partOfSpeech';
@@ -16,9 +17,10 @@ import { useFocusAfterTransition } from '@/hooks/useFocusAfterTransition';
 import { useT } from '@/i18n';
 import type { ExampleSentence } from '@/services/tatoeba';
 import { fetchPartOfSpeech } from '@/services/wiktionary';
-import { spacing } from '@/theme';
+import { fontSize, iconSize, spacing, touchTarget, useTextScale, useTheme } from '@/theme';
 
 import { AppText } from './AppText';
+import { Appear } from './Appear';
 import { Button } from './Button';
 import { Card } from './Card';
 import { ChoiceChips } from './ChoiceChips';
@@ -33,6 +35,8 @@ type MeaningDraft = {
   text: string;
   note: string;
   examples: string;
+  noteOpen?: boolean;
+  examplesOpen?: boolean;
   /** Topics given to this meaning (by the user, by Wiktionary or saved before). */
   topics: TopicId[];
   /** The translation `topics` was decided for: when the text changes, suggestions take over. */
@@ -77,7 +81,7 @@ function draftTopics(draft: MeaningDraft, term: string, pair: LanguagePair, only
   return draft.text.trim() ? suggestMeaningTopics(term, draft.text, pair, onlyMeaning) : [];
 }
 
-function inputFromDrafts(term: string, drafts: MeaningDraft[], tags: string, pair: LanguagePair): NewWordInput {
+function inputFromDrafts(term: string, drafts: MeaningDraft[], pair: LanguagePair): NewWordInput {
   const filled = drafts.filter((draft) => draft.text.trim());
   return {
     term: term.trim(),
@@ -91,10 +95,6 @@ function inputFromDrafts(term: string, drafts: MeaningDraft[], tags: string, pai
       topics: draftTopics(draft, term, pair, filled.length === 1),
       topicsByUser: draft.topicsByUser || undefined,
     })),
-    tags: tags
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean),
   };
 }
 
@@ -113,11 +113,51 @@ function meaningIndexFor(drafts: MeaningDraft[], sentence: ExampleSentence): num
   return Math.max(index, 0);
 }
 
+function CollapsibleField({
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const { colors } = useTheme();
+
+  return (
+    <View style={styles.collapsibleField}>
+      <Pressable
+        onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityLabel={title}
+        accessibilityState={{ expanded: open }}
+        style={({ pressed }) => [styles.fieldToggle, pressed && styles.fieldPressed]}>
+        <AppText variant="caption" color="textMuted" style={styles.flex}>
+          {title.toUpperCase()}
+        </AppText>
+        <SymbolView
+          name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }}
+          size={iconSize.sm}
+          tintColor={colors.textMuted}
+          accessible={false}
+          pointerEvents="none"
+          style={open ? styles.fieldArrowOpen : undefined}
+        />
+      </Pressable>
+
+      {open ? <Appear from="down" exit={false}>{children}</Appear> : null}
+    </View>
+  );
+}
+
 export function WordForm({ pair, initialWord, autoFocus = true, onSave, onDelete }: WordFormProps) {
   const t = useT();
+  const textScale = useTextScale();
+  const mainFieldStyle = [styles.mainField, { fontSize: fontSize.large * textScale }];
   const [term, setTerm] = useState(initialWord?.term ?? '');
   const [drafts, setDrafts] = useState(() => draftsFromWord(initialWord));
-  const [tags, setTags] = useState(initialWord?.tags.join(', ') ?? '');
   const [error, setError] = useState<string | null>(null);
   const termRef = useRef<TextFieldRef>(null);
 
@@ -141,6 +181,12 @@ export function WordForm({ pair, initialWord, autoFocus = true, onSave, onDelete
 
   const updateDraft = (index: number, changes: Partial<MeaningDraft>) =>
     setDrafts((current) => current.map((draft, i) => (i === index ? { ...draft, ...changes } : draft)));
+
+  const toggleDraftField = (index: number, field: 'noteOpen' | 'examplesOpen') => {
+    setDrafts((current) =>
+      current.map((draft, i) => (i === index ? { ...draft, [field]: !draft[field] } : draft)),
+    );
+  };
 
   const removeDraft = (index: number) => setDrafts((current) => current.filter((_, i) => i !== index));
 
@@ -201,7 +247,7 @@ ${example}` : example });
 
   const save = () => {
     const input: NewWordInput = {
-      ...inputFromDrafts(term, drafts, tags, pair),
+      ...inputFromDrafts(term, drafts, pair),
       partOfSpeech: kind,
       partOfSpeechSource: kindSource,
     };
@@ -226,7 +272,7 @@ ${example}` : example });
             autoCapitalize="none"
             autoCorrect={false}
             ref={termRef}
-            style={styles.flex}
+            style={[styles.flex, mainFieldStyle]}
           />
           <SpeakButton text={term} language={pair.source} />
         </View>
@@ -242,19 +288,30 @@ ${example}` : example });
               onChangeText={(text) => updateDraft(index, { text })}
               placeholder={t.wordForm.meaningPlaceholder}
               autoCapitalize="none"
+              style={mainFieldStyle}
             />
-            <TextField
-              value={draft.note}
-              onChangeText={(note) => updateDraft(index, { note })}
-              placeholder={t.wordForm.notePlaceholder}
-              autoCapitalize="none"
-            />
-            <TextField
-              value={draft.examples}
-              onChangeText={(examples) => updateDraft(index, { examples })}
-              placeholder={t.wordForm.examplesPlaceholder}
-              multiline
-            />
+            <CollapsibleField
+              title={t.wordForm.noteTitle}
+              open={draft.noteOpen ?? false}
+              onToggle={() => toggleDraftField(index, 'noteOpen')}>
+              <TextField
+                value={draft.note}
+                onChangeText={(note) => updateDraft(index, { note })}
+                placeholder={t.wordForm.notePlaceholder}
+                autoCapitalize="none"
+              />
+            </CollapsibleField>
+            <CollapsibleField
+              title={t.wordForm.examplesTitle}
+              open={draft.examplesOpen ?? false}
+              onToggle={() => toggleDraftField(index, 'examplesOpen')}>
+              <TextField
+                value={draft.examples}
+                onChangeText={(examples) => updateDraft(index, { examples })}
+                placeholder={t.wordForm.examplesPlaceholder}
+                multiline
+              />
+            </CollapsibleField>
             <MeaningTopics
               topics={draftTopics(draft, term, pair, filledCount <= 1)}
               byUser={draft.topicsByUser}
@@ -291,10 +348,6 @@ ${example}` : example });
         <ExampleFinder pair={pair} term={term} meanings={meaningTexts} onAdd={addExample} />
       </Section>
 
-      <Section title={t.wordForm.tags}>
-        <TextField value={tags} onChangeText={setTags} placeholder={t.wordForm.tagsPlaceholder} autoCapitalize="none" />
-      </Section>
-
       <View style={styles.actions}>
         {error ? <AppText color="danger">{error}</AppText> : null}
         <Button label={t.common.save} onPress={save} />
@@ -312,6 +365,26 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+    mainField: {
+    minHeight: spacing.xxl * 2,
+    paddingVertical: spacing.lg,
+  },
+  collapsibleField: {
+    gap: spacing.xs,
+  },
+  fieldToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: touchTarget,
+    paddingHorizontal: spacing.xs,
+    gap: spacing.sm,
+  },
+  fieldPressed: {
+    opacity: 0.65,
+  },
+  fieldArrowOpen: {
+    transform: [{ rotate: '180deg' }],
   },
   remove: {
     alignSelf: 'flex-end',

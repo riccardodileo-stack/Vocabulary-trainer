@@ -104,6 +104,8 @@ export const it: Translations = {
     termPlaceholder: 'es. battery',
     meanings: 'Traduzioni',
     meaningPlaceholder: 'Traduzione',
+    noteTitle: 'Nota',
+    examplesTitle: 'Esempi',
     notePlaceholder: 'Nota (facoltativa), es. elettrica',
     examplesPlaceholder: 'Esempi, uno per riga (facoltativi)',
     addMeaning: '+ Aggiungi traduzione',
@@ -130,7 +132,7 @@ export const it: Translations = {
     notFound: 'Questa parola non esiste più.',
   },
   meanings: {
-    find: '📖 Cerca significati',
+    find: 'Cerca significati',
     none: 'Nessun significato trovato per questa parola.',
     error: 'Impossibile caricare i significati. Controlla la connessione.',
     addAccessibility: (meaning: string) => `Aggiungi ${meaning} ai significati`,
@@ -140,7 +142,7 @@ export const it: Translations = {
   },
   examples: {
     title: 'Frasi di esempio',
-    find: '🔎 Cerca frasi di esempio',
+    find: 'Cerca frasi di esempio',
     none: 'Nessuna frase trovata per questa parola.',
     error: 'Impossibile caricare le frasi. Controlla la connessione.',
     add: '+ Aggiungi alla parola',
