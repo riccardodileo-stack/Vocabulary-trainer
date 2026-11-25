@@ -29,7 +29,7 @@ import { CHOICE_MAX_BOX } from '@/domain/word';
 import { useT } from '@/i18n';
 import { useActivePair, useSettingsStore, type QuizCountChoice } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
-import { radius, spacing, useTheme } from '@/theme';
+import { radius, spacing, touchTarget, useTheme } from '@/theme';
 
 type TrainMode = QuizMode | 'blocks';
 const TRAIN_MODES: TrainMode[] = [...QUIZ_MODES, 'blocks'];
@@ -43,6 +43,7 @@ export default function TrainScreen() {
   // Start on the review when there is something to review
   const [selectedMode, setSelectedMode] = useState<TrainMode>(() => (quizPool(words, { mode: 'due' }).length > 0 ? 'due' : 'all'));
   const showingBlocks = selectedMode === 'blocks';
+  const [filterRowHeight, setFilterRowHeight] = useState(touchTarget + spacing.xs);
   const mode = selectedMode === 'blocks' ? 'all' : selectedMode;
   const countChoice = useSettingsStore((state) => state.quizCountChoice);
   const customCount = useSettingsStore((state) => state.quizCustomCount);
@@ -143,9 +144,13 @@ export default function TrainScreen() {
           </View>
           {/* Under the three choices: the filters and, when some are on, what they keep */}
           {showingBlocks ? (
-            <QuizBlockList words={words} direction={direction} />
+            <View style={{ marginTop: filterRowHeight + spacing.lg }}>
+              <QuizBlockList words={words} direction={direction} />
+            </View>
           ) : (
-          <View style={styles.filterRow}>
+          <View
+            style={styles.filterRow}
+            onLayout={({ nativeEvent }) => setFilterRowHeight(nativeEvent.layout.height)}>
             <FilterButton
               label={t.filters.button}
               active={activeFilters}
