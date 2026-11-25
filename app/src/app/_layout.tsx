@@ -143,6 +143,18 @@ export default function RootLayout() {
               headerShown: false,
             }}
           />
+
+          <Stack.Screen
+            name="learned-words"
+            options={{
+              presentation: 'formSheet',
+              sheetGrabberVisible: true,
+              sheetAllowedDetents: [0.75, 1],
+              sheetCornerRadius: 28,
+              headerShown: false,
+            }}
+          />
+          
           <Stack.Screen
             name="friends"
             options={{

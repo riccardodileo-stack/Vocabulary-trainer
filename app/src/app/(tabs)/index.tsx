@@ -20,8 +20,8 @@ import { fontSize, iconSize, radius, spacing, touchTarget, useTheme } from '@/th
 
 const SYMBOLS = {
   flame: { ios: 'flame.fill', android: 'local_fire_department', web: 'local_fire_department' },
-  words: { ios: 'book.closed', android: 'menu_book', web: 'menu_book' },
-  learned: { ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' },
+  words: { ios: 'book.fill', android: 'menu_book', web: 'menu_book' },
+  learned: { ios: 'star.fill', android: 'star_rate', web: 'star_rate' },
   review: { ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' },
   next: { ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' },
 } as const;
@@ -67,6 +67,9 @@ export default function HomeScreen() {
       symbol: SYMBOLS.flame,
       tint: flameColor,
       chip: colors.cardMuted,
+      backdropOpacity: streakLevel?.opacity ?? 0.08,
+      hint: t.home.streakOpen,
+      onPress: () => router.push('/streak'),
     },
     {
       id: 'words',
@@ -75,14 +78,20 @@ export default function HomeScreen() {
       symbol: SYMBOLS.words,
       tint: colors.primaryStrong,
       chip: colors.primarySoft,
+      backdropOpacity: 0.14,
+      hint: t.home.wordsOpen,
+      onPress: () => router.navigate('/words'),
     },
     {
       id: 'learned',
       value: masteredCount,
       label: t.home.masteredStat,
       symbol: SYMBOLS.learned,
-      tint: colors.homeLearned,
-      chip: colors.homeLearnedSoft,
+      tint: colors.gold,
+      chip: colors.goldSoft,
+      backdropOpacity: 0.17,
+      hint: t.home.learnedOpen,
+      onPress: () => router.navigate('/learned-words'),
     },
   ];
 
@@ -108,16 +117,16 @@ export default function HomeScreen() {
           const value = numberFormat.format(stat.value);
 
           return (
-            <Pressable
+              <Pressable
               key={stat.id}
               accessible
-              // Only the streak opens something: its sheet explains the saves
-              disabled={stat.id !== 'streak'}
-              accessibilityRole={stat.id === 'streak' ? 'button' : undefined}
-              accessibilityHint={stat.id === 'streak' ? t.home.streakOpen : undefined}
-              onPress={() => router.push('/streak')}
+              accessibilityRole="button"
+              accessibilityHint={stat.hint}
+              onPress={stat.onPress}
               accessibilityLabel={
-                stat.id === 'streak' && saves > 0 ? `${value} ${stat.label}, ${t.home.streakSaves(saves)}` : `${value} ${stat.label}`
+                stat.id === 'streak' && saves > 0
+                  ? `${value} ${stat.label}, ${t.home.streakSaves(saves)}`
+                  : `${value} ${stat.label}`
               }
               style={({ pressed }) => [
                 styles.stat,
@@ -125,16 +134,14 @@ export default function HomeScreen() {
                 { backgroundColor: colors.card, borderColor: colors.border },
                 pressed && styles.pressed,
               ]}>
-              {stat.id === 'streak' ? (
-                <SymbolView
-                  name={SYMBOLS.flame}
-                  size={spacing.xxl * 3}
-                  tintColor={flameColor}
-                  accessible={false}
-                  pointerEvents="none"
-                  style={[styles.flame, { opacity: streakLevel?.opacity ?? 0.08 }]}
-                />
-              ) : null}
+              <SymbolView
+                name={stat.symbol}
+                size={spacing.xxl * 3}
+                tintColor={stat.tint}
+                accessible={false}
+                pointerEvents="none"
+                style={[styles.statBackdrop, { opacity: stat.backdropOpacity }]}
+              />
               <View style={styles.statTop}>
                 <View style={[styles.statIcon, { backgroundColor: stat.chip }]}>
                   <SymbolView name={stat.symbol} size={iconSize.sm} tintColor={stat.tint} accessible={false} />
@@ -227,7 +234,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   statInRow: { flex: 1, minWidth: 0 },
-  flame: { position: 'absolute', top: -spacing.xl, right: -spacing.xl },
+  statBackdrop: { position: 'absolute', top: -spacing.xl, right: -spacing.xl },
   statTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   statIcon: {
     width: spacing.xxl,

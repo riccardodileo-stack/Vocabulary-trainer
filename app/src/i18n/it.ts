@@ -28,6 +28,10 @@ export const it: Translations = {
     streakOpen: 'Apre i dettagli della serie',
     wordsStat: (count: number) => (count === 1 ? 'parola' : 'parole'),
     masteredStat: 'imparate',
+    wordsOpen: 'Apre il Dizionario',
+    learnedOpen: 'Mostra le parole con la stella dorata',
+    learnedTitle: 'Parole imparate',
+    learnedEmpty: 'Quando una parola conquista la stella dorata, la trovi qui.',
     reviewTitle: 'Ripasso di oggi',
     reviewDue: (count: number) =>
       count === 1 ? '1 parola da ripassare oggi.' : `${count} parole da ripassare oggi.`,

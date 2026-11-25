@@ -27,6 +27,10 @@ export const en = {
     streakOpen: 'Opens the streak details',
     wordsStat: (count: number): string => (count === 1 ? 'word' : 'words'),
     masteredStat: 'learned',
+    wordsOpen: 'Opens the dictionary',
+    learnedOpen: 'Shows the words with a gold star',
+    learnedTitle: 'Learned words',
+    learnedEmpty: 'Words appear here when they earn a gold star.',
     reviewTitle: "Today's review",
     reviewDue: (count: number) =>
       count === 1 ? '1 word to review today.' : `${count} words to review today.`,
