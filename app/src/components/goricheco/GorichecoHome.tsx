@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useNavigation } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -14,13 +14,20 @@ import { useGorichecoStage } from './useGorichecoStage';
 type Props = {
   greeting: string;
   bubbleColor: string;
+  languageSelector: ReactNode;
   compact?: boolean;
   visible?: boolean;
 };
 
 const surfaceStyle = { width: '100%', height: '100%', backgroundColor: 'transparent' } as const;
 
-export function GorichecoHome({ greeting, bubbleColor, compact = false, visible = true }: Props) {
+export function GorichecoHome({
+  greeting,
+  bubbleColor,
+  languageSelector,
+  compact = false,
+  visible = true,
+}: Props) {
   const navigation = useNavigation();
   const { active, onLayout, reducedMotion, ref } = useGorichecoStage();
   const [ready, setReady] = useState(false);
@@ -127,21 +134,6 @@ export function GorichecoHome({ greeting, bubbleColor, compact = false, visible 
       collapsable={false}
       onLayout={onLayout}
     >
-      <Animated.View
-        aria-hidden={!greetingVisible}
-        accessibilityElementsHidden={!greetingVisible}
-        importantForAccessibility={greetingVisible ? 'auto' : 'no-hide-descendants'}
-        style={[
-          styles.bubble,
-          { backgroundColor: bubbleColor, opacity: failed || reducedMotion === true ? 1 : opacity },
-        ]}
-      >
-        <View pointerEvents="none" style={styles.bubbleTail}>
-          <View style={[styles.bubbleTip, { backgroundColor: bubbleColor }]} />
-        </View>
-        <AppText variant="hero" accessibilityRole="header">{greeting}</AppText>
-      </Animated.View>
-      <View style={[styles.reserve, compact && styles.reserveCompact]} />
       <View
         pointerEvents="none"
         accessibilityElementsHidden
@@ -159,6 +151,27 @@ export function GorichecoHome({ greeting, bubbleColor, compact = false, visible 
           />
         )}
       </View>
+
+      <View style={[styles.reserve, compact && styles.reserveCompact]} />
+
+      <View style={styles.rightColumn}>
+        <View style={styles.toolbar}>{languageSelector}</View>
+
+        <Animated.View
+          aria-hidden={!greetingVisible}
+          accessibilityElementsHidden={!greetingVisible}
+          importantForAccessibility={greetingVisible ? 'auto' : 'no-hide-descendants'}
+          style={[
+            styles.bubble,
+            { backgroundColor: bubbleColor, opacity: failed || reducedMotion === true ? 1 : opacity },
+          ]}
+        >
+          <View pointerEvents="none" style={[styles.bubbleTail, compact && styles.bubbleTailCompact]}>
+            <View style={[styles.bubbleTip, { backgroundColor: bubbleColor }]} />
+          </View>
+          <AppText variant="hero" accessibilityRole="header">{greeting}</AppText>
+        </Animated.View>
+      </View>
     </View>
   );
 }
@@ -169,18 +182,25 @@ const COMPACT_STAGE_HEIGHT = 124;
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing.xs,
     minHeight: STAGE_HEIGHT,
-    marginRight: -spacing.lg,
-    paddingRight: spacing.lg,
+    marginLeft: -spacing.lg,
+    paddingLeft: spacing.lg,
     overflow: 'hidden',
   },
   rowCompact: {
     minHeight: COMPACT_STAGE_HEIGHT,
   },
-  bubble: {
+  rightColumn: {
     flex: 1,
+    minWidth: 0,
+    gap: spacing.md,
+  },
+  toolbar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  bubble: {
     minWidth: 0,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
@@ -188,11 +208,12 @@ const styles = StyleSheet.create({
   },
   bubbleTail: {
     position: 'absolute',
-    top: spacing.sm,
-    bottom: 0,
-    right: -5,
+    top: spacing.xl,
+    left: -5,
     width: 14,
-    justifyContent: 'center',
+  },
+  bubbleTailCompact: {
+    top: spacing.md,
   },
   bubbleTip: {
     width: 14,
@@ -211,13 +232,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: '50%',
+    top: 0,
     height: STAGE_HEIGHT,
-    marginTop: -STAGE_HEIGHT / 2,
+    transform: [{ scaleX: -1 }],
   },
   stageCompact: {
     height: COMPACT_STAGE_HEIGHT,
-    marginTop: -COMPACT_STAGE_HEIGHT / 2,
   },
   static: {
     position: 'absolute',

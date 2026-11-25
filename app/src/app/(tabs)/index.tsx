@@ -101,16 +101,14 @@ export default function HomeScreen() {
       trackViewport
       contentContainerStyle={Platform.OS === 'android' && { paddingTop: insets.top + spacing.lg }}
     >
-      <View style={styles.header}>
-        <View style={styles.toolbar}>
+      <GorichecoHome
+        greeting={greeting}
+        bubbleColor={colors.card}
+        compact={largeText}
+        languageSelector={
           <LanguagePairChip pair={pair} compact onPress={() => router.push('/languages')} />
-        </View>
-        <GorichecoHome
-          greeting={greeting}
-          bubbleColor={colors.card}
-          compact={largeText}
-        />
-      </View>
+        }
+      />
 
       <View style={[styles.stats, largeText && styles.statsStacked]}>
         {stats.map((stat) => {
@@ -219,11 +217,6 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs },
-  toolbar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
   stats: { flexDirection: 'row', gap: spacing.sm },
   statsStacked: { flexDirection: 'column' },
   stat: {
