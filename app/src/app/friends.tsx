@@ -5,6 +5,7 @@
 // Everything comes from the server (services/account.ts); the counters in Profile follow.
 
 import { router, useFocusEffect } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 
@@ -38,7 +39,7 @@ import {
   sendFriendRequestByNick,
 } from '@/services/account';
 import { useProfileStore } from '@/store/profileStore';
-import { fontSize, fontWeight, radius, spacing, useTheme } from '@/theme';
+import { fontSize, fontWeight, iconSize, radius, spacing, touchTarget, useTheme } from '@/theme';
 
 const NO_LISTS: FriendLists = { friends: [], incoming: [], outgoing: [] };
 
@@ -90,6 +91,7 @@ export default function FriendsSheet() {
   const { colors } = useTheme();
   const friendCode = useProfileStore((state) => state.friendCode);
   const nickname = useProfileStore((state) => state.nickname);
+  const [friendCodeOpen, setFriendCodeOpen] = useState(false);
   const [lists, setLists] = useState<FriendLists>(NO_LISTS);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -289,24 +291,50 @@ export default function FriendsSheet() {
         ) : null}
       </Section>
 
-      <Section title={t.friends.yourCode} hint={t.friends.yourCodeHint}>
-        <Card style={styles.codeCard}>
-          <View
-            style={[styles.codeBox, { backgroundColor: colors.primarySoft, borderColor: colors.accent }]}
-            accessible
-            accessibilityLabel={t.friends.codeAccessibility(friendCode)}>
-            <AppText style={styles.code} color="primaryStrong" selectable numberOfLines={1} adjustsFontSizeToFit>
-              {friendCode}
+      <View style={styles.friendCodeSection}>
+        <Pressable
+          onPress={() => setFriendCodeOpen((open) => !open)}
+          accessibilityRole="button"
+          accessibilityLabel={t.friends.yourCode}
+          accessibilityState={{ expanded: friendCodeOpen }}
+          style={({ pressed }) => [styles.friendCodeToggle, pressed && styles.pressed]}>
+          <AppText variant="caption" color="textMuted" style={styles.flex}>
+            {t.friends.yourCode.toUpperCase()}
+          </AppText>
+          <SymbolView
+            name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }}
+            size={iconSize.sm}
+            tintColor={colors.textMuted}
+            accessible={false}
+            pointerEvents="none"
+            style={friendCodeOpen ? styles.friendCodeArrowOpen : undefined}
+          />
+        </Pressable>
+
+        {friendCodeOpen ? (
+          <Appear from="down" exit={false} style={styles.friendCodeSection}>
+            <Card style={styles.codeCard}>
+              <View
+                style={[styles.codeBox, { backgroundColor: colors.primarySoft, borderColor: colors.accent }]}
+                accessible
+                accessibilityLabel={t.friends.codeAccessibility(friendCode)}>
+                <AppText style={styles.code} color="primaryStrong" selectable numberOfLines={1} adjustsFontSizeToFit>
+                  {friendCode}
+                </AppText>
+                {nickname ? (
+                  <AppText variant="small" color="textMuted" numberOfLines={1}>
+                    @{nickname}
+                  </AppText>
+                ) : null}
+              </View>
+              <Button label={`📤 ${t.friends.shareShort}`} size="sm" onPress={shareCode} />
+            </Card>
+            <AppText variant="small" color="textMuted" style={styles.friendCodeHint}>
+              {t.friends.yourCodeHint}
             </AppText>
-            {nickname ? (
-              <AppText variant="small" color="textMuted" numberOfLines={1}>
-                @{nickname}
-              </AppText>
-            ) : null}
-          </View>
-          <Button label={`📤 ${t.friends.shareShort}`} size="sm" onPress={shareCode} />
-        </Card>
-      </Section>
+          </Appear>
+        ) : null}
+      </View>
 
       {loadError ? <AppText color="danger">{loadError}</AppText> : null}
 
@@ -391,6 +419,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs,
   },
+
+  friendCodeSection: {
+    gap: spacing.sm,
+  },
+  friendCodeToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: touchTarget,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  friendCodeArrowOpen: {
+    transform: [{ rotate: '180deg' }],
+  },
+  friendCodeHint: {
+    marginLeft: spacing.xs,
+  },
+
   codeCard: {
     flexDirection: 'row',
     alignItems: 'center',
