@@ -12,6 +12,7 @@ type SegmentedControlProps<T extends string> = {
   options: Option<T>[];
   value: T;
   onChange: (value: T) => void;
+  uniformLabels?: boolean;
 };
 
 const GAP = spacing.xs;
@@ -20,7 +21,12 @@ const GAP = spacing.xs;
  * A row of mutually exclusive choices, e.g. System / Light / Dark.
  * The raised "thumb" slides under the chosen option instead of jumping.
  */
-export function SegmentedControl<T extends string>({ options, value, onChange }: SegmentedControlProps<T>) {
+export function SegmentedControl<T extends string>({
+  options,
+  value,
+  onChange,
+  uniformLabels = false,
+}: SegmentedControlProps<T>) {
   const { colors } = useTheme();
   const selectedIndex = options.findIndex((option) => option.value === value);
 
@@ -62,12 +68,13 @@ export function SegmentedControl<T extends string>({ options, value, onChange }:
               accessibilityRole="button"
               accessibilityState={{ selected }}
               onPress={() => onChange(option.value)}
-              style={styles.segment}>
+              style={[styles.segment, uniformLabels && styles.uniformSegment]}>
               <AppText
-                variant={selected ? 'bodyBold' : 'body'}
+                variant={uniformLabels || selected ? 'bodyBold' : 'body'}
                 color={selected ? 'text' : 'textMuted'}
-                numberOfLines={1}
-                adjustsFontSizeToFit>
+                numberOfLines={uniformLabels ? 0 : 1}
+                adjustsFontSizeToFit={!uniformLabels}
+                style={uniformLabels ? styles.uniformLabel : undefined}>
                 {option.label}
               </AppText>
             </Pressable>
@@ -94,6 +101,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: touchTarget - spacing.xs,
     paddingHorizontal: spacing.xs,
+  },
+  uniformSegment: {
+    minWidth: 0,
+    paddingVertical: spacing.xs,
+  },
+  uniformLabel: {
+    width: '100%',
+    textAlign: 'center',
   },
   thumb: {
     position: 'absolute',

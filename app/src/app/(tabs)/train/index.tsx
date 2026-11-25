@@ -100,6 +100,7 @@ export default function TrainScreen() {
 
         <Section title={t.train.mode}>
           <SegmentedControl<TrainMode>
+            uniformLabels
             options={[
               { value: 'due', label: t.train.modeDue },
               { value: 'all', label: t.train.modeAll },

@@ -3,8 +3,7 @@
 
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
@@ -29,8 +28,6 @@ import { useProfileStore } from '@/store/profileStore';
 import { useActivePair } from '@/store/settingsStore';
 import { radius, spacing, useTheme } from '@/theme';
 
-/** Above this length the title uses a smaller size, so it fits next to the gear. */
-const LONG_TITLE = 16;
 
 function openSettings() {
   router.push('/settings');
@@ -49,7 +46,6 @@ export default function ProfileScreen() {
   const t = useT();
   const uiLanguage = useUiLanguage();
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const profile = useProfileStore();
   const pair = useActivePair();
   const bestStreak = useActivityStore((state) => state.bestStreak);
@@ -103,25 +99,16 @@ export default function ProfileScreen() {
 
   return (
     <>
-      {/* No native header: its large-title area left too much empty space above the
-          content. The name is drawn as the first line of the page, like Home.
-          The title is still set: it is the "back" label of the pages opened from here. */}
-      <Stack.Screen options={{ title, headerShown: false }} />
+      <Stack.Screen
+        options={{
+          title,
+          headerRight: () => (
+            <IconButton icon="⚙️" onPress={openSettings} accessibilityLabel={t.settings.title} />
+          ),
+        }}
+      />
 
-      {/* On iOS the ScrollView already avoids the notch; Android needs the inset by hand */}
-      <Screen tab="/profile" contentContainerStyle={Platform.OS === 'android' && { paddingTop: insets.top + spacing.lg }}>
-        <View style={styles.header}>
-          <AppText
-            variant={title.length > LONG_TITLE ? 'title' : 'hero'}
-            accessibilityRole="header"
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.6}
-            style={styles.flex}>
-            {title}
-          </AppText>
-          <IconButton icon="⚙️" onPress={openSettings} accessibilityLabel={t.settings.title} />
-        </View>
+      <Screen tab="/profile">
 
         <Card style={styles.hero}>
           <Pressable onPress={openEdit} accessibilityRole="button" accessibilityLabel={t.profile.edit}>
@@ -239,11 +226,6 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
   hero: {
     flexDirection: 'row',
     alignItems: 'center',
