@@ -6,6 +6,10 @@ export function normalizeText(text: string): string {
   return text.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+export function capitalizeFirstLetter(text: string): string {
+  return text.replace(/\p{L}/u, (letter) => letter.toUpperCase());
+}
+
 /** "perché" -> "perche": used only to forgive missing accents, never to store text. */
 export function removeAccents(text: string): string {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '');

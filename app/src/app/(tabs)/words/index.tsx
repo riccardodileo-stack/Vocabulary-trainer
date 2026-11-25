@@ -20,8 +20,8 @@ import { SpeakButton } from '@/components/SpeakButton';
 import { TextField } from '@/components/TextField';
 import { compareWordsOldestFirst, QUIZ_BLOCK_SIZE } from '@/domain/quiz';
 import { MASTERED_BOX, reviewBox } from '@/domain/review';
-import { normalizeText } from '@/domain/text';
-import { meaningsToText, type Word } from '@/domain/word';
+import { capitalizeFirstLetter, normalizeText } from '@/domain/text';
+import type { Word } from '@/domain/word';
 import { useT } from '@/i18n';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
@@ -77,7 +77,7 @@ const WordRow = memo(function WordRow({ word, errorsLabel, correctLabel, mastery
       style={mastered ? [styles.masteredCard, { borderColor: colors.gold }] : undefined}>
       <View style={styles.row}>
         <AppText variant="bodyBold" style={styles.term}>
-          {word.term}
+          {capitalizeFirstLetter(word.term)}
         </AppText>
         <SpeakButton text={word.term} language={word.sourceLang} size="sm" />
         {errorsLabel ? <Pill label={errorsLabel} tone="warning" /> : null}
@@ -104,7 +104,7 @@ const WordRow = memo(function WordRow({ word, errorsLabel, correctLabel, mastery
       </View>
       <View style={styles.wordFooter}>
         <AppText color="textMuted" numberOfLines={2} style={styles.translation}>
-          {meaningsToText(word)}
+          {word.meanings.map((meaning) => capitalizeFirstLetter(meaning.text)).join(' / ')}
         </AppText>
         {box <= 2 ? (
           <View>

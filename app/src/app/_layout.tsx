@@ -2,7 +2,7 @@
 // the top-level screens (the welcome screens without an account; with one the tab bar, the settings, the language sheet, the
 // medal sheet, the medals-per-level sheet, the streak sheet, the friends sheet and a friend's profile). It also mounts the tracker that
 // dates the medal levels and keeps the streak and the summary friends see on the server up to date.
-
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -79,6 +79,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={navigationTheme}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <AchievementTracker />
       <Stack>
         <Stack.Protected guard={!signedIn}>
@@ -195,6 +196,7 @@ export default function RootLayout() {
           />
         </Stack.Protected>
       </Stack>
+      </GestureHandlerRootView>
     </ThemeProvider>
   );
 }

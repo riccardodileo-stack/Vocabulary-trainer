@@ -21,7 +21,7 @@ import { fontSize, iconSize, radius, spacing, touchTarget, useTheme } from '@/th
 const SYMBOLS = {
   flame: { ios: 'flame.fill', android: 'local_fire_department', web: 'local_fire_department' },
   words: { ios: 'book.fill', android: 'menu_book', web: 'menu_book' },
-  learned: { ios: 'star.fill', android: 'star_rate', web: 'star_rate' },
+  learned: { ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' },
   review: { ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' },
   next: { ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' },
 } as const;
@@ -87,8 +87,8 @@ export default function HomeScreen() {
       value: masteredCount,
       label: t.home.masteredStat,
       symbol: SYMBOLS.learned,
-      tint: colors.gold,
-      chip: colors.goldSoft,
+      tint: colors.homeLearned,
+      chip: colors.homeLearnedSoft,
       backdropOpacity: 0.17,
       hint: t.home.learnedOpen,
       onPress: () => router.navigate('/learned-words'),

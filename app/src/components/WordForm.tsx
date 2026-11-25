@@ -12,7 +12,7 @@ import { guessPartOfSpeech, PARTS_OF_SPEECH, type PartOfSpeech } from '@/domain/
 import { normalizeText } from '@/domain/text';
 import { suggestMeaningTopics } from '@/domain/topicClassifier';
 import type { TopicId } from '@/domain/topics';
-import type { NewWordInput, Word } from '@/domain/word';
+import { createId, type NewWordInput, type Word } from '@/domain/word';
 import { useFocusAfterTransition } from '@/hooks/useFocusAfterTransition';
 import { useT } from '@/i18n';
 import type { ExampleSentence } from '@/services/tatoeba';
@@ -29,9 +29,11 @@ import { MeaningFinder } from './MeaningFinder';
 import { MeaningTopics } from './MeaningTopics';
 import { Section } from './Section';
 import { SpeakButton } from './SpeakButton';
+import { SwipeableTranslation } from './SwipeableTranslation';
 import { TextField, type TextFieldRef } from './TextField';
 
 type MeaningDraft = {
+  id: string;
   text: string;
   note: string;
   examples: string;
@@ -53,21 +55,34 @@ type WordFormProps = {
   onDelete?: () => void;
 };
 
-const EMPTY_MEANING: MeaningDraft = { text: '', note: '', examples: '', topics: [], topicsFor: '', topicsByUser: false };
+function makeMeaningDraft(values: Partial<Omit<MeaningDraft, 'id'>> = {}): MeaningDraft {
+  return {
+    text: '',
+    note: '',
+    examples: '',
+    topics: [],
+    topicsFor: '',
+    topicsByUser: false,
+    ...values,
+    id: createId(),
+  };
+}
 
 function draftsFromWord(word: Word | undefined): MeaningDraft[] {
   if (!word || word.meanings.length === 0) {
-    return [EMPTY_MEANING];
+    return [makeMeaningDraft()];
   }
 
-  return word.meanings.map((meaning) => ({
-    text: meaning.text,
-    note: meaning.note ?? '',
-    examples: meaning.examples.join('\n'),
-    topics: meaning.topics ?? [],
-    topicsFor: meaning.topics ? meaning.text.trim() : '',
-    topicsByUser: meaning.topicsByUser === true,
-  }));
+  return word.meanings.map((meaning) =>
+    makeMeaningDraft({
+      text: meaning.text,
+      note: meaning.note ?? '',
+      examples: meaning.examples.join('\n'),
+      topics: meaning.topics ?? [],
+      topicsFor: meaning.topics ? meaning.text.trim() : '',
+      topicsByUser: meaning.topicsByUser === true,
+    }),
+  );
 }
 
 /**
@@ -128,24 +143,27 @@ function CollapsibleField({
 
   return (
     <View style={styles.collapsibleField}>
-      <Pressable
-        onPress={onToggle}
-        accessibilityRole="button"
-        accessibilityLabel={title}
-        accessibilityState={{ expanded: open }}
-        style={({ pressed }) => [styles.fieldToggle, pressed && styles.fieldPressed]}>
-        <AppText variant="caption" color="textMuted" style={styles.flex}>
-          {title.toUpperCase()}
+      <View style={styles.fieldToggle}>
+        <AppText variant="caption" color="textMuted" style={styles.flex} accessible={false}>
+          {title}
         </AppText>
-        <SymbolView
-          name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }}
-          size={iconSize.sm}
-          tintColor={colors.textMuted}
-          accessible={false}
-          pointerEvents="none"
-          style={open ? styles.fieldArrowOpen : undefined}
-        />
-      </Pressable>
+
+        <Pressable
+          onPress={onToggle}
+          accessibilityRole="button"
+          accessibilityLabel={title}
+          accessibilityState={{ expanded: open }}
+          style={({ pressed }) => [styles.fieldArrowButton, pressed && styles.fieldPressed]}>
+          <SymbolView
+            name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }}
+            size={iconSize.sm}
+            tintColor={colors.textMuted}
+            accessible={false}
+            pointerEvents="none"
+            style={open ? styles.fieldArrowOpen : undefined}
+          />
+        </Pressable>
+      </View>
 
       {open ? <Appear from="down" exit={false}>{children}</Appear> : null}
     </View>
@@ -179,24 +197,32 @@ export function WordForm({ pair, initialWord, autoFocus = true, onSave, onDelete
   // New word: start typing at once (but only after the screen has slid in)
   useFocusAfterTransition(termRef, autoFocus && !initialWord);
 
-  const updateDraft = (index: number, changes: Partial<MeaningDraft>) =>
-    setDrafts((current) => current.map((draft, i) => (i === index ? { ...draft, ...changes } : draft)));
+  const updateDraft = (id: string, changes: Partial<MeaningDraft>) =>
+    setDrafts((current) => current.map((draft) => (draft.id === id ? { ...draft, ...changes } : draft)));
 
-  const toggleDraftField = (index: number, field: 'noteOpen' | 'examplesOpen') => {
+  const toggleDraftField = (id: string, field: 'noteOpen' | 'examplesOpen') => {
     setDrafts((current) =>
-      current.map((draft, i) => (i === index ? { ...draft, [field]: !draft[field] } : draft)),
+      current.map((draft) => (draft.id === id ? { ...draft, [field]: !draft[field] } : draft)),
     );
   };
 
-  const removeDraft = (index: number) => setDrafts((current) => current.filter((_, i) => i !== index));
+  const removeDraft = (id: string) =>
+    setDrafts((current) =>
+      current.length > 1 ? current.filter((draft) => draft.id !== id) : current,
+    );
+
+  const addDraft = () => {
+    const draft = makeMeaningDraft();
+    setDrafts((current) => [...current, draft]);
+  };
 
   const addExample = (sentence: ExampleSentence) => {
-    const index = meaningIndexFor(drafts, sentence);
+    const draft = drafts[meaningIndexFor(drafts, sentence)];
     const example = `${sentence.text} — ${sentence.translation}`;
-    const current = drafts[index].examples.trim();
-    updateDraft(index, { examples: current ? `${current}
-${example}` : example });
+    const current = draft.examples.trim();
+    updateDraft(draft.id, { examples: current ? `${current}\n${example}` : example });
   };
+
 
   const meaningTexts = drafts.map((draft) => draft.text.trim()).filter(Boolean);
 
@@ -234,14 +260,18 @@ ${example}` : example });
    * A meaning found online: in the first empty meaning, or in a new one. `topics` come with
    * it when Wiktionary says the field ("(medicine) …" -> health).
    */
-  const addMeaning = (text: string, topics?: TopicId[]) =>
+  const addMeaning = (text: string, topics?: TopicId[]) => {
+    const given = topics?.length ? { topics, topicsFor: text.trim() } : {};
+    const draft = makeMeaningDraft({ text, ...given });
+
     setDrafts((current) => {
-      const given = topics?.length ? { topics, topicsFor: text.trim() } : {};
-      const empty = current.findIndex((draft) => !draft.text.trim());
+      const empty = current.findIndex((item) => !item.text.trim());
       return empty >= 0
-        ? current.map((draft, i) => (i === empty ? { ...draft, text, ...given } : draft))
-        : [...current, { ...EMPTY_MEANING, text, ...given }];
+        ? current.map((item, i) => (i === empty ? { ...item, text, ...given } : item))
+        : [...current, draft];
     });
+  };
+
 
   const filledCount = drafts.filter((draft) => draft.text.trim()).length;
 
@@ -281,52 +311,59 @@ ${example}` : example });
       </Section>
 
       <Section title={t.wordForm.meanings}>
-        {drafts.map((draft, index) => (
-          <Card key={index}>
-            <TextField
-              value={draft.text}
-              onChangeText={(text) => updateDraft(index, { text })}
-              placeholder={t.wordForm.meaningPlaceholder}
-              autoCapitalize="none"
-              style={mainFieldStyle}
-            />
-            <CollapsibleField
-              title={t.wordForm.noteTitle}
-              open={draft.noteOpen ?? false}
-              onToggle={() => toggleDraftField(index, 'noteOpen')}>
-              <TextField
-                value={draft.note}
-                onChangeText={(note) => updateDraft(index, { note })}
-                placeholder={t.wordForm.notePlaceholder}
-                autoCapitalize="none"
-              />
-            </CollapsibleField>
-            <CollapsibleField
-              title={t.wordForm.examplesTitle}
-              open={draft.examplesOpen ?? false}
-              onToggle={() => toggleDraftField(index, 'examplesOpen')}>
-              <TextField
-                value={draft.examples}
-                onChangeText={(examples) => updateDraft(index, { examples })}
-                placeholder={t.wordForm.examplesPlaceholder}
-                multiline
-              />
-            </CollapsibleField>
-            <MeaningTopics
-              topics={draftTopics(draft, term, pair, filledCount <= 1)}
-              byUser={draft.topicsByUser}
-              onChange={(topics) => updateDraft(index, { topics, topicsByUser: true })}
-              onReset={() => updateDraft(index, { topicsByUser: false, topicsFor: '' })}
-            />
-            {drafts.length > 1 ? (
-              <View style={styles.remove}>
-                <Button label={t.wordForm.removeMeaning} tone="danger" size="sm" onPress={() => removeDraft(index)} />
-              </View>
-            ) : null}
-          </Card>
-        ))}
+        {drafts.map((draft) => {
+          const onRemove = drafts.length > 1 ? () => removeDraft(draft.id) : undefined;
 
-        <Button label={t.wordForm.addMeaning} tone="secondary" onPress={() => setDrafts([...drafts, EMPTY_MEANING])} />
+          return (
+            <SwipeableTranslation key={draft.id} removeLabel={t.wordForm.removeMeaning} onRemove={onRemove}>
+              <Card style={styles.meaningCard}>
+                <TextField
+                  value={draft.text}
+                  onChangeText={(text) => updateDraft(draft.id, { text })}
+                  placeholder={t.wordForm.meaningPlaceholder}
+                  autoCapitalize="none"
+                  style={mainFieldStyle}
+                  accessibilityActions={
+                    onRemove ? [{ name: 'removeMeaning', label: t.wordForm.removeMeaning }] : undefined
+                  }
+                  onAccessibilityAction={(event) => {
+                    if (event.nativeEvent.actionName === 'removeMeaning') onRemove?.();
+                  }}
+                />
+                <CollapsibleField
+                  title={t.wordForm.noteTitle}
+                  open={draft.noteOpen ?? false}
+                  onToggle={() => toggleDraftField(draft.id, 'noteOpen')}>
+                  <TextField
+                    value={draft.note}
+                    onChangeText={(note) => updateDraft(draft.id, { note })}
+                    placeholder={t.wordForm.notePlaceholder}
+                    autoCapitalize="none"
+                  />
+                </CollapsibleField>
+                <CollapsibleField
+                  title={t.wordForm.examplesTitle}
+                  open={draft.examplesOpen ?? false}
+                  onToggle={() => toggleDraftField(draft.id, 'examplesOpen')}>
+                  <TextField
+                    value={draft.examples}
+                    onChangeText={(examples) => updateDraft(draft.id, { examples })}
+                    placeholder={t.wordForm.examplesPlaceholder}
+                    multiline
+                  />
+                </CollapsibleField>
+                <MeaningTopics
+                  topics={draftTopics(draft, term, pair, filledCount <= 1)}
+                  byUser={draft.topicsByUser}
+                  onChange={(topics) => updateDraft(draft.id, { topics, topicsByUser: true })}
+                  onReset={() => updateDraft(draft.id, { topicsByUser: false, topicsFor: '' })}
+                />
+              </Card>
+            </SwipeableTranslation>
+          );
+        })}
+
+        <Button label={t.wordForm.addMeaning} tone="secondary" onPress={addDraft} />
       </Section>
 
       <Section
@@ -366,9 +403,13 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-    mainField: {
-    minHeight: spacing.xxl * 2,
-    paddingVertical: spacing.lg,
+  mainField: {
+    minHeight: touchTarget + spacing.xs,
+    paddingVertical: spacing.sm,
+  },
+  meaningCard: {
+    padding: spacing.md,
+    gap: spacing.xs,
   },
   collapsibleField: {
     gap: spacing.xs,
@@ -376,9 +417,14 @@ const styles = StyleSheet.create({
   fieldToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: touchTarget,
-    paddingHorizontal: spacing.xs,
+    minHeight: spacing.xxl,
     gap: spacing.sm,
+  },
+  fieldArrowButton: {
+    width: spacing.xxl,
+    minHeight: spacing.xxl,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   fieldPressed: {
     opacity: 0.65,
@@ -386,10 +432,8 @@ const styles = StyleSheet.create({
   fieldArrowOpen: {
     transform: [{ rotate: '180deg' }],
   },
-  remove: {
-    alignSelf: 'flex-end',
-  },
   actions: {
+    marginTop: spacing.lg,
     gap: spacing.md,
   },
 });
