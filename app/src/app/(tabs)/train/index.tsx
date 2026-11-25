@@ -144,7 +144,15 @@ export default function TrainScreen() {
           </View>
           {/* Under the three choices: the filters and, when some are on, what they keep */}
           {showingBlocks ? (
-            <View style={{ marginTop: filterRowHeight + spacing.lg }}>
+            <View>
+              <Section
+                title="Quiz"
+                style={{
+                  height: filterRowHeight + spacing.lg,
+                  justifyContent: 'flex-end',
+                  paddingBottom: spacing.sm,
+                }}
+              />
               <QuizBlockList words={words} direction={direction} />
             </View>
           ) : (
