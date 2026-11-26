@@ -13,7 +13,8 @@ import { Section } from '@/components/Section';
 import { WORD_BANK } from '@/content/wordBank';
 import { remainingCount } from '@/domain/dailyWords';
 import { normalizeText } from '@/domain/text';
-import { TOPIC_ICONS, TOPIC_IDS, type TopicId } from '@/domain/topics';
+import { TOPIC_IDS, type TopicId } from '@/domain/topics';
+import { TopicIcon } from '@/components/TopicBadge';
 import { useT } from '@/i18n';
 import { useKnownIds } from '@/store/dailyStore';
 import { useActivePair, useSettingsStore } from '@/store/settingsStore';
@@ -51,7 +52,7 @@ export default function DailyTopicsSheet() {
           options={TOPIC_IDS.map((topic) => ({
             value: topic,
             label: t.topicsShort[topic],
-            icon: TOPIC_ICONS[topic],
+            icon: <TopicIcon topic={topic} />,
             count: count([topic]),
           }))}
           value={topics}

@@ -24,12 +24,13 @@ import { SegmentedControl } from '@/components/SegmentedControl';
 import { LANGUAGES } from '@/domain/languages';
 import { QUIZ_COUNTS, QUIZ_CUSTOM_MAX, QUIZ_CUSTOM_MIN, QUIZ_MODES, quizPool, type QuizDirection, type QuizMode } from '@/domain/quiz';
 import { reviewBox } from '@/domain/review';
-import { TOPIC_ICONS } from '@/domain/topics';
 import { CHOICE_MAX_BOX } from '@/domain/word';
 import { useT } from '@/i18n';
 import { useActivePair, useSettingsStore, type QuizCountChoice } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
 import { radius, spacing, touchTarget, useTheme } from '@/theme';
+import { Pill } from '@/components/Pill';
+import { TopicBadges } from '@/components/TopicBadge';
 
 type TrainMode = QuizMode | 'blocks';
 const TRAIN_MODES: TrainMode[] = [...QUIZ_MODES, 'blocks'];
@@ -62,10 +63,6 @@ export default function TrainScreen() {
   ).length;
   const activeFilters = topics.length + kinds.length;
   // "💻 Informatica · 🍝 Cibo · Verbi": what the filters keep, shown under the choice
-  const filterSummary = [
-    ...topics.map((topic) => `${TOPIC_ICONS[topic]} ${t.topicsShort[topic]}`),
-    ...kinds.map((kind) => t.partsOfSpeechPlural[kind]),
-  ].join(' · ');
   const openFilters = () => router.push({ pathname: '/quiz-filters', params: { mode } });
   const source = LANGUAGES[pair.source].flag;
   const target = LANGUAGES[pair.target].flag;
@@ -156,9 +153,8 @@ export default function TrainScreen() {
               <QuizBlockList words={words} direction={direction} />
             </View>
           ) : (
-          <View
-            style={styles.filterRow}
-            onLayout={({ nativeEvent }) => setFilterRowHeight(nativeEvent.layout.height)}>
+<>
+          <View style={styles.filterRow}>
             <FilterButton
               label={t.filters.button}
               active={activeFilters}
@@ -166,22 +162,27 @@ export default function TrainScreen() {
               accessibilityLabel={t.filters.buttonAccessibility(activeFilters)}
             />
             {activeFilters > 0 ? (
-              <Appear style={styles.summary}>
-                <AppText variant="small" color="primaryStrong" style={styles.flex} numberOfLines={2}>
-                  {filterSummary}
-                </AppText>
-                <Button
-                  label={t.filters.reset}
-                  tone="secondary"
-                  size="sm"
-                  onPress={() => {
-                    setTopics([]);
-                    setKinds([]);
-                  }}
-                />
-              </Appear>
+              <Button
+                label={t.filters.reset}
+                tone="secondary"
+                size="sm"
+                onPress={() => {
+                  setTopics([]);
+                  setKinds([]);
+                }}
+              />
             ) : null}
           </View>
+          {activeFilters > 0 ? (
+            <Appear>
+              <TopicBadges topics={topics}>
+                {kinds.map((kind) => (
+                  <Pill key={kind} label={t.partsOfSpeechPlural[kind]} />
+                ))}
+              </TopicBadges>
+            </Appear>
+          ) : null}
+        </>
           )}
         </Section>
 
@@ -296,14 +297,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  flex: {
-    flex: 1,
-  },
-  summary: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
+  }
 });

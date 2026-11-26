@@ -29,7 +29,7 @@ import { SpeakButton } from '@/components/SpeakButton';
 import { Section } from '@/components/Section';
 import { TextField, type TextFieldRef } from '@/components/TextField';
 import { splitExample } from '@/domain/highlight';
-import { TOPIC_ICONS } from '@/domain/topics';
+import { TopicBadge } from '@/components/TopicBadge';
 import {
   buildDictation,
   buildQuiz,
@@ -299,9 +299,11 @@ export default function QuizScreen() {
             ) : null}
             {/* With a topic filter: which meaning is asked ("stroke" in Health = "ictus") */}
             {question.topicHint ? (
-              <AppText color="textMuted" style={styles.centered}>
-                {TOPIC_ICONS[question.topicHint]} {t.topics[question.topicHint]}
-              </AppText>
+              <TopicBadge
+                topic={question.topicHint}
+                label={t.topics[question.topicHint]}
+                centered
+              />
             ) : null}
             {/* The studied word can be listened to (bottom right of its card); a translation in
                 one's own language needs no voice */}

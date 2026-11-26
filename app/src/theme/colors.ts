@@ -110,3 +110,18 @@ export const palette = {
 
 export type ColorScheme = keyof typeof palette;
 export type ThemeColors = { [K in keyof typeof palette.light]: string };
+
+export const topicTints = {
+  tech: { light: '#2557A7', dark: '#A8C9FF' },
+  health: { light: '#AB2D52', dark: '#FFA7BD' },
+  food: { light: '#A8461D', dark: '#FFB28A' },
+  travel: { light: '#146981', dark: '#8ADCF4' },
+  work: { light: '#82530D', dark: '#F1C475' },
+  home: { light: '#855042', dark: '#EBB6A0' },
+  nature: { light: '#226443', dark: '#92D9B0' },
+  people: { light: '#6841A2', dark: '#D2B5FF' },
+  school: { light: '#454EA1', dark: '#B9C1FF' },
+  sport: { light: '#3E631D', dark: '#BCE989' },
+  culture: { light: '#8E3589', dark: '#E9ACE6' },
+  feelings: { light: '#A73F43', dark: '#FFAAA7' },
+} as const;

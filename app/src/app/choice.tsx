@@ -25,7 +25,7 @@ import { WORD_BANK } from '@/content/wordBank';
 import { buildChoiceQuiz, type ChoiceOptions, type ChoiceQuestion } from '@/domain/choiceQuiz';
 import { quizOptionsFromParams, type QuizParams } from '@/domain/quiz';
 import { reviewBox } from '@/domain/review';
-import { TOPIC_ICONS } from '@/domain/topics';
+import { TopicBadge } from '@/components/TopicBadge';
 import { CHOICE_MAX_BOX, meaningsToText } from '@/domain/word';
 import { useT } from '@/i18n';
 import { playSound, soundsForScreen } from '@/services/sounds';
@@ -262,7 +262,11 @@ export default function ChoiceScreen() {
 
         {question.topicHint ? (
           <Appear key={`hint-${index}`} style={styles.hintRow}>
-            <Pill label={`${TOPIC_ICONS[question.topicHint]} ${t.topics[question.topicHint]}`} tone="primary" />
+            <TopicBadge
+              topic={question.topicHint}
+              label={t.topics[question.topicHint]}
+              centered
+            />
           </Appear>
         ) : null}
 

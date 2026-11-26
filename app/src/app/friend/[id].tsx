@@ -28,7 +28,7 @@ import {
   type FriendProfile,
 } from '@/domain/friendProfile';
 import { LANGUAGES } from '@/domain/languages';
-import { TOPIC_ICONS } from '@/domain/topics';
+import { TopicBadge } from '@/components/TopicBadge';
 import { refreshFriendCounts } from '@/hooks/useAccountSession';
 import { useT } from '@/i18n';
 import { photoUrl, removeFriend } from '@/services/account';
@@ -208,10 +208,10 @@ export default function FriendProfileSheet() {
               <Section title={t.friendProfile.topics}>
                 <View style={styles.chips}>
                   {profile.stats.topics.map((topic) => (
-                    <Pill
+                    <TopicBadge
                       key={topic.id}
-                      tone="primary"
-                      label={`${TOPIC_ICONS[topic.id]} ${t.topicsShort[topic.id]} · ${t.friendProfile.topicWords(topic.words)}`}
+                      topic={topic.id}
+                      label={`${t.topicsShort[topic.id]} · ${t.friendProfile.topicWords(topic.words)}`}
                     />
                   ))}
                 </View>

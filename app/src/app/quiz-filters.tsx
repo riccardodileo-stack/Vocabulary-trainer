@@ -12,7 +12,8 @@ import { ChoiceChips } from '@/components/ChoiceChips';
 import { Section } from '@/components/Section';
 import { PARTS_OF_SPEECH, type PartOfSpeech } from '@/domain/partOfSpeech';
 import { QUIZ_MODES, quizPool, type QuizMode } from '@/domain/quiz';
-import { TOPIC_ICONS, TOPIC_IDS, type TopicId } from '@/domain/topics';
+import { TOPIC_IDS, type TopicId } from '@/domain/topics';
+import { TopicIcon } from '@/components/TopicBadge';
 import { useT } from '@/i18n';
 import { useActivePair, useSettingsStore } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
@@ -56,7 +57,7 @@ export default function QuizFiltersSheet() {
           options={TOPIC_IDS.map((topic) => ({
             value: topic,
             label: t.topicsShort[topic],
-            icon: TOPIC_ICONS[topic],
+            icon: <TopicIcon topic={topic} />,
             count: topicCount(topic),
           }))}
           value={topics}

@@ -10,7 +10,8 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import type { LanguagePair } from '@/domain/languages';
 import { normalizeText } from '@/domain/text';
 import { topicsOfLabel } from '@/domain/topicClassifier';
-import { TOPIC_ICONS, type TopicId } from '@/domain/topics';
+import type { TopicId } from '@/domain/topics';
+import { TopicIcon } from './TopicBadge';
 import { glossLabel, type SenseGroup } from '@/domain/wiktionarySenses';
 import { useT } from '@/i18n';
 import { fetchMeanings } from '@/services/meanings';
@@ -112,13 +113,24 @@ export function MeaningFinder({ pair, term, meanings, onAdd }: MeaningFinderProp
             <View
               key={`${group.gloss}-${index}`}
               style={[styles.group, index > 0 && { borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth }]}>
-              <AppText variant="small" color="textMuted" numberOfLines={2}>
-                {group.topics.length > 0 ? `${group.topics.map((topic) => TOPIC_ICONS[topic]).join(' ')} ` : ''}
-                <AppText variant="small" color="text">
-                  {t.partsOfSpeech[group.partOfSpeech]}
+              <View
+                style={styles.groupHeading}
+                accessible
+                accessibilityLabel={[
+                  ...group.topics.map((topic) => t.topics[topic]),
+                  t.partsOfSpeech[group.partOfSpeech],
+                  group.gloss,
+                ].filter(Boolean).join(', ')}>
+                {group.topics.map((topic) => (
+                  <TopicIcon key={topic} topic={topic} compact />
+                ))}
+                <AppText variant="small" color="textMuted" numberOfLines={2} style={styles.groupTitle}>
+                  <AppText variant="small" color="text">
+                    {t.partsOfSpeech[group.partOfSpeech]}
+                  </AppText>
+                  {group.gloss ? ` · ${group.gloss}` : ''}
                 </AppText>
-                {group.gloss ? ` · ${group.gloss}` : ''}
-              </AppText>
+              </View>
               <View style={styles.chips}>{group.translations.map((meaning) => chip(meaning, group.topics))}</View>
             </View>
           ))}
@@ -158,6 +170,14 @@ const styles = StyleSheet.create({
   group: {
     gap: spacing.xs + 2,
     paddingTop: spacing.sm,
+  },
+  groupHeading: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.xs + 2,
+  },
+  groupTitle: {
+    flex: 1,
   },
   chips: {
     flexDirection: 'row',

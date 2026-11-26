@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import { GorichecoPose } from '@/components/goricheco/GorichecoPose';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { TOPIC_ICONS } from '@/domain/topics';
+import { TopicBadges } from './TopicBadge';
 import { useDailyWords, type DailyWordItem, type DailyWords } from '@/hooks/useDailyWords';
 import { useT } from '@/i18n';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -99,7 +99,7 @@ export function DailyWordsCard() {
       {topics.length > 0 ? (
         <Appear key={topics.join(',')}>
           <AppText variant="small" color="textMuted">
-            {topics.map((topic) => `${TOPIC_ICONS[topic]} ${t.topicsShort[topic]}`).join('  ·  ')}
+            <TopicBadges topics={topics} />
           </AppText>
         </Appear>
       ) : null}

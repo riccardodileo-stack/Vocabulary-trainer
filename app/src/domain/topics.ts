@@ -19,21 +19,6 @@ export const TOPIC_IDS = [
 
 export type TopicId = (typeof TOPIC_IDS)[number];
 
-export const TOPIC_ICONS: Record<TopicId, string> = {
-  tech: '💻',
-  health: '🩺',
-  food: '🍝',
-  travel: '✈️',
-  work: '💼',
-  home: '🏠',
-  nature: '🌿',
-  people: '👪',
-  school: '🎓',
-  sport: '⚽',
-  culture: '🎨',
-  feelings: '😊',
-};
-
 export function isTopicId(value: unknown): value is TopicId {
   return typeof value === 'string' && (TOPIC_IDS as readonly string[]).includes(value);
 }

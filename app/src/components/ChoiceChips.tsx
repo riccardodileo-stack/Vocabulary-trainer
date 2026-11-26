@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
@@ -9,7 +9,7 @@ import { AppText } from './AppText';
 export type ChipOption<T extends string> = {
   value: T;
   label: string;
-  icon?: string;
+  icon?: ReactNode;
   /** Small number after the label (e.g. how many words have this topic). */
   count?: number;
 };
@@ -64,7 +64,7 @@ export function ChoiceChips<T extends string>({
 
 type ChipProps = {
   label: string;
-  icon?: string;
+  icon?: ReactNode;
   count?: number;
   selected: boolean;
   onPress: () => void;
@@ -95,7 +95,7 @@ function Chip({ label, icon, count, selected, onPress, accessibilityLabel }: Chi
       accessibilityLabel={accessibilityLabel}>
       {({ pressed }) => (
         <Animated.View style={[styles.chip, animatedStyle, pressed && styles.pressed, dimmed && styles.dimmed]}>
-          {icon ? <AppText accessible={false}>{icon}</AppText> : null}
+          {typeof icon === 'string' ? <AppText accessible={false}>{icon}</AppText> : icon}
           <AppText variant={selected ? 'bodyBold' : 'body'} color={selected ? 'primaryStrong' : 'text'}>
             {label}
           </AppText>

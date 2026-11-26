@@ -4,9 +4,10 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { TOPIC_ICONS, TOPIC_IDS, type TopicId } from '@/domain/topics';
+import { TOPIC_IDS, type TopicId } from '@/domain/topics';
+import { TopicBadge, TopicIcon } from './TopicBadge';
 import { useT } from '@/i18n';
-import { radius, spacing, useTheme } from '@/theme';
+import { spacing } from '@/theme';
 
 import { AppText } from './AppText';
 import { Appear } from './Appear';
@@ -24,7 +25,6 @@ type MeaningTopicsProps = {
 
 export function MeaningTopics({ topics, byUser, onChange, onReset }: MeaningTopicsProps) {
   const t = useT();
-  const { colors } = useTheme();
   const [open, setOpen] = useState(false);
 
   return (
@@ -45,11 +45,7 @@ export function MeaningTopics({ topics, byUser, onChange, onReset }: MeaningTopi
             </AppText>
           ) : (
             topics.map((topic) => (
-              <View key={topic} style={[styles.label, { backgroundColor: colors.primarySoft }]}>
-                <AppText variant="caption" color="primaryStrong">
-                  {TOPIC_ICONS[topic]} {t.topicsShort[topic]}
-                </AppText>
-              </View>
+              <TopicBadge key={topic} topic={topic} label={t.topicsShort[topic]} />
             ))
           )}
         </View>
@@ -61,7 +57,11 @@ export function MeaningTopics({ topics, byUser, onChange, onReset }: MeaningTopi
       {open ? (
         <Appear from="down" style={styles.editor}>
           <ChoiceChips
-            options={TOPIC_IDS.map((topic) => ({ value: topic, label: t.topicsShort[topic], icon: TOPIC_ICONS[topic] }))}
+            options={TOPIC_IDS.map((topic) => ({
+              value: topic,
+              label: t.topicsShort[topic],
+              icon: <TopicIcon topic={topic} />,
+            }))}
             value={topics}
             onChange={onChange}
             accessibilityLabelFor={(option) => t.topics[option.value]}
@@ -91,11 +91,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
-  },
-  label: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
   },
   editor: {
     gap: spacing.sm,
