@@ -140,46 +140,17 @@ export default function TrainScreen() {
             <GorichecoPose scene="training" style={styles.mascot} />
           </View>
           {/* Under the three choices: the filters and, when some are on, what they keep */}
-          {showingBlocks ? (
-            <Section title="Quiz" style={styles.blocksSection}>
-              <QuizBlockList words={words} direction={direction} />
-            </Section>
-          ) : (
-            <>
-              <View style={styles.filterRow}>
-                <FilterButton
-                  label={t.filters.button}
-                  active={activeFilters}
-                  onPress={openFilters}
-                  accessibilityLabel={t.filters.buttonAccessibility(activeFilters)}
-                />
-              </View>
-
-              {activeFilters > 0 ? (
-                <Appear>
-                  <TopicBadges topics={topics}>
-                    {kinds.map((kind) => (
-                      <Pill key={kind} label={t.partsOfSpeechPlural[kind]} />
-                    ))}
-                    <Button
-                      label={t.filters.reset}
-                      tone="secondary"
-                      size="sm"
-                      onPress={() => {
-                        setTopics([]);
-                        setKinds([]);
-                      }}
-                    />
-                  </TopicBadges>
-                </Appear>
-              ) : null}
-            </>
-          )}
         </Section>
+
+        {showingBlocks ? (
+          <Section title="Quiz" style={styles.questionsSection}>
+            <QuizBlockList words={words} direction={direction} />
+          </Section>
+        ) : null}
 
         {!showingBlocks ? (
           <>
-        <Section title={t.train.count}>
+        <Section title={t.train.count} style={styles.questionsSection}>
           <SegmentedControl<QuizCountChoice>
             options={[
               ...QUIZ_COUNTS.map((value) => ({
@@ -207,9 +178,38 @@ export default function TrainScreen() {
         </Section>
 
         <Card>
-          <AppText color="textMuted">
-            {availableCount === 0 ? t.train.noWords : t.train.available(availableCount)}
-          </AppText>
+          <View style={styles.startHeader}>
+            <AppText color="textMuted" style={styles.availableWords}>
+              {availableCount === 0 ? t.train.noWords : t.train.available(availableCount)}
+            </AppText>
+            <FilterButton
+              compact
+              label={t.filters.button}
+              active={activeFilters}
+              onPress={openFilters}
+              accessibilityLabel={t.filters.buttonAccessibility(activeFilters)}
+            />
+          </View>
+
+          {activeFilters > 0 ? (
+            <Appear>
+              <TopicBadges topics={topics}>
+                {kinds.map((kind) => (
+                  <Pill key={kind} label={t.partsOfSpeechPlural[kind]} />
+                ))}
+                <Button
+                  label={t.filters.reset}
+                  tone="secondary"
+                  size="sm"
+                  onPress={() => {
+                    setTopics([]);
+                    setKinds([]);
+                  }}
+                />
+              </TopicBadges>
+            </Appear>
+          ) : null}
+
           <Button label={t.train.start} onPress={start} disabled={availableCount === 0} />
         </Card>
 
@@ -285,10 +285,20 @@ const styles = StyleSheet.create({
     marginRight: -spacing.lg,
   },
   blocksSection: {
-    marginTop: touchTarget + spacing.xs + spacing.lg,
+    marginTop: touchTarget + spacing.md,
   },
-  filterRow: {
+  questionsSection: {
+    marginTop: spacing.sm,
+  },
+  startHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    minHeight: touchTarget,
+    gap: spacing.sm,
+  },
+  availableWords: {
+    flex: 1,
+    minWidth: 0,
   },
   otherExercises: {
     marginTop: spacing.xl,
