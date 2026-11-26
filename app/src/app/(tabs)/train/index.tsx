@@ -141,48 +141,39 @@ export default function TrainScreen() {
           </View>
           {/* Under the three choices: the filters and, when some are on, what they keep */}
           {showingBlocks ? (
-            <View>
-              <Section
-                title="Quiz"
-                style={{
-                  height: filterRowHeight + spacing.lg,
-                  justifyContent: 'flex-end',
-                  paddingBottom: spacing.sm,
-                }}
-              />
+            <Section title="Quiz" style={styles.blocksSection}>
               <QuizBlockList words={words} direction={direction} />
-            </View>
+            </Section>
           ) : (
-<>
-          <View style={styles.filterRow}>
-            <FilterButton
-              label={t.filters.button}
-              active={activeFilters}
-              onPress={openFilters}
-              accessibilityLabel={t.filters.buttonAccessibility(activeFilters)}
-            />
-            {activeFilters > 0 ? (
-              <Button
-                label={t.filters.reset}
-                tone="secondary"
-                size="sm"
-                onPress={() => {
-                  setTopics([]);
-                  setKinds([]);
-                }}
-              />
-            ) : null}
-          </View>
-          {activeFilters > 0 ? (
-            <Appear>
-              <TopicBadges topics={topics}>
-                {kinds.map((kind) => (
-                  <Pill key={kind} label={t.partsOfSpeechPlural[kind]} />
-                ))}
-              </TopicBadges>
-            </Appear>
-          ) : null}
-        </>
+            <>
+              <View style={styles.filterRow}>
+                <FilterButton
+                  label={t.filters.button}
+                  active={activeFilters}
+                  onPress={openFilters}
+                  accessibilityLabel={t.filters.buttonAccessibility(activeFilters)}
+                />
+              </View>
+
+              {activeFilters > 0 ? (
+                <Appear>
+                  <TopicBadges topics={topics}>
+                    {kinds.map((kind) => (
+                      <Pill key={kind} label={t.partsOfSpeechPlural[kind]} />
+                    ))}
+                    <Button
+                      label={t.filters.reset}
+                      tone="secondary"
+                      size="sm"
+                      onPress={() => {
+                        setTopics([]);
+                        setKinds([]);
+                      }}
+                    />
+                  </TopicBadges>
+                </Appear>
+              ) : null}
+            </>
           )}
         </Section>
 
@@ -223,23 +214,23 @@ export default function TrainScreen() {
         </Card>
 
         {/* A section of its own for the exercises that aren't the written quiz */}
-        <Section title={t.exercises.title} hint={t.exercises.hint}>
+        <Section title={t.exercises.title} hint={t.exercises.hint} style={styles.otherExercises}>
           <ExerciseCard
-            icon="🔤"
+            kind="choice"
             title={t.exercises.choiceTitle}
             description={t.exercises.choiceDescription(choiceCount)}
             onPress={() => startChoice('choice')}
             disabled={choiceCount === 0}
           />
           <ExerciseCard
-            icon="🎧"
+            kind="listen"
             title={t.exercises.listenTitle}
             description={t.exercises.listenDescription}
             onPress={() => startChoice('listen')}
             disabled={availableCount === 0}
           />
           <ExerciseCard
-            icon="✍️"
+            kind="dictation"
             title={t.exercises.dictationTitle}
             description={t.exercises.dictationDescription}
             onPress={startDictation}
@@ -293,9 +284,13 @@ const styles = StyleSheet.create({
     marginLeft: -spacing.xl,
     marginRight: -spacing.lg,
   },
+  blocksSection: {
+    marginTop: touchTarget + spacing.xs + spacing.lg,
+  },
   filterRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+  },
+  otherExercises: {
+    marginTop: spacing.xl,
   }
 });
