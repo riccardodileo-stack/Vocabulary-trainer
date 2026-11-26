@@ -1,24 +1,33 @@
-// Sheet opened from the streak on Home: the days in a row, the last week day by day
-// and the saves (earned every DAYS_PER_SAVE days, used by themselves on a skipped day).
-
 import { router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Pill } from '@/components/Pill';
 import { ProgressBar } from '@/components/ProgressBar';
 import { DAYS_PER_SAVE, MAX_SAVES } from '@/domain/activity';
 import { addDays, dayKey } from '@/domain/dates';
 import { useT, useUiLanguage } from '@/i18n';
 import { useActivityStore, useStreakStatus } from '@/store/activityStore';
-import { radius, spacing, touchTarget, useTheme } from '@/theme';
+import { fontSize, iconSize, radius, spacing, useTheme } from '@/theme';
 
 const WEEK = 7;
+const FLAME_SIZE = 224;
+
+const SYMBOLS = {
+  flame: { ios: 'flame.fill', android: 'local_fire_department', web: 'local_fire_department' },
+  sparkle: { ios: 'sparkle', android: 'auto_awesome', web: 'auto_awesome' },
+  shield: { ios: 'shield', android: 'shield', web: 'shield' },
+  shieldCheck: { ios: 'checkmark.shield.fill', android: 'verified_user', web: 'verified_user' },
+  check: { ios: 'checkmark', android: 'check', web: 'check' },
+  trophy: { ios: 'trophy.fill', android: 'emoji_events', web: 'emoji_events' },
+} as const;
 
 export default function StreakSheet() {
   const t = useT();
   const language = useUiLanguage();
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const { streak, saves, savedDays, daysToNextSave, savesEarned, savesUsed } = useStreakStatus();
   const days = useActivityStore((state) => state.days);
   const bestStreak = useActivityStore((state) => state.bestStreak);
@@ -35,18 +44,57 @@ export default function StreakSheet() {
   });
 
   const message = streak === 0 ? t.streakSheet.none : trainedToday ? t.streakSheet.todayDone : t.streakSheet.todayMissing;
+  const format = new Intl.NumberFormat(language);
+  const streakValue = format.format(streak);
+  const streakLabel = t.streakSheet.days(streak);
+  const record = Math.max(bestStreak, streak);
+  const saveCount = t.streakSheet.savesCount(saves, MAX_SAVES);
+  const fireColor = streak > 0 ? colors.homeStreak10 : colors.textMuted;
+  const fireInk = scheme === 'dark' ? colors.background : colors.card;
 
   return (
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.container}
       contentInsetAdjustmentBehavior="automatic">
-      <View style={styles.heading} accessible accessibilityRole="header" accessibilityLabel={`${streak} ${t.streakSheet.days(streak)}`}>
-        <AppText style={[styles.flame, streak === 0 && styles.faded]}>🔥</AppText>
-        <AppText variant="display">{streak}</AppText>
-        <AppText variant="bodyBold" color="textMuted">
-          {t.streakSheet.days(streak)}
-        </AppText>
+      <View style={styles.heading}>
+        <View
+          style={styles.flameStage}
+          accessible
+          accessibilityRole="header"
+          accessibilityLabel={`${streakValue} ${streakLabel}`}>
+          <View style={[StyleSheet.absoluteFill, styles.flameHalo, { backgroundColor: fireColor }]} />
+          <View style={[StyleSheet.absoluteFill, styles.flameRing, { borderColor: fireColor }]} />
+          <SymbolView name={SYMBOLS.flame} size={FLAME_SIZE} tintColor={fireColor} accessible={false} />
+          {streak > 0 ? (
+            <SymbolView
+              name={SYMBOLS.sparkle}
+              size={iconSize.sm}
+              tintColor={fireColor}
+              style={styles.flameSparkle}
+              accessible={false}
+            />
+          ) : null}
+          <View style={[styles.flameText, { backgroundColor: fireColor }]}>
+            <AppText
+              variant="display"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.65}
+              maxFontSizeMultiplier={1.2}
+              style={[styles.flameCount, { color: fireInk }]}>
+              {streakValue}
+            </AppText>
+            <AppText
+              variant="caption"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              maxFontSizeMultiplier={1.2}
+              style={[styles.flameCaption, { color: fireInk }]}>
+              {streakLabel}
+            </AppText>
+          </View>
+        </View>
         <AppText color="textMuted" style={styles.centered}>
           {message}
         </AppText>
@@ -70,9 +118,12 @@ export default function StreakSheet() {
                   state === 'today' && { borderColor: colors.homeStreak1, borderStyle: 'dashed' },
                   state === 'missed' && { backgroundColor: colors.cardMuted, borderColor: colors.border },
                 ]}>
-                <AppText variant="small" style={state === 'trained' && styles.onFlame}>
-                  {state === 'trained' ? '✓' : state === 'saved' ? '🛡️' : ''}
-                </AppText>
+                {state === 'trained' ? (
+                  <SymbolView name={SYMBOLS.check} size={iconSize.sm} tintColor={fireInk} accessible={false} />
+                ) : null}
+                {state === 'saved' ? (
+                  <SymbolView name={SYMBOLS.shieldCheck} size={iconSize.sm} tintColor={colors.primaryStrong} accessible={false} />
+                ) : null}
               </View>
             </View>
           ))}
@@ -84,51 +135,67 @@ export default function StreakSheet() {
           <AppText variant="caption" color="textMuted" style={styles.flex}>
             {t.streakSheet.savesTitle.toUpperCase()}
           </AppText>
-          <AppText variant="bodyBold">{t.streakSheet.savesCount(saves, MAX_SAVES)}</AppText>
+          <Pill label={saveCount} tone="primary" />
         </View>
-        <View style={styles.saves} accessible accessibilityLabel={`${t.streakSheet.savesTitle}: ${t.streakSheet.savesCount(saves, MAX_SAVES)}`}>
-          {Array.from({ length: MAX_SAVES }, (_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.save,
-                index < saves
-                  ? { backgroundColor: colors.primarySoft, borderColor: colors.primary }
-                  : { backgroundColor: colors.cardMuted, borderColor: colors.border },
-              ]}>
-              <AppText variant="title" style={index >= saves && styles.faded}>
-                🛡️
-              </AppText>
-            </View>
-          ))}
+
+        <View style={styles.saves} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {Array.from({ length: MAX_SAVES }, (_, index) => {
+            const available = index < saves;
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.save,
+                  available
+                    ? { backgroundColor: colors.primarySoft, borderColor: colors.primary }
+                    : { backgroundColor: colors.cardMuted, borderColor: colors.border, borderStyle: 'dashed' },
+                ]}>
+                <SymbolView
+                  name={available ? SYMBOLS.shieldCheck : SYMBOLS.shield}
+                  size={iconSize.lg}
+                  tintColor={available ? colors.primaryStrong : colors.textMuted}
+                  accessible={false}
+                />
+              </View>
+            );
+          })}
         </View>
+
         {daysToNextSave > 0 ? (
           <>
             <ProgressBar progress={(DAYS_PER_SAVE - daysToNextSave) / DAYS_PER_SAVE} size="sm" />
-            <AppText variant="small" color="textMuted">
-              {t.streakSheet.nextSave(daysToNextSave)}
-            </AppText>
+            <AppText variant="small" color="textMuted">{t.streakSheet.nextSave(daysToNextSave)}</AppText>
           </>
         ) : (
-          <AppText variant="small" color="textMuted">
-            {t.streakSheet.savesFull}
-          </AppText>
+          <AppText variant="small" color="textMuted">{t.streakSheet.savesFull}</AppText>
         )}
-        <AppText variant="small" color="textMuted">
-          {t.streakSheet.savesHint(DAYS_PER_SAVE, MAX_SAVES)}
-        </AppText>
+        <AppText variant="small" color="textMuted">{t.streakSheet.savesHint(DAYS_PER_SAVE, MAX_SAVES)}</AppText>
         {savesEarned > 0 ? (
-          <AppText variant="small" color="textMuted">
-            {t.streakSheet.savesTotals(savesEarned, savesUsed)}
-          </AppText>
+          <AppText variant="small" color="textMuted">{t.streakSheet.savesTotals(savesEarned, savesUsed)}</AppText>
         ) : null}
       </View>
 
-      <View style={[styles.card, styles.best, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <AppText style={styles.flex}>🏆 {t.streakSheet.best}</AppText>
-        <AppText variant="bodyBold">
-          {Math.max(bestStreak, streak)} {t.streakSheet.days(Math.max(bestStreak, streak))}
-        </AppText>
+      <View style={[styles.card, styles.record, { backgroundColor: colors.card, borderColor: colors.goldSoft }]}>
+        <SymbolView
+          name={SYMBOLS.trophy}
+          size={spacing.xxl * 3}
+          tintColor={colors.gold}
+          style={styles.recordWatermark}
+          accessible={false}
+          pointerEvents="none"
+        />
+        <View style={[styles.recordBadge, { backgroundColor: colors.goldSoft }]}>
+          <SymbolView name={SYMBOLS.trophy} size={iconSize.md} tintColor={colors.warning} accessible={false} />
+          <AppText variant="caption" color="warning">{t.streakSheet.best.toUpperCase()}</AppText>
+        </View>
+        <View style={styles.recordValue}>
+          <AppText variant="hero" numberOfLines={1} adjustsFontSizeToFit style={styles.rightText}>
+            {format.format(record)}
+          </AppText>
+          <AppText variant="small" color="textMuted" style={styles.rightText}>
+            {t.streakSheet.days(record)}
+          </AppText>
+        </View>
       </View>
 
       <Button label={t.medalSheet.close} tone="secondary" onPress={() => router.back()} />
@@ -137,72 +204,65 @@ export default function StreakSheet() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
-    gap: spacing.lg,
+  container: { padding: spacing.lg, paddingTop: spacing.xl, gap: spacing.lg },
+  heading: { alignItems: 'center', gap: spacing.sm },
+  flameStage: { width: FLAME_SIZE, height: FLAME_SIZE, alignItems: 'center', justifyContent: 'center' },
+  flameHalo: { margin: spacing.md, borderRadius: radius.pill, opacity: 0.12 },
+  flameRing: {
+    margin: spacing.xs,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    opacity: 0.28,
   },
-  heading: {
-    alignItems: 'center',
-    gap: spacing.xs,
+  flameSparkle: { position: 'absolute', top: spacing.xxl, right: spacing.xl, opacity: 0.75 },
+  flameText: {
+    position: 'absolute',
+    bottom: spacing.xxl + spacing.xs,
+    width: '52%',
+    paddingHorizontal: spacing.xs,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
+    borderRadius: radius.lg,
   },
-  flame: {
-    fontSize: 56,
-    lineHeight: 68,
-  },
-  faded: {
-    opacity: 0.3,
-  },
-  centered: {
+  flameCount: {
+    fontSize: fontSize.display + spacing.sm,
+    lineHeight: fontSize.display + spacing.md,
     textAlign: 'center',
   },
-  flex: {
+  flameCaption: { textAlign: 'center' },
+  centered: { textAlign: 'center' },
+  card: { gap: spacing.md, padding: spacing.lg, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth },
+  week: { flexDirection: 'row', gap: spacing.xs },
+  day: { flex: 1, minWidth: 0, alignItems: 'center', gap: spacing.xs },
+  dot: {
+    width: '100%',
+    maxWidth: 36,
+    aspectRatio: 1,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flex: { flex: 1 },
+  savesTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  saves: { flexDirection: 'row', gap: spacing.sm },
+  save: {
     flex: 1,
+    minHeight: spacing.xxl + spacing.xl,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  card: {
-    gap: spacing.md,
-    padding: spacing.lg,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  week: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  day: {
+  record: { flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
+  recordWatermark: { position: 'absolute', right: -spacing.md, top: -spacing.lg, opacity: 0.17 },
+  recordBadge: {
     alignItems: 'center',
     gap: spacing.xs,
-  },
-  dot: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  onFlame: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  savesTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  saves: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  save: {
-    width: touchTarget + spacing.md,
-    height: touchTarget + spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: radius.md,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  best: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  recordValue: { flex: 1, minWidth: 0 },
+  rightText: { textAlign: 'right' },
 });
