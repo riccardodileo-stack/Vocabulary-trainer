@@ -3,7 +3,7 @@
 
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
@@ -15,7 +15,7 @@ import { MedalBadge } from '@/components/MedalBadge';
 import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
-import { StatTile } from '@/components/StatTile';
+import { ProfileCounterTile, StreakTile } from '@/components/ProfileVisuals';
 import { MEDAL_TIERS, tiersEarned, type Achievement } from '@/domain/achievements';
 import { LANGUAGES } from '@/domain/languages';
 import { refreshFriendCounts } from '@/hooks/useAccountSession';
@@ -48,7 +48,8 @@ export default function ProfileScreen() {
   const { colors } = useTheme();
   const profile = useProfileStore();
   const pair = useActivePair();
-  const bestStreak = useActivityStore((state) => state.bestStreak);
+  const stacked = useWindowDimensions().fontScale >= 1.4;
+  const numberFormat = new Intl.NumberFormat(uiLanguage);
 
   // Requests may have arrived since last time
   useFocusEffect(
@@ -137,26 +138,20 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
-        <View style={styles.stats}>
-          <StatTile
-            icon="👥"
-            value={profile.friendsCount}
+        <View style={[styles.stats, stacked && styles.statsStacked]}>
+          <ProfileCounterTile
+            kind="friends"
+            stacked={stacked}
+            value={numberFormat.format(profile.friendsCount)}
             label={t.profile.friendsStat(profile.friendsCount)}
-            onPress={openFriends}
             accessibilityHint={t.profile.friendsHint}
           />
-          <StatTile
-            icon="🔥"
-            value={bestStreak}
-            label={t.profile.bestStreakStat}
-            onPress={() => router.push('/streak')}
-            accessibilityHint={t.home.streakOpen}
-          />
-          <StatTile
-            icon="🏅"
-            value={`${levelsWon}/${levelsTotal}`}
+          <StreakTile stacked={stacked} />
+          <ProfileCounterTile
+            kind="medals"
+            stacked={stacked}
+            value={`${numberFormat.format(levelsWon)}/${numberFormat.format(levelsTotal)}`}
             label={t.profile.medalsStat}
-            onPress={() => router.push('/medals')}
             accessibilityHint={t.medalsSheet.hint}
           />
         </View>
@@ -255,6 +250,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
+  statsStacked: { flexDirection: 'column' },
   medalsCard: {
     paddingHorizontal: spacing.sm,
   },

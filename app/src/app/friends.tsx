@@ -7,7 +7,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, View, ActivityIndicator } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Appear } from '@/components/Appear';
@@ -40,6 +40,8 @@ import {
 } from '@/services/account';
 import { useProfileStore } from '@/store/profileStore';
 import { fontSize, fontWeight, iconSize, radius, spacing, touchTarget, useTheme } from '@/theme';
+import { ProfileSheetHero } from '@/components/ProfileVisuals';
+
 
 const NO_LISTS: FriendLists = { friends: [], incoming: [], outgoing: [] };
 
@@ -91,6 +93,7 @@ export default function FriendsSheet() {
   const { colors } = useTheme();
   const friendCode = useProfileStore((state) => state.friendCode);
   const nickname = useProfileStore((state) => state.nickname);
+  const friendsCount = useProfileStore((state) => state.friendsCount);
   const [friendCodeOpen, setFriendCodeOpen] = useState(false);
   const [lists, setLists] = useState<FriendLists>(NO_LISTS);
   const [loading, setLoading] = useState(true);
@@ -230,10 +233,13 @@ export default function FriendsSheet() {
       contentContainerStyle={styles.container}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled">
-      <AppText variant="title" accessibilityRole="header" style={styles.centered}>
-        👥 {t.friends.title}
-      </AppText>
+      <ProfileSheetHero kind="friends" title={t.friends.title}>
+        <AppText variant="small" color="primaryStrong" style={[styles.heroCount, { backgroundColor: colors.primarySoft }]}>
+          {t.profile.friendsSome(friendsCount)}
+        </AppText>
+      </ProfileSheetHero>
 
+      <Card>
       <Section title={t.friends.addTitle}>
         <TextField
           value={text}
@@ -243,6 +249,7 @@ export default function FriendsSheet() {
           }}
           placeholder={t.friends.searchPlaceholder}
           accessibilityLabel={t.friends.searchPlaceholder}
+          style={{ backgroundColor: colors.cardMuted }}
           autoCapitalize="none"
           autoCorrect={false}
           maxLength={21}
@@ -290,6 +297,7 @@ export default function FriendsSheet() {
           </Appear>
         ) : null}
       </Section>
+      </Card>
 
       <View style={styles.friendCodeSection}>
         <Pressable
@@ -360,7 +368,8 @@ export default function FriendsSheet() {
 
       <Section title={t.friends.list}>
         <Card style={styles.list}>
-          {!loading && lists.friends.length === 0 ? (
+          {loading ? <ActivityIndicator color={colors.primary} style={styles.empty} /> : null}
+          {!loading && !loadError && lists.friends.length === 0 ? (
             <AppText color="textMuted" style={styles.empty}>
               {t.friends.none}
             </AppText>
@@ -394,8 +403,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     gap: spacing.lg,
   },
-  centered: {
-    textAlign: 'center',
+  heroCount: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
   },
   flex: {
     flex: 1,

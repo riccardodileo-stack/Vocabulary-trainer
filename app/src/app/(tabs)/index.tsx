@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { StreakTile } from '@/components/ProfileVisuals';
 import { AppText } from '@/components/AppText';
 import { DailyWordsCard } from '@/components/DailyWordsCard';
 import { HomeAddWordCard } from '@/components/HomeAddWordCard';
@@ -12,26 +12,18 @@ import { Screen } from '@/components/Screen';
 import { dayKey } from '@/domain/dates';
 import { isDue, isMastered } from '@/domain/review';
 import { useT, useUiLanguage } from '@/i18n';
-import { useStreakStatus } from '@/store/activityStore';
 import { useProfileStore } from '@/store/profileStore';
 import { useActivePair } from '@/store/settingsStore';
 import { useWordsOfPair } from '@/store/wordStore';
 import { fontSize, iconSize, radius, spacing, touchTarget, useTheme } from '@/theme';
 
 const SYMBOLS = {
-  flame: { ios: 'flame.fill', android: 'local_fire_department', web: 'local_fire_department' },
   words: { ios: 'book.fill', android: 'menu_book', web: 'menu_book' },
   learned: { ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' },
   review: { ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' },
   next: { ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' },
 } as const;
 
-const STREAK_LEVELS = [
-  { minDays: 1000, color: 'homeStreak1000', opacity: 0.23 },
-  { minDays: 100, color: 'homeStreak100', opacity: 0.19 },
-  { minDays: 10, color: 'homeStreak10', opacity: 0.16 },
-  { minDays: 1, color: 'homeStreak1', opacity: 0.13 },
-] as const;
 
 export default function HomeScreen() {
   const t = useT();
@@ -42,7 +34,6 @@ export default function HomeScreen() {
   const largeText = fontScale >= 1.4;
   const pair = useActivePair();
   const words = useWordsOfPair(pair);
-  const { streak, saves } = useStreakStatus();
   const name = useProfileStore((state) => state.name)?.trim();
   const greeting = name ? t.home.greetingName(name) : t.home.greeting;
 
@@ -57,20 +48,8 @@ export default function HomeScreen() {
       ? t.home.reviewDue(dueCount)
       : t.home.reviewDone;
 
-  const streakLevel = STREAK_LEVELS.find((level) => streak >= level.minDays);
-  const flameColor = streakLevel ? colors[streakLevel.color] : colors.textMuted;
+
   const stats = [
-    {
-      id: 'streak',
-      value: streak,
-      label: t.home.streak(streak),
-      symbol: SYMBOLS.flame,
-      tint: flameColor,
-      chip: colors.cardMuted,
-      backdropOpacity: streakLevel?.opacity ?? 0.08,
-      hint: t.home.streakOpen,
-      onPress: () => router.push('/streak'),
-    },
     {
       id: 'words',
       value: words.length,
@@ -111,6 +90,7 @@ export default function HomeScreen() {
       />
 
       <View style={[styles.stats, largeText && styles.statsStacked]}>
+        <StreakTile stacked={largeText} />
         {stats.map((stat) => {
           const value = numberFormat.format(stat.value);
 
@@ -121,11 +101,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityHint={stat.hint}
               onPress={stat.onPress}
-              accessibilityLabel={
-                stat.id === 'streak' && saves > 0
-                  ? `${value} ${stat.label}, ${t.home.streakSaves(saves)}`
-                  : `${value} ${stat.label}`
-              }
+              accessibilityLabel={`${value} ${stat.label}`}
               style={({ pressed }) => [
                 styles.stat,
                 !largeText && styles.statInRow,
@@ -144,11 +120,6 @@ export default function HomeScreen() {
                 <View style={[styles.statIcon, { backgroundColor: stat.chip }]}>
                   <SymbolView name={stat.symbol} size={iconSize.sm} tintColor={stat.tint} accessible={false} />
                 </View>
-                {stat.id === 'streak' && saves > 0 ? (
-                  <AppText variant="caption" color="textMuted" accessible={false}>
-                    {'🛡️'.repeat(saves)}
-                  </AppText>
-                ) : null}
               </View>
               <AppText variant="display" style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
                 {value}
