@@ -10,12 +10,12 @@ import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { IconButton } from '@/components/IconButton';
-import { ListGroup, ListRow } from '@/components/ListGroup';
+import { ListGroup } from '@/components/ListGroup';
 import { MedalBadge } from '@/components/MedalBadge';
 import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
-import { ProfileCounterTile, StreakTile } from '@/components/ProfileVisuals';
+import { ProfileAccountRow, ProfileCounterTile, ProfileFriendsCard, StreakTile } from '@/components/ProfileVisuals';
 import { MEDAL_TIERS, tiersEarned, type Achievement } from '@/domain/achievements';
 import { LANGUAGES } from '@/domain/languages';
 import { refreshFriendCounts } from '@/hooks/useAccountSession';
@@ -157,48 +157,43 @@ export default function ProfileScreen() {
         </View>
 
         <Section title={t.profile.medalsTitle}>
-          <Card style={styles.medalsCard}>
-            <View style={styles.medals}>
-              {achievements.map((achievement) => (
-                <MedalBadge
-                  key={achievement.id}
-                  achievement={achievement}
-                  title={t.achievements[achievement.id].title}
-                  tierLabel={achievement.tier ? t.medalTiers[achievement.tier] : null}
-                  accessibilityLabel={medalLabel(achievement)}
-                  onPress={() => router.push({ pathname: '/medal/[id]', params: { id: achievement.id } })}
-                />
-              ))}
-            </View>
-          </Card>
+          <View style={styles.medals}>
+            {achievements.map((achievement) => (
+              <MedalBadge
+                key={achievement.id}
+                achievement={achievement}
+                title={t.achievements[achievement.id].title}
+                tierLabel={achievement.tier ? t.medalTiers[achievement.tier] : null}
+                accessibilityLabel={medalLabel(achievement)}
+                onPress={() => router.push({ pathname: '/medal/[id]', params: { id: achievement.id } })}
+              />
+            ))}
+          </View>
         </Section>
 
         <Section title={t.profile.friendsTitle}>
-          <Card onPress={openFriends} accessibilityRole="button" accessibilityHint={t.profile.friendsHint} style={styles.friendsCard}>
-            <View style={styles.friendsHeader}>
-              <AppText variant="bodyBold" style={styles.flex}>
-                👥 {profile.friendsCount > 0 ? t.profile.friendsSome(profile.friendsCount) : t.profile.friendsEmpty}
-              </AppText>
-              {profile.incomingRequests > 0 ? (
-                <Pill label={t.profile.friendsRequests(profile.incomingRequests)} tone="warning" />
-              ) : null}
-            </View>
-            <AppText variant="small" color="textMuted">
-              {profile.friendsCount > 0 || profile.incomingRequests > 0 ? t.profile.seeFriends : t.profile.addFriends}
-            </AppText>
-          </Card>
+          <ProfileFriendsCard
+            count={profile.friendsCount}
+            requests={profile.incomingRequests}
+            onPress={openFriends}
+          />
         </Section>
 
         <Section title={t.profile.accountTitle} hint={t.profile.accountHint}>
           <ListGroup>
-            <ListRow
-              icon={profile.isGuest ? '🙂' : '✉️'}
+            <ProfileAccountRow
+              kind={profile.isGuest ? 'guest' : 'email'}
               label={t.profile.accountType}
               value={profile.isGuest ? t.profile.guest : profile.email}
             />
-            <ListRow icon="🏷️" label={t.profile.name} value={profile.name || t.profile.notSet} onPress={openEdit} />
-            <ListRow
-              icon="#️⃣"
+            <ProfileAccountRow
+              kind="name"
+              label={t.profile.name}
+              value={profile.name || t.profile.notSet}
+              onPress={openEdit}
+            />
+            <ProfileAccountRow
+              kind="nickname"
               label={t.profile.nickname}
               value={profile.nickname ? `@${profile.nickname}` : t.profile.notSet}
               onPress={openEdit}
@@ -250,9 +245,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
-  statsStacked: { flexDirection: 'column' },
-  medalsCard: {
-    paddingHorizontal: spacing.sm,
+  statsStacked: { 
+    flexDirection: 'column' 
   },
   medals: {
     flexDirection: 'row',
@@ -260,16 +254,5 @@ const styles = StyleSheet.create({
   },
   register: {
     gap: spacing.sm,
-  },
-  friendsCard: {
-    gap: spacing.xs,
-  },
-  friendsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  flex: {
-    flex: 1,
-  },
+  }
 });

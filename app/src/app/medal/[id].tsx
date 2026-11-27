@@ -1,27 +1,24 @@
-// Medal sheet (slides up from the bottom when a medal is tapped in Profile):
-// the four levels, how many are missing for each one, and the date each was reached.
-// Even at diamond the progress stays visible ("620 / 500").
-
 import { router, useLocalSearchParams } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { MedalEmblem, MEDAL_MARKS, MEDAL_SYMBOLS, medalTint } from '@/components/MedalVisuals';
 import { ProgressBar } from '@/components/ProgressBar';
-import { MEDAL_TIERS, missingFor, TIER_ICONS, tierKey } from '@/domain/achievements';
+import { MEDAL_TIERS, missingFor, tierKey } from '@/domain/achievements';
 import { useAchievements } from '@/hooks/useAchievements';
 import { useT, useUiLanguage } from '@/i18n';
 import { useAchievementStore } from '@/store/achievementStore';
-import { fontSize, radius, spacing, useTheme } from '@/theme';
-
-const MEDAL_SIZE = 88;
+import { iconSize, radius, spacing, useTheme } from '@/theme';
 
 export default function MedalSheet() {
   const t = useT();
-  const { colors } = useTheme();
-  const uiLanguage = useUiLanguage();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const achievement = useAchievements().find((medal) => medal.id === id);
+  const language = useUiLanguage();
+  const { colors, scheme } = useTheme();
+  const { id: medalId } = useLocalSearchParams<{ id: string }>();
+  const achievement = useAchievements().find((medal) => medal.id === medalId);
   const reachedAt = useAchievementStore((state) => state.reachedAt);
 
   if (!achievement) {
@@ -32,104 +29,113 @@ export default function MedalSheet() {
     );
   }
 
-  const texts = t.achievements[achievement.id];
-  const { tier, next, value } = achievement;
-  const formatDate = (iso: string) =>
-    new Intl.DateTimeFormat(uiLanguage, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
-
-  // At diamond the last target stays the reference, so "620 / 500" is still shown
-  const reference = next?.target ?? achievement.targets[achievement.targets.length - 1];
-  const ring = tier ? { ring: colors[tier], soft: colors[`${tier}Soft`] } : { ring: colors.border, soft: colors.cardMuted };
+  const { id, tier, next, targets, value, progress } = achievement;
+  const tint = medalTint(id, colors, scheme);
+  const rim = tier ? colors[tier] : tint;
+  const texts = t.achievements[id];
+  const reference = next?.target ?? targets[targets.length - 1];
+  const progressColor = colors[next?.tier ?? 'diamond'];
+  const number = new Intl.NumberFormat(language);
+  const date = new Intl.DateTimeFormat(language, { day: 'numeric', month: 'long', year: 'numeric' });
+  const statusIcon = tier === 'diamond' ? MEDAL_MARKS.diamond : tier ? MEDAL_MARKS.medal : MEDAL_MARKS.lock;
 
   return (
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.container}
       contentInsetAdjustmentBehavior="automatic">
-      <View style={[styles.medal, { backgroundColor: ring.soft, borderColor: ring.ring }]}>
-        <AppText style={[styles.medalIcon, !tier && styles.locked]} accessible={false}>
-          {achievement.icon}
-        </AppText>
-      </View>
+      <View style={styles.hero}>
+        <View
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={styles.stage}>
+          <View style={[StyleSheet.absoluteFill, styles.orbit, { borderColor: rim + '50' }]} />
+          <View style={[StyleSheet.absoluteFill, styles.halo, { backgroundColor: tint + '19' }]} />
+          <MedalEmblem id={id} tier={tier} size={108} />
+          {tier ? (
+            <SymbolView name={MEDAL_MARKS.sparkle} size={iconSize.sm} tintColor={rim} style={styles.sparkle} accessible={false} />
+          ) : null}
+        </View>
 
-      <View style={styles.heading}>
-        <AppText variant="title" accessibilityRole="header">
-          {texts.title}
-        </AppText>
-        <AppText color="textMuted">{tier ? t.medalTiers[tier] : t.profile.medalLocked}</AppText>
-      </View>
-
-      <View style={[styles.progressCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <AppText variant="caption" color="textMuted">
-          {t.medalSheet.yourProgress.toUpperCase()}
-        </AppText>
-        <AppText variant="display">
-          {value}
-          <AppText variant="title" color="textMuted">
-            {' '}
-            / {reference}
+        <AppText variant="hero" accessibilityRole="header" style={styles.center}>{texts.title}</AppText>
+        <View style={[styles.status, { backgroundColor: tier ? colors[`${tier}Soft`] : colors.cardMuted }]}>
+          <SymbolView name={statusIcon} size={15} tintColor={tier ? rim : colors.textMuted} accessible={false} />
+          <AppText variant="small" color={tier ? 'text' : 'textMuted'} style={styles.statusText}>
+            {tier ? t.medalTiers[tier] : t.profile.medalLocked}
           </AppText>
-        </AppText>
-        <ProgressBar progress={Math.min(value / reference, 1)} />
-        <AppText color="textMuted">
-          {next ? t.profile.medalNext(t.medalTiers[next.tier], value, next.target) : t.medalSheet.maxReached}
-        </AppText>
+        </View>
       </View>
 
-      <View style={[styles.levels, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        {MEDAL_TIERS.map((levelTier, index) => {
-          const target = achievement.targets[index];
+      <Card style={[styles.progressCard, { borderColor: tint + '48' }]}>
+        <SymbolView
+          name={MEDAL_SYMBOLS[id]}
+          size={128}
+          tintColor={tint}
+          style={styles.watermark}
+          accessible={false}
+          pointerEvents="none"
+        />
+        <AppText variant="caption" color="textMuted">{t.medalSheet.yourProgress.toUpperCase()}</AppText>
+        <AppText variant="display">
+          {number.format(value)}
+          <AppText variant="title" color="textMuted">{' / '}{number.format(reference)}</AppText>
+        </AppText>
+        <ProgressBar progress={progress} color={progressColor} accessibilityLabel={t.medalSheet.yourProgress} />
+        <AppText variant="small" color="textMuted">
+          {next ? t.medalSheet.nextTier(t.medalTiers[next.tier]) : t.medalSheet.maxReached}
+        </AppText>
+      </Card>
+
+      <View style={styles.levels}>
+        {MEDAL_TIERS.map((level, index) => {
+          const target = targets[index];
           const reached = value >= target;
-          const date = reachedAt[tierKey(achievement.id, levelTier)];
-          const missing = missingFor(achievement, target);
-          const isNext = next?.tier === levelTier;
+          const isNext = next?.tier === level;
+          const highlighted = reached || isNext;
+          const savedDate = reachedAt[tierKey(id, level)];
+          const earnedDate = savedDate ? new Date(savedDate) : null;
+          const reachedLabel = earnedDate && !Number.isNaN(earnedDate.getTime())
+            ? t.medalSheet.reachedOn(date.format(earnedDate))
+            : t.medalSheet.reached;
 
           return (
-            <View
-              key={levelTier}
+            <Card
+              key={level}
               accessible
-              style={[styles.level, index > 0 && { borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth }]}>
+              style={[styles.level, isNext && { borderColor: colors[level] + '99', backgroundColor: colors.cardMuted }]}>
               <View
-                style={[
-                  styles.levelBadge,
-                  { backgroundColor: reached ? colors[`${levelTier}Soft`] : colors.cardMuted, borderColor: reached ? colors[levelTier] : colors.border },
-                ]}>
-                <AppText style={!reached && styles.locked}>{TIER_ICONS[levelTier]}</AppText>
+                style={[styles.levelBadge, {
+                  backgroundColor: highlighted ? colors[`${level}Soft`] : colors.cardMuted,
+                  borderColor: highlighted ? colors[level] + '75' : colors.border,
+                }]}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants">
+                <SymbolView
+                  name={level === 'diamond' ? MEDAL_MARKS.diamond : MEDAL_MARKS.medal}
+                  size={iconSize.md}
+                  tintColor={highlighted ? colors[level] : colors.textMuted}
+                  accessible={false}
+                />
               </View>
 
-              <View style={styles.levelTexts}>
-                <View style={styles.levelTitle}>
-                  <AppText variant="bodyBold" style={styles.flex}>
-                    {t.medalTiers[levelTier]}
-                  </AppText>
-                  {reached ? (
-                    <AppText variant="bodyBold" color="primary">
-                      ✓
-                    </AppText>
-                  ) : null}
-                </View>
-                <AppText variant="small" color="textMuted">
-                  {texts.goal(target)}
+              <View style={styles.levelCopy}>
+                <AppText variant="bodyBold">{t.medalTiers[level]}</AppText>
+                <AppText variant="small" color="textMuted">{texts.goal(target)}</AppText>
+                <AppText variant="small" color={reached ? 'primaryStrong' : isNext ? 'text' : 'textMuted'}>
+                  {reached ? reachedLabel : t.medalSheet.toGo(missingFor(achievement, target))}
                 </AppText>
-
-                {reached ? (
-                  <AppText variant="small" color="primary">
-                    {date ? t.medalSheet.reachedOn(formatDate(date)) : '✓'}
-                  </AppText>
-                ) : (
-                  <>
-                    <AppText variant="small" color={isNext ? 'text' : 'textMuted'}>
-                      {t.medalSheet.toGo(missing)} · {value}/{target}
-                    </AppText>
-                    {isNext ? (
-                      <View style={styles.levelBar}>
-                        <ProgressBar progress={achievement.progress} color={colors[levelTier]} size="sm" />
-                      </View>
-                    ) : null}
-                  </>
-                )}
               </View>
-            </View>
+
+              {reached ? (
+                <View
+                  style={[styles.levelCheck, { backgroundColor: colors.primarySoft }]}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants">
+                  <SymbolView name={MEDAL_MARKS.check} size={15} tintColor={colors.primaryStrong} accessible={false} />
+                </View>
+              ) : null}
+            </Card>
           );
         })}
       </View>
@@ -140,67 +146,35 @@ export default function MedalSheet() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
-    gap: spacing.lg,
-  },
-  medal: {
-    alignSelf: 'center',
-    width: MEDAL_SIZE,
-    height: MEDAL_SIZE,
-    borderRadius: radius.pill,
-    borderWidth: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  medalIcon: {
-    fontSize: fontSize.display,
-    lineHeight: fontSize.display + 10,
-  },
-  locked: {
-    opacity: 0.35,
-  },
-  heading: {
+  container: { padding: spacing.lg, paddingTop: spacing.xl, gap: spacing.lg },
+  hero: { alignItems: 'center', gap: spacing.sm },
+  stage: { width: 146, height: 146, alignItems: 'center', justifyContent: 'center' },
+  orbit: { borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth },
+  halo: { margin: spacing.sm, borderRadius: radius.pill },
+  sparkle: { position: 'absolute', top: spacing.sm, right: spacing.xs },
+  center: { textAlign: 'center' },
+  status: {
+    maxWidth: '100%',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-  },
-  progressCard: {
-    gap: spacing.sm,
-    padding: spacing.lg,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  levels: {
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-  },
-  level: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-  levelBadge: {
-    width: 44,
-    height: 44,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
-    borderWidth: 2,
+  },
+  statusText: { flexShrink: 1 },
+  progressCard: { gap: spacing.sm, overflow: 'hidden' },
+  watermark: { position: 'absolute', top: -spacing.xl, right: -spacing.md, opacity: 0.11 },
+  levels: { gap: spacing.sm },
+  level: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, padding: spacing.md },
+  levelBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  levelTexts: {
-    flex: 1,
-    gap: 2,
-  },
-  levelTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  flex: {
-    flex: 1,
-  },
-  levelBar: {
-    marginTop: spacing.xs,
-  },
+  levelCopy: { flex: 1, minWidth: 0, gap: 2 },
+  levelCheck: { width: 26, height: 26, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
 });

@@ -6,8 +6,11 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useT, useUiLanguage } from '@/i18n';
 import { useStreakStatus } from '@/store/activityStore';
 import { fontSize, iconSize, radius, spacing, useTheme } from '@/theme';
+import { topicTints } from '@/theme/colors';
 
 import { AppText } from './AppText';
+import { Card } from './Card';
+import { Pill } from './Pill';
 
 const PROFILE_ART = {
   friends: {
@@ -172,6 +175,146 @@ export function ProfileSheetHero({ kind, title, children }: {
     </View>
   );
 }
+
+const CHEVRON_RIGHT = { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as const;
+
+const ACCOUNT_ART = {
+  guest: { name: { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }, tone: 'account' },
+  email: { name: { ios: 'envelope.fill', android: 'mail', web: 'mail' }, tone: 'account' },
+  name: { name: { ios: 'person.text.rectangle.fill', android: 'badge', web: 'badge' }, tone: 'name' },
+  nickname: { name: { ios: 'at', android: 'alternate_email', web: 'alternate_email' }, tone: 'nickname' },
+} as const;
+
+export function ProfileFriendsCard({ count, requests, onPress }: {
+  count: number;
+  requests: number;
+  onPress: () => void;
+}) {
+  const t = useT();
+  const { colors } = useTheme();
+  const art = PROFILE_ART.friends;
+  const tint = colors[art.tint];
+  const title = count > 0 ? t.profile.friendsSome(count) : t.profile.friendsEmpty;
+  const action = count > 0 || requests > 0 ? t.profile.seeFriends : t.profile.addFriends;
+  const pending = requests > 0 ? t.profile.friendsRequests(requests) : null;
+
+  return (
+    <Card
+      tone="primary"
+      onPress={onPress}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={pending ? `${title}, ${pending}` : title}
+      accessibilityHint={t.profile.friendsHint}
+      style={[detailStyles.friendsCard, { borderColor: tint + '38' }]}>
+      <SymbolView
+        name={art.name}
+        size={112}
+        tintColor={tint}
+        style={detailStyles.friendsWatermark}
+        accessible={false}
+        pointerEvents="none"
+      />
+
+      <View style={[detailStyles.friendsIcon, { backgroundColor: colors.card, borderColor: tint + '38' }]}>
+        <SymbolView name={art.name} size={iconSize.lg} tintColor={tint} weight="semibold" accessible={false} />
+      </View>
+
+      <View style={detailStyles.copy}>
+        <AppText variant="bodyBold">{title}</AppText>
+        <AppText variant="small" color="textMuted">{action}</AppText>
+        {pending ? <Pill label={pending} tone="warning" /> : null}
+      </View>
+
+      <View style={[detailStyles.friendsChevron, { backgroundColor: colors.card, borderColor: tint + '38' }]}>
+        <SymbolView name={CHEVRON_RIGHT} size={iconSize.sm} tintColor={tint} accessible={false} />
+      </View>
+    </Card>
+  );
+}
+
+type ProfileAccountRowProps = {
+  kind: keyof typeof ACCOUNT_ART;
+  label: string;
+  value: string;
+  onPress?: () => void;
+};
+
+export function ProfileAccountRow({ kind, label, value, onPress }: ProfileAccountRowProps) {
+  const { colors, scheme } = useTheme();
+  const art = ACCOUNT_ART[kind];
+  const tint = {
+    account: topicTints.tech[scheme],
+    name: colors.primaryStrong,
+    nickname: colors.homeLearned,
+  }[art.tone];
+
+  const content = (
+    <>
+      <View style={[detailStyles.accountIcon, { backgroundColor: tint + '1A', borderColor: tint + '30' }]}>
+        <SymbolView name={art.name} size={iconSize.md} tintColor={tint} weight="semibold" accessible={false} />
+      </View>
+
+      <View style={detailStyles.copy}>
+        <AppText variant="bodyBold">{label}</AppText>
+        {value ? <AppText variant="small" color="textMuted">{value}</AppText> : null}
+      </View>
+
+      {onPress ? (
+        <SymbolView name={CHEVRON_RIGHT} size={iconSize.sm} tintColor={colors.textMuted} accessible={false} />
+      ) : null}
+    </>
+  );
+
+  return onPress ? (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={value ? `${label}, ${value}` : label}
+      style={({ pressed }) => [detailStyles.accountRow, pressed && { backgroundColor: colors.cardMuted }]}>
+      {content}
+    </Pressable>
+  ) : (
+    <View style={detailStyles.accountRow}>{content}</View>
+  );
+}
+
+const detailStyles = StyleSheet.create({
+  friendsCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, overflow: 'hidden' },
+  friendsWatermark: { position: 'absolute', top: -spacing.xl, right: -spacing.md, opacity: 0.12 },
+  friendsIcon: {
+    width: spacing.xxl + spacing.lg,
+    height: spacing.xxl + spacing.lg,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  friendsChevron: {
+    width: spacing.xxl,
+    height: spacing.xxl,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  copy: { flex: 1, minWidth: 0, gap: spacing.xs },
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  accountIcon: {
+    width: spacing.xxl + spacing.sm,
+    height: spacing.xxl + spacing.sm,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 const styles = StyleSheet.create({
   tile: {

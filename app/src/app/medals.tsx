@@ -1,28 +1,19 @@
 import { router } from 'expo-router';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import { SymbolView } from 'expo-symbols';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { MEDAL_MARKS, MEDAL_SYMBOLS } from '@/components/MedalVisuals';
 import { ProfileSheetHero } from '@/components/ProfileVisuals';
 import { ProgressBar } from '@/components/ProgressBar';
-import { MEDAL_TIERS, reachedTiers, tierCounts, tiersEarned, type AchievementId } from '@/domain/achievements';
+import { MEDAL_TIERS, reachedTiers, tierCounts, tiersEarned } from '@/domain/achievements';
 import { useAchievements } from '@/hooks/useAchievements';
 import { useT } from '@/i18n';
 import { iconSize, radius, spacing, useTheme } from '@/theme';
 
 const TIERS_DOWN = [...MEDAL_TIERS].reverse();
-const MEDAL = { ios: 'medal.fill', android: 'military_tech', web: 'military_tech' } as const;
-const DIAMOND = { ios: 'diamond.fill', android: 'diamond', web: 'diamond' } as const;
-const ACHIEVEMENT_ICONS = {
-  words: { ios: 'book.closed.fill', android: 'menu_book', web: 'menu_book' },
-  learned: { ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' },
-  streak: { ios: 'flame.fill', android: 'local_fire_department', web: 'local_fire_department' },
-  answers: { ios: 'scope', android: 'track_changes', web: 'track_changes' },
-  perfect: { ios: 'star.fill', android: 'star', web: 'star' },
-  polyglot: { ios: 'globe', android: 'language', web: 'language' },
-} satisfies Record<AchievementId, SymbolViewProps['name']>;
 
 export default function MedalsSheet() {
   const t = useT();
@@ -75,7 +66,7 @@ export default function MedalsSheet() {
                 style={[styles.levelBadge, { backgroundColor: surface, borderColor: color + '65' }]}
                 accessibilityElementsHidden
                 importantForAccessibility="no-hide-descendants">
-                <SymbolView name={tier === 'diamond' ? DIAMOND : MEDAL} size={iconSize.lg} tintColor={color} />
+                <SymbolView name={tier === 'diamond' ? MEDAL_MARKS.diamond : MEDAL_MARKS.medal} size={iconSize.lg} tintColor={color} />
               </View>
 
               <View style={styles.levelCopy}>
@@ -90,7 +81,7 @@ export default function MedalsSheet() {
                   <View style={styles.earned}>
                     {medals.map((medal) => (
                       <View key={medal.id} style={[styles.miniBadge, { backgroundColor: surface }]}>
-                        <SymbolView name={ACHIEVEMENT_ICONS[medal.id]} size={iconSize.sm} tintColor={color} accessible={false} />
+                        <SymbolView name={MEDAL_SYMBOLS[medal.id]} size={iconSize.sm} tintColor={color} accessible={false} />
                       </View>
                     ))}
                   </View>
