@@ -14,9 +14,8 @@ import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { MedalBadge } from '@/components/MedalBadge';
-import { Pill } from '@/components/Pill';
+import { FriendStreakTiles } from '@/components/ProfileVisuals';
 import { Section } from '@/components/Section';
-import { StatTile } from '@/components/StatTile';
 import { AVATAR_PRESETS, isAvatarId } from '@/content/avatars';
 import { accountProblem } from '@/domain/account';
 import type { Achievement } from '@/domain/achievements';
@@ -150,10 +149,10 @@ export default function FriendProfileSheet() {
 
       {profile?.streak ? (
         <Appear>
-          <View style={styles.tiles}>
-            <StatTile icon="🔥" value={friendStreakToday(profile.streak, today)} label={t.friendProfile.streak} />
-            <StatTile icon="🏆" value={profile.streak.best} label={t.friendProfile.bestStreak} />
-          </View>
+          <FriendStreakTiles
+            streak={friendStreakToday(profile.streak, today)}
+            record={profile.streak.best}
+          />
         </Appear>
       ) : null}
 
@@ -218,17 +217,6 @@ export default function FriendProfileSheet() {
               </Section>
             ) : null}
 
-            <Section title={t.friendProfile.learnedWords}>
-              {profile.stats.learnedWords.length > 0 ? (
-                <View style={styles.chips}>
-                  {profile.stats.learnedWords.map((word, index) => (
-                    <Pill key={`${word.lang}:${word.term}:${index}`} label={`${LANGUAGES[word.lang].flag} ${word.term}`} />
-                  ))}
-                </View>
-              ) : (
-                <AppText color="textMuted">{t.friendProfile.noLearnedWords}</AppText>
-              )}
-            </Section>
           </View>
         </Appear>
       ) : null}
@@ -257,10 +245,6 @@ const styles = StyleSheet.create({
   message: {
     gap: spacing.sm,
     alignItems: 'flex-start',
-  },
-  tiles: {
-    flexDirection: 'row',
-    gap: spacing.sm,
   },
   sections: {
     gap: spacing.lg,

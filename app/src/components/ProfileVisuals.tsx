@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { useT, useUiLanguage } from '@/i18n';
 import { useStreakStatus } from '@/store/activityStore';
-import { fontSize, iconSize, radius, spacing, useTheme } from '@/theme';
+import { fontSize, iconSize, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 import { topicTints } from '@/theme/colors';
 
 import { AppText } from './AppText';
@@ -46,34 +46,29 @@ type CounterProps = {
   accessibilityHint: string;
 };
 
-type TileProps = CounterProps & {
+type TileProps = Omit<CounterProps, 'accessibilityHint'> & {
   name: SymbolViewProps['name'];
   tint: string;
   surface: string;
   opacity: number;
-  onPress: () => void;
+  onPress?: () => void;
   accessory?: ReactNode;
   accessibilityLabel?: string;
+  accessibilityHint?: string;
 };
 
 function OverviewTile({
   value, label, stacked, name, tint, surface, opacity, onPress, accessory, accessibilityHint, accessibilityLabel,
 }: TileProps) {
   const { colors } = useTheme();
-
-  return (
-    <Pressable
-      onPress={onPress}
-      accessible
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? `${value} ${label}`}
-      accessibilityHint={accessibilityHint}
-      style={({ pressed }) => [
-        styles.tile,
-        !stacked && styles.inRow,
-        { backgroundColor: colors.card, borderColor: colors.border },
-        pressed && styles.pressed,
-      ]}>
+  const description = accessibilityLabel ?? `${value} ${label}`;
+  const tileStyle = [
+    styles.tile,
+    !stacked && styles.inRow,
+    { backgroundColor: colors.card, borderColor: colors.border },
+  ];
+  const content = (
+    <>
       <SymbolView
         name={name}
         size={spacing.xxl * 3}
@@ -94,8 +89,34 @@ function OverviewTile({
       <AppText variant="small" color="textMuted">
         {label}
       </AppText>
-    </Pressable>
+    </>
   );
+
+  return onPress ? (
+    <Pressable
+      onPress={onPress}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={description}
+      accessibilityHint={accessibilityHint}
+      style={({ pressed }) => [tileStyle, pressed && styles.pressed]}>
+      {content}
+    </Pressable>
+  ) : (
+    <View accessible accessibilityLabel={description} style={tileStyle}>
+      {content}
+    </View>
+  );
+}
+
+function streakAppearance(streak: number, colors: ThemeColors) {
+  const tier = STREAK_LEVELS.find((level) => streak >= level.min);
+  return {
+    name: FLAME,
+    tint: tier ? colors[tier.color] : colors.textMuted,
+    surface: colors.cardMuted,
+    opacity: tier?.opacity ?? 0.08,
+  };
 }
 
 export function StreakTile({ stacked }: { stacked: boolean }) {
@@ -103,7 +124,6 @@ export function StreakTile({ stacked }: { stacked: boolean }) {
   const language = useUiLanguage();
   const { colors } = useTheme();
   const { streak, saves } = useStreakStatus();
-  const tier = STREAK_LEVELS.find((level) => streak >= level.min);
   const value = new Intl.NumberFormat(language).format(streak);
   const label = t.home.streak(streak);
   const accessibilityLabel = saves > 0
@@ -112,13 +132,10 @@ export function StreakTile({ stacked }: { stacked: boolean }) {
 
   return (
     <OverviewTile
+      {...streakAppearance(streak, colors)}
       stacked={stacked}
       value={value}
       label={label}
-      name={FLAME}
-      tint={tier ? colors[tier.color] : colors.textMuted}
-      surface={colors.cardMuted}
-      opacity={tier?.opacity ?? 0.08}
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={t.home.streakOpen}
       onPress={() => router.push('/streak')}
@@ -130,6 +147,36 @@ export function StreakTile({ stacked }: { stacked: boolean }) {
         </View>
       ) : undefined}
     />
+  );
+}
+
+const TROPHY = { ios: 'trophy.fill', android: 'emoji_events', web: 'emoji_events' } as const;
+
+export function FriendStreakTiles({ streak, record }: { streak: number; record: number }) {
+  const t = useT();
+  const language = useUiLanguage();
+  const { colors } = useTheme();
+  const stacked = useWindowDimensions().fontScale >= 1.4;
+  const format = new Intl.NumberFormat(language);
+
+  return (
+    <View style={{ flexDirection: stacked ? 'column' : 'row', gap: spacing.sm }}>
+      <OverviewTile
+        {...streakAppearance(streak, colors)}
+        stacked={stacked}
+        value={format.format(streak)}
+        label={t.home.streak(streak)}
+      />
+      <OverviewTile
+        stacked={stacked}
+        value={format.format(record)}
+        label={t.friendProfile.bestStreak}
+        name={TROPHY}
+        tint={colors.warning}
+        surface={colors.warningSoft}
+        opacity={0.16}
+      />
+    </View>
   );
 }
 
