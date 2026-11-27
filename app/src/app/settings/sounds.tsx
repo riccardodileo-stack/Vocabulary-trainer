@@ -24,7 +24,7 @@ export default function SoundsSettingsScreen() {
     <Screen>
       <Section title={t.settings.quizSection} hint={t.settings.soundsHint}>
         <ListGroup>
-          <ListRow icon="🔊" label={t.settings.soundsLabel} toggle={{ value: soundsEnabled, onChange: toggle }} />
+          <ListRow label={t.settings.soundsLabel} toggle={{ value: soundsEnabled, onChange: toggle }} />
         </ListGroup>
       </Section>
     </Screen>

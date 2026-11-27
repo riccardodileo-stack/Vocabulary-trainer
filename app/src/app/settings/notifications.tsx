@@ -39,7 +39,6 @@ export default function NotificationsSettingsScreen() {
       <Section title={t.settings.reminderSection} hint={t.settings.reminderHint}>
         <ListGroup>
           <ListRow
-            icon="🔔"
             label={t.settings.reminderLabel}
             toggle={{ value: settings.reminderEnabled, onChange: toggleReminder }}
           />

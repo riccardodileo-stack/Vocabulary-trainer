@@ -37,31 +37,27 @@ export default function SettingsScreen() {
 
       <ListGroup>
         <ListRow
-          icon="🌍"
           label={t.settings.languagesCategory}
           value={languagesSummary}
           onPress={() => router.push('/settings/languages')}
         />
         <ListRow
-          icon="🔊"
           label={t.settings.sounds}
           value={settings.soundsEnabled ? t.settings.on : t.settings.off}
           onPress={() => router.push('/settings/sounds')}
         />
         <ListRow
-          icon="🔔"
           label={t.settings.notifications}
           value={settings.reminderEnabled ? formatTime(settings.reminderTime) : t.settings.off}
           onPress={() => router.push('/settings/notifications')}
         />
-        <ListRow icon="📋" label={t.importList.title} onPress={() => router.push('/settings/import-list')} />
-        <ListRow icon="💾" label={t.settings.backup} onPress={() => router.push('/settings/backup')} />
+        <ListRow label={t.importList.title} onPress={() => router.push('/settings/import-list')} />
+        <ListRow label={t.settings.backup} onPress={() => router.push('/settings/backup')} />
       </ListGroup>
 
       <Section title={t.settings.privacy} hint={settings.shareStats ? t.settings.shareStatsOn : t.settings.shareStatsOff}>
         <ListGroup>
           <ListRow
-            icon="👥"
             label={t.settings.shareStats}
             toggle={{ value: settings.shareStats, onChange: settings.setShareStats }}
           />
