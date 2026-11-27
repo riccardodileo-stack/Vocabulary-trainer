@@ -13,8 +13,6 @@ import { useAchievements } from '@/hooks/useAchievements';
 import { useT } from '@/i18n';
 import { iconSize, radius, spacing, useTheme } from '@/theme';
 
-const TIERS_DOWN = [...MEDAL_TIERS].reverse();
-
 export default function MedalsSheet() {
   const t = useT();
   const { colors } = useTheme();
@@ -49,7 +47,7 @@ export default function MedalsSheet() {
       </Card>
 
       <View style={styles.tiers}>
-        {TIERS_DOWN.map((tier) => {
+        {MEDAL_TIERS.map((tier) => {
           const count = counts[tier];
           const color = colors[tier];
           const surface = colors[`${tier}Soft`];
