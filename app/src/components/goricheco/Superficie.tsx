@@ -15,7 +15,7 @@ type Props = {
 };
 
 export default function Superficie({ state, onSceneEvent, pose, action }: Props) {
-  const canvas = useRef<HTMLCanvasElement>(null);
+  const host = useRef<HTMLDivElement>(null);
   const renderer = useRef<GorichecoRenderer | null>(null);
   const notify = useRef(onSceneEvent);
   const lastAction = useRef<string | null>(null);
@@ -27,11 +27,11 @@ export default function Superficie({ state, onSceneEvent, pose, action }: Props)
   }, [onSceneEvent]);
 
   useEffect(() => {
-    if (!canvas.current) return;
+    if (!host.current) return;
     const emit = (event: SceneEvent) => { void notify.current?.(event).catch(() => {}); };
     try {
       const engine = createGorichecoEngine();
-      renderer.current = engine.mount(canvas.current, { onEvent: emit });
+      renderer.current = engine.mount(host.current, { onEvent: emit });
     } catch {
       emit('error');
     }
@@ -58,8 +58,8 @@ export default function Superficie({ state, onSceneEvent, pose, action }: Props)
   }, [actionName, actionSequence]);
 
   return (
-    <canvas
-      ref={canvas}
+    <div
+      ref={host}
       aria-hidden="true"
       style={{ position: 'absolute', inset: 0, display: 'block', width: '100%', height: '100%', pointerEvents: 'none' }}
     />

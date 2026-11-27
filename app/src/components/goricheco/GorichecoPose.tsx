@@ -7,12 +7,10 @@ import Superficie from './Superficie';
 import { useGorichecoStage } from './useGorichecoStage';
 
 const poses = {
-  welcome: { yaw: 0.92, expression: 'smile', tail: 0.42 },
-  daily: { yaw: 0.66, expression: 'curious', tail: 0.35, gaze: [-0.24, 0.02] },
-  training: { yaw: 0.76, expression: 'sleepy', tail: 0.28, gaze: [-0.18, 0.12] },
+  welcome: { yaw: 0.12, expression: 'joy', tail: 0.42 },
+  daily: { yaw: -0.28, tilt: -3, expression: 'curious', tail: 0.35, gaze: [-0.24, 0.02] },
+  training: { yaw: 0.24, tilt: 2, expression: 'focused', tail: 0.28, gaze: [-0.18, 0.12] },
 } satisfies Record<string, Pose>;
-
-const wave = { name: 'wave', sequence: 1 } as const;
 
 export function GorichecoPose({ scene, style }: {
   scene: keyof typeof poses;
@@ -59,7 +57,6 @@ export function GorichecoPose({ scene, style }: {
             edgeInset: 0,
           }}
           pose={poses[scene]}
-          action={scene === 'welcome' && active && ready && reducedMotion === false ? wave : undefined}
           onSceneEvent={onSceneEvent}
           dom={{
             useExpoDOMWebView: Platform.OS !== 'ios',

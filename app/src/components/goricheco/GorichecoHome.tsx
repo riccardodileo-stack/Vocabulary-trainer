@@ -40,12 +40,20 @@ export function GorichecoHome({
 
   useEffect(() => {
     if (mode !== 'intro') return;
+    if (reducedMotion === true) {
+      const frame = requestAnimationFrame(() => {
+        setMode('idle');
+        setShowGreeting(true);
+        opacity.setValue(1);
+      });
+      return () => cancelAnimationFrame(frame);
+    }
     return navigation.addListener('blur', () => {
       setMode('idle');
       setShowGreeting(true);
       opacity.setValue(1);
     });
-  }, [mode, navigation, opacity]);
+  }, [mode, navigation, opacity, reducedMotion]);
 
   useEffect(() => {
     if (!showStage || mode !== 'hold') return;
@@ -66,9 +74,9 @@ export function GorichecoHome({
   useEffect(() => {
     if (!showStage || failed || reducedMotion === true) return;
 
-    const waitingForCanvas = !ready || reducedMotion === null;
+    const waitingForRenderer = !ready || reducedMotion === null;
     const duringIntro = mode === 'intro' && !showGreeting;
-    const limit = waitingForCanvas ? (__DEV__ ? 10000 : 5000) : duringIntro ? 6500 : 0;
+    const limit = waitingForRenderer ? (__DEV__ ? 10000 : 5000) : duringIntro ? 6500 : 0;
     if (!limit) return;
 
     const timer = setTimeout(() => {
@@ -141,18 +149,16 @@ export function GorichecoHome({
         style={[styles.stage, compact && styles.stageCompact]}
       >
         {!failed && <Superficie state={state} onSceneEvent={onSceneEvent} dom={surfaceOptions} />}
-        {(failed || (reducedMotion === true && !ready)) && (
+        {(failed || !ready) && (
           <Image
             source={require('./goricheco-statico.png')}
             accessible={false}
             contentFit="contain"
-            contentPosition="bottom right"
-            style={[styles.static, compact && styles.staticCompact]}
+            contentPosition="center"
+            style={StyleSheet.absoluteFill}
           />
         )}
       </View>
-
-      <View style={[styles.reserve, compact && styles.reserveCompact]} />
 
       <View style={styles.rightColumn}>
         <View style={styles.toolbar}>{languageSelector}</View>
@@ -221,34 +227,13 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     transform: [{ rotate: '45deg' }],
   },
-  reserve: {
+  stage: {
     width: 134,
+    height: STAGE_HEIGHT,
     flexShrink: 0,
   },
-  reserveCompact: {
-    width: 111,
-  },
-  stage: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: STAGE_HEIGHT,
-    transform: [{ scaleX: -1 }],
-  },
   stageCompact: {
+    width: 111,
     height: COMPACT_STAGE_HEIGHT,
-  },
-  static: {
-    position: 'absolute',
-    width: '47%',
-    maxWidth: 194,
-    top: 0,
-    bottom: 4,
-    right: spacing.lg + 2,
-  },
-  staticCompact: {
-    width: '37%',
-    maxWidth: 142,
   },
 });

@@ -11,7 +11,7 @@ export type SceneState = {
 export type SceneEvent = 'ready' | 'greet' | 'idle' | 'error';
 
 export type Action = 'wave' | 'blink';
-export type Expression = 'smile' | 'curious' | 'sleepy';
+export type Expression = 'smile' | 'curious' | 'sleepy' | 'focused' | 'surprised' | 'joy';
 export type Paw = 'frontNear' | 'frontFar' | 'backNear' | 'backFar';
 
 export type Pose = {

@@ -8,5 +8,5 @@ export type GorichecoRenderer = {
 };
 
 export function createGorichecoEngine(): {
-  mount(canvas: HTMLCanvasElement, options?: { onEvent?: (event: SceneEvent) => void }): GorichecoRenderer;
+  mount(host: HTMLDivElement, options?: { onEvent?: (event: SceneEvent) => void }): GorichecoRenderer;
 };
