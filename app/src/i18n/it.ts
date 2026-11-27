@@ -285,6 +285,7 @@ export const it: Translations = {
     quizSection: 'Quiz',
     reminderSection: 'Promemoria',
     reminderTimeTitle: 'Orario',
+    reminderCustomTime: 'Orario personalizzato',
     exportHint: 'Crea un file con tutte le parole e i progressi, da conservare o portare su un altro telefono.',
     sounds: 'Suoni',
     soundsLabel: 'Suoni del quiz',

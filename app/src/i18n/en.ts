@@ -284,6 +284,7 @@ export const en = {
     quizSection: 'Quiz',
     reminderSection: 'Reminder',
     reminderTimeTitle: 'Time',
+    reminderCustomTime: 'Custom time',
     exportHint: 'Creates a file with all your words and progress, to keep it safe or move it to another phone.',
     sounds: 'Sounds',
     soundsLabel: 'Quiz sounds',
